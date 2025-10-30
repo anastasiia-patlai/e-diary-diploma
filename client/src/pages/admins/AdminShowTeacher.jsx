@@ -8,7 +8,6 @@ const AdminShowTeacher = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Отримання викладачів з сервера
     useEffect(() => {
         const fetchTeachers = async () => {
             try {
