@@ -14,10 +14,13 @@ mongoose.connect('mongodb://localhost:27017/db-e-diary')
 const signupRouter = require('./routes/signup');
 const groupsRouter = require('./routes/groups');
 const loginRouter = require('./routes/login');
+const usersRouter = require('./routes/users');
+
 
 app.use('/api', signupRouter);
 app.use('/api/groups', groupsRouter);
 app.use('/api', loginRouter);
+app.use('/api', usersRouter);
 
 app.get('/', (req, res) => res.send('Сервер працює!'));
 

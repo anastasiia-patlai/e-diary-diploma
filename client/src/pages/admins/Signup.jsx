@@ -136,7 +136,7 @@ function Signup({ onClose }) {
                     maxHeight: '90vh',
                     overflowY: 'auto'
                 }}>
-                    {/* Кнопка закриття */}
+                    {/* ЗАКРИТИ*/}
                     <button
                         onClick={onClose}
                         style={{
@@ -153,7 +153,7 @@ function Signup({ onClose }) {
                         <FaTimes />
                     </button>
 
-                    {/* Повідомлення успіху */}
+                    {/* УСПІШНЕ ДОДАННЯ КОРИСТУВАЧА */}
                     {successMessage && (
                         <div
                             style={{
@@ -316,7 +316,21 @@ function Signup({ onClose }) {
                         <button
                             type="submit"
                             className="btn w-100"
-                            style={{ backgroundColor: "#59b971", color: "white" }}
+                            style={{
+                                backgroundColor: "rgba(105, 180, 185, 1)",
+                                color: "white",
+                                transition: "background-color 0.3s ease",
+                                border: "none",
+                                padding: "10px",
+                                borderRadius: "5px",
+                                cursor: "pointer"
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.backgroundColor = "rgba(61, 117, 121, 1)";
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.backgroundColor = "rgba(105, 180, 185, 1)";
+                            }}
                         >
                             Зареєструвати
                         </button>

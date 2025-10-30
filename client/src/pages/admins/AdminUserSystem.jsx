@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaTimes } from "react-icons/fa";
+import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus } from "react-icons/fa";
 import Signup from "./Signup";
+import AdminShowStudent from "./AdminShowStudent";
+import AdminShowTeacher from "./AdminShowTeacher";
 
 const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
@@ -16,6 +18,7 @@ const AdminUserSystem = () => {
 
     return (
         <div>
+            {/* ЗАГОЛОВОК І КНОПКА */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -36,7 +39,8 @@ const AdminUserSystem = () => {
                         alignItems: 'center',
                         gap: '8px',
                         fontSize: '14px',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        transition: 'background-color 0.3s ease'
                     }}
                     onMouseOver={(e) => {
                         e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.8)';
@@ -50,7 +54,7 @@ const AdminUserSystem = () => {
                 </button>
             </div>
 
-            {/* ВКЛАДКИ */}
+            {/* САМІ ВКЛАДКИ */}
             <div style={{
                 display: 'flex',
                 borderBottom: '1px solid #e5e7eb',
@@ -67,7 +71,20 @@ const AdminUserSystem = () => {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
+                        transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        if (activeTab !== "students") {
+                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
+                            e.target.style.color = 'white';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (activeTab !== "students") {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#374151';
+                        }
                     }}
                 >
                     <FaUserGraduate />
@@ -84,7 +101,20 @@ const AdminUserSystem = () => {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
+                        transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        if (activeTab !== "teachers") {
+                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
+                            e.target.style.color = 'white';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (activeTab !== "teachers") {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#374151';
+                        }
                     }}
                 >
                     <FaChalkboardTeacher />
@@ -92,36 +122,16 @@ const AdminUserSystem = () => {
                 </button>
             </div>
 
-            {/* ВМІСТ ВКЛАДОК*/}
+            {/* КОНТЕНТ */}
             {activeTab === "students" && (
-                <div>
-                    <h4>Список учнів/студентів</h4>
-                    <p>Тут буде таблиця з усіма учнями/студентами:</p>
-                    <ul>
-                        <li>Перегляд списку студентів</li>
-                        <li>Додавання нових студентів</li>
-                        <li>Редагування даних студентів</li>
-                        <li>Видалення студентів</li>
-                        <li>Прив'язка до груп</li>
-                    </ul>
-                </div>
+                <AdminShowStudent />
             )}
 
             {activeTab === "teachers" && (
-                <div>
-                    <h4>Список викладачів</h4>
-                    <p>Тут буде таблиця з усіма викладачами:</p>
-                    <ul>
-                        <li>Перегляд списку викладачів</li>
-                        <li>Додавання нових викладачів</li>
-                        <li>Редагування даних викладачів</li>
-                        <li>Видалення викладачів</li>
-                        <li>Призначення кураторів груп</li>
-                    </ul>
-                </div>
+                <AdminShowTeacher />
             )}
 
-            {/* ПОКАЗ ПОПАПУ */}
+            {/* Попап для реєстрації */}
             {showPopup && (
                 <Signup onClose={handleClosePopup} />
             )}

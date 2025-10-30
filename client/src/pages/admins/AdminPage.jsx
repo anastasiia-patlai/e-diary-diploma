@@ -6,7 +6,6 @@ import {
     FaChartLine
 } from "react-icons/fa";
 import AdminUserSystem from "./AdminUserSystem";
-import Signup from "./Signup";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");

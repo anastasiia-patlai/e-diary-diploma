@@ -31,6 +31,7 @@ router.post('/signup', async (req, res) => {
             fullName,
             role,
             phone,
+            dateOfBirth,
             email,
             password: hashedPassword,
             group: groupId,
