@@ -1,8 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { FaTimes } from "react-icons/fa";
 
-function Signup() {
+function Signup({ onClose }) {
     const [formData, setFormData] = useState({
         fullName: "",
         role: "",
@@ -91,7 +92,10 @@ function Signup() {
                     });
                     setTouched({});
                     setErrors({});
-                    setTimeout(() => setSuccessMessage(""), 3000);
+                    setTimeout(() => {
+                        setSuccessMessage("");
+                        if (onClose) onClose();
+                    }, 2000);
                 })
                 .catch((err) => console.error(err));
         }
@@ -109,41 +113,63 @@ function Signup() {
         return "form-select is-valid";
     };
 
-    return (
-        <div
-            className="container d-flex justify-content-center align-items-center mt-5"
-            style={{ minHeight: "80vh" }}
-        >
-            <div style={{ position: "relative", width: "600px" }}>
-                {/* Повідомлення успіху */}
-                {successMessage && (
-                    <div
+    if (onClose) {
+        return (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+                <div style={{
+                    position: 'relative',
+                    backgroundColor: 'white',
+                    borderRadius: '10px',
+                    padding: '20px',
+                    width: '600px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto'
+                }}>
+                    {/* Кнопка закриття */}
+                    <button
+                        onClick={onClose}
                         style={{
-                            position: "absolute",
-                            top: "-60px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            backgroundColor: "#59b971",
-                            color: "white",
-                            padding: "10px 20px",
-                            borderRadius: "10px",
-                            zIndex: 1000,
-                            textAlign: "center",
-                            fontWeight: "bold",
+                            position: 'absolute',
+                            top: '15px',
+                            right: '15px',
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '20px',
+                            cursor: 'pointer',
+                            color: '#666'
                         }}
                     >
-                        {successMessage}
-                    </div>
-                )}
-                <div
-                    className="card shadow-sm p-4"
-                    style={{
-                        width: "600px",
-                        minHeight: "600px",
-                        overflow: "hidden",
-                        transition: "all 0.3s ease",
-                    }}
-                >
+                        <FaTimes />
+                    </button>
+
+                    {/* Повідомлення успіху */}
+                    {successMessage && (
+                        <div
+                            style={{
+                                backgroundColor: "#59b971",
+                                color: "white",
+                                padding: "10px 20px",
+                                borderRadius: "10px",
+                                textAlign: "center",
+                                fontWeight: "bold",
+                                marginBottom: '20px'
+                            }}
+                        >
+                            {successMessage}
+                        </div>
+                    )}
+
                     <h3 className="text-center mb-4">Реєстрація користувача</h3>
 
                     <form onSubmit={handleSubmit} noValidate>
@@ -296,21 +322,8 @@ function Signup() {
                         </button>
                     </form>
                 </div>
-
-                <style>
-                    {`
-                      .fade-in {
-                        animation: fadeIn 0.4s ease;
-                      }
-                                
-                      @keyframes fadeIn {
-                        from { opacity: 0; transform: translateY(-5px); }
-                        to { opacity: 1; transform: translateY(0); }
-                      }
-                    `}
-                </style>
             </div>
-        </div>
-    );
+        );
+    }
 }
 export default Signup;

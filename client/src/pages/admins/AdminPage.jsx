@@ -1,38 +1,51 @@
 import React, { useState } from "react";
 import {
     FaHome,
-    FaChartBar,
-    FaCalendarAlt,
-    FaBook,
-    FaUserCheck,
-    FaUsers,
-    FaBookOpen,
-    FaEnvelope,
+    FaUserCog,
+    FaCog,
+    FaChartLine
 } from "react-icons/fa";
+import AdminUserSystem from "./AdminUserSystem";
+import Signup from "./Signup";
 
-const Navigate = ({ role = "", onLogout, userFullName }) => {
+const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
 
-    const sectionsByRole = {
-        student: [
-            { name: "Головна", icon: <FaHome /> },
-            { name: "Оцінки", icon: <FaChartBar /> },
-            { name: "Розклад", icon: <FaCalendarAlt /> },
-            { name: "Домашні завдання", icon: <FaBook /> },
-            { name: "Відвідуваність", icon: <FaUserCheck /> }
-        ],
-        parent: [
-            { name: "Головна", icon: <FaHome /> },
-            { name: "Оцінки дитини", icon: <FaChartBar /> },
-            { name: "Відвідуваність", icon: <FaUserCheck /> },
-            { name: "Зв'язок з викладачами", icon: <FaEnvelope /> }
-        ],
-        teacher: [
-            { name: "Головна", icon: <FaHome /> },
-            { name: "Класи", icon: <FaUsers /> },
-            { name: "Журнал", icon: <FaBookOpen /> },
-            { name: "Повідомлення", icon: <FaEnvelope /> }
-        ]
+    const adminSections = [
+        { name: "Головна", icon: <FaHome /> },
+        { name: "Користувачі", icon: <FaUserCog /> },
+        { name: "Налаштування", icon: <FaCog /> },
+        { name: "Звіти", icon: <FaChartLine /> }
+    ];
+
+    const renderAdminContent = () => {
+        switch (activeSection) {
+            case "Користувачі":
+                return <AdminUserSystem />;
+
+            case "Налаштування":
+                return (
+                    <div>
+                        <h3>Налаштування системи</h3>
+                        <p>Тут будуть налаштування системи, ролей, прав доступу тощо.</p>
+                    </div>
+                );
+
+            case "Звіти":
+                return (
+                    <div>
+                        <h3>Звіти та статистика</h3>
+                        <p>Тут будуть різні звіти та статистика по системі.</p>
+                    </div>
+                );
+
+            default:
+                return (
+                    <div>
+                        <p>Ласкаво просимо до адміністративної панелі!</p>
+                    </div>
+                );
+        }
     };
 
     return (
@@ -107,7 +120,7 @@ const Navigate = ({ role = "", onLogout, userFullName }) => {
                         padding: 0,
                         margin: 0
                     }}>
-                        {sectionsByRole[role].map((section) => (
+                        {adminSections.map((section) => (
                             <li key={section.name}>
                                 <button
                                     onClick={() => setActiveSection(section.name)}
@@ -154,22 +167,11 @@ const Navigate = ({ role = "", onLogout, userFullName }) => {
                     backgroundColor: 'white',
                     overflowY: 'auto'
                 }}>
-                    <h2 style={{
-                        fontSize: '24px',
-                        fontWeight: '600',
-                        marginBottom: '16px',
-                        color: '#1f2937'
-                    }}>
-                        {activeSection}
-                    </h2>
-                    <p style={{ color: '#374151' }}>
-                        Тут відображається інформація розділу <b>"{activeSection}"</b> для ролі{" "}
-                        <b>{role}</b>.
-                    </p>
+                    {renderAdminContent()}
                 </main>
             </div>
         </div>
     );
 };
 
-export default Navigate;
+export default AdminPage;

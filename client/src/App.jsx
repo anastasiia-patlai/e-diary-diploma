@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate as Redirect } from "react-router-dom";
-import Signup from "./Signup";
+import Signup from "./pages/admins/Signup";
 import Login from "./Login";
 import Navigate from "./pages/Navigate";
-import StudentPage from "./pages/StudentPage";
-import TeacherPage from "./pages/TeacherPage";
-import ParentPage from "./pages/ParentPage";
-import AdminPage from "./pages/AdminPage";
+import StudentPage from "./pages/students/StudentPage";
+import TeacherPage from "./pages/teachers/TeacherPage";
+import ParentPage from "./pages/parents/ParentPage";
+import AdminPage from "./pages/admins/AdminPage";
 
 function App() {
   let user = null;
@@ -75,7 +75,7 @@ function App() {
           path="/admin"
           element={
             user?.role === "admin" ? (
-              <Navigate role="admin" onLogout={handleLogout} userFullName={user.fullName} />
+              <AdminPage onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
               <Redirect to="/login" />
             )
