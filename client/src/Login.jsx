@@ -1,49 +1,30 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function Login() {
-    const [formData, setFormData] = useState({
-        email: "",
-        password: "",
-    });
-
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({ email: "", password: "" });
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
 
     const validateField = (name, value) => {
         let error = "";
-
-        switch (name) {
-            case "email":
-                if (!value) {
-                    error = "Електронна пошта обов'язкова";
-                } else if (!/\S+@\S+\.\S+/.test(value)) {
-                    error = "Некоректна електронна адреса";
-                }
-                break;
-
-            case "password":
-                if (!value) {
-                    error = "Пароль обов'язковий";
-                } else if (value.length < 6) {
-                    error = "Пароль має містити щонайменше 6 символів";
-                }
-                break;
-
-            default:
-                break;
+        if (name === "email") {
+            if (!value) error = "Електронна пошта обов'язкова";
+            else if (!/\S+@\S+\.\S+/.test(value)) error = "Некоректна електронна адреса";
         }
-
+        if (name === "password") {
+            if (!value) error = "Пароль обов'язковий";
+            else if (value.length < 6) error = "Пароль має містити щонайменше 6 символів";
+        }
         setErrors((prev) => ({ ...prev, [name]: error }));
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-
-        if (touched[name]) {
-            validateField(name, value);
-        }
+        if (touched[name]) validateField(name, value);
     };
 
     const handleBlur = (e) => {
@@ -52,16 +33,41 @@ function Login() {
         validateField(name, value);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         Object.keys(formData).forEach((field) =>
             validateField(field, formData[field])
         );
 
-        if (Object.values(errors).every((err) => !err)) {
-            alert("Вхід успішний!");
-            console.log("Дані форми:", formData);
+        if (Object.values(errors).some((err) => err)) return;
+
+        try {
+            const res = await fetch("http://localhost:3001/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await res.json();
+            console.log("Відповідь сервера:", data);
+
+            if (!res.ok) {
+                alert(data.error || "Помилка входу");
+                return;
+            }
+
+            if (data.user && data.user.role) {
+                localStorage.setItem("user", JSON.stringify(data.user));
+
+                window.location.href = `/${data.user.role}`;
+            } else {
+                alert("Некоректна відповідь від сервера");
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Помилка сервера");
         }
     };
 
@@ -91,7 +97,7 @@ function Login() {
                     borderRadius: "15px",
                 }}
             >
-                <h3 className="text-center mb-4">Вхід до  системи електронний щоденник</h3>
+                <h3 className="text-center mb-4">Вхід до системи електронний щоденник</h3>
 
                 <form onSubmit={handleSubmit} noValidate>
                     {/* ПОШТА */}
@@ -138,7 +144,7 @@ function Login() {
                     </button>
                 </form>
             </div>
-        </div >
+        </div>
     );
 }
 

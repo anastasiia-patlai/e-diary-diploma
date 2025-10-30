@@ -292,7 +292,7 @@ function Signup() {
                             className="btn w-100"
                             style={{ backgroundColor: "#59b971", color: "white" }}
                         >
-                            Зареєструватися
+                            Зареєструвати
                         </button>
                     </form>
                 </div>
