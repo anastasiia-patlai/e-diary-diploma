@@ -3,9 +3,11 @@ import {
     FaHome,
     FaUserCog,
     FaCog,
-    FaChartLine
+    FaChartLine,
+    FaUserTie
 } from "react-icons/fa";
 import AdminUserSystem from "./AdminUserSystem";
+import AdminShowCurators from "./AdminShowCurators";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -13,6 +15,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
     const adminSections = [
         { name: "Головна", icon: <FaHome /> },
         { name: "Користувачі", icon: <FaUserCog /> },
+        { name: "Класні керівники", icon: <FaUserTie /> },
         { name: "Налаштування", icon: <FaCog /> },
         { name: "Звіти", icon: <FaChartLine /> }
     ];
@@ -31,12 +34,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
                 );
 
             case "Класні керівники":
-                return (
-                    <div>
-                        <h3>Звіти та статистика</h3>
-                        <p>Тут будуть різні звіти та статистика по системі.</p>
-                    </div>
-                );
+                return <AdminShowCurators />;
 
             case "Звіти":
                 return (

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUsers, FaUserTie } from "react-icons/fa";
+import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus } from "react-icons/fa";
 import Signup from "./Signup";
 import AdminShowStudent from "./AdminShowStudent";
 import AdminShowTeacher from "./AdminShowTeacher";
-import AdminShowCurators from "./AdminShowCurators";
 
 const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
@@ -121,36 +120,6 @@ const AdminUserSystem = () => {
                     <FaChalkboardTeacher />
                     Викладачі
                 </button>
-                <button
-                    onClick={() => setActiveTab("curators")}
-                    style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        backgroundColor: activeTab === "curators" ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                        color: activeTab === "curators" ? 'white' : '#374151',
-                        borderBottom: activeTab === "curators" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        if (activeTab !== "curators") {
-                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                            e.target.style.color = 'white';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (activeTab !== "curators") {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#374151';
-                        }
-                    }}
-                >
-                    <FaUserTie />
-                    Куратори
-                </button>
             </div>
 
             {/* КОНТЕНТ */}
@@ -160,10 +129,6 @@ const AdminUserSystem = () => {
 
             {activeTab === "teachers" && (
                 <AdminShowTeacher />
-            )}
-
-            {activeTab === "curators" && (
-                <AdminShowCurators />
             )}
 
             {/* Попап для реєстрації */}

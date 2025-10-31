@@ -465,7 +465,7 @@ const AdminShowCurators = () => {
                             </div>
                         )}
 
-                        {/* Зайняті викладачі (тільки для інформації) */}
+                        {/* ЗАЙНЯТІ ВИКЛАДАЧІ */}
                         {busyTeachers.length > 0 && (
                             <div>
                                 <h4 style={{ marginBottom: '10px', color: '#6b7280' }}>
