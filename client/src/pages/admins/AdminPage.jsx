@@ -79,7 +79,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
                 {/* НАЗВА СТОРІНКИ ПО ЦЕНТРУ*/}
                 <h1 style={{
                     margin: 0,
-                    fontSize: '20px',
+                    fontSize: '24px',
                     fontWeight: '600',
                 }}>
                     {activeSection}

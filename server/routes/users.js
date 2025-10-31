@@ -3,6 +3,41 @@ const router = express.Router();
 const User = require('../models/User');
 const Group = require('../models/Group');
 
+// ОТРИМАТИ ВСІХ БАТЬКІВ
+router.get('/parents', async (req, res) => {
+    try {
+        const parents = await User.find({ role: 'parent' })
+            .select('fullName email phone children')
+            .populate({
+                path: 'children',
+                select: 'fullName email group',
+                populate: {
+                    path: 'group',
+                    select: 'name'
+                }
+            })
+            .sort({ fullName: 1 });
+        res.json(parents);
+    } catch (err) {
+        console.error('Помилка отримання батьків:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ОТРИМАТИ ВСІХ СТУДЕНТІВ
+router.get('/students', async (req, res) => {
+    try {
+        const students = await User.find({ role: 'student' })
+            .select('fullName email phone dateOfBirth group')
+            .populate('group', 'name')
+            .sort({ fullName: 1 });
+        res.json(students);
+    } catch (err) {
+        console.error('Помилка отримання студентів:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ОТРИМАТИ ВСІХ ВИКЛАДАЧІВ
 router.get('/teachers', async (req, res) => {
     try {
@@ -114,6 +149,101 @@ router.get('/:id', async (req, res) => {
     } catch (err) {
         console.error('Помилка отримання користувача:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ОТРИМАННЯ ВСІХ КОРИСТУВАЧІВ
+router.get('/', async (req, res) => {
+    try {
+        const users = await User.find()
+            .select('fullName role email phone position group children')
+            .populate('group', 'name')
+            .populate('children', 'fullName email group');
+        res.json(users);
+    } catch (err) {
+        console.error("Помилка отримання користувачів:", err);
+        res.status(500).json({ error: 'Помилка сервера при отриманні користувачів' });
+    }
+});
+
+// ДОДАТИ ДИТИНУ
+router.put('/:id/add-child', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { childId } = req.body;
+
+        const parent = await User.findById(id);
+        if (!parent || parent.role !== 'parent') {
+            return res.status(404).json({ error: 'Батька не знайдено' });
+        }
+
+        const child = await User.findById(childId);
+        if (!child || child.role !== 'student') {
+            return res.status(400).json({ error: 'Дитина має бути студентом' });
+        }
+
+        if (parent.children && parent.children.includes(childId)) {
+            return res.status(400).json({ error: 'Дитина вже додана до цього батька' });
+        }
+
+        await User.findByIdAndUpdate(
+            id,
+            { $addToSet: { children: childId } }
+        );
+
+        const updatedParent = await User.findById(id)
+            .populate({
+                path: 'children',
+                select: 'fullName email group',
+                populate: {
+                    path: 'group',
+                    select: 'name'
+                }
+            });
+
+        res.json({
+            message: 'Дитину успішно додано',
+            parent: updatedParent
+        });
+    } catch (err) {
+        console.error('Помилка додавання дитини:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// ВИДАЛИТИ ДИТИНУ
+router.put('/:id/remove-child', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { childId } = req.body;
+
+        const parent = await User.findById(id);
+        if (!parent || parent.role !== 'parent') {
+            return res.status(404).json({ error: 'Батька не знайдено' });
+        }
+
+        await User.findByIdAndUpdate(
+            id,
+            { $pull: { children: childId } }
+        );
+
+        const updatedParent = await User.findById(id)
+            .populate({
+                path: 'children',
+                select: 'fullName email group',
+                populate: {
+                    path: 'group',
+                    select: 'name'
+                }
+            });
+
+        res.json({
+            message: 'Дитину успішно видалено',
+            parent: updatedParent
+        });
+    } catch (err) {
+        console.error('Помилка видалення дитини:', err);
+        res.status(400).json({ error: err.message });
     }
 });
 
