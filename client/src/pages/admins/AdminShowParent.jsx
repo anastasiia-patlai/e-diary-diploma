@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus, FaTimes, FaSearch } from "react-icons/fa";
 import axios from "axios";
+import AdminParentEdit from './AdminParentEdit';
+import AdminParentDelete from './AdminParentDelete';
 
 const AdminShowParents = () => {
     const [parents, setParents] = useState([]);
@@ -8,6 +10,8 @@ const AdminShowParents = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showAddChildPopup, setShowAddChildPopup] = useState(false);
+    const [showEditPopup, setShowEditPopup] = useState(false);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [selectedParent, setSelectedParent] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -34,7 +38,6 @@ const AdminShowParents = () => {
         } catch (err) {
             console.error("Помилка завантаження студентів:", err);
             console.error("Деталі помилки:", err.response?.data);
-            setError("Помилка завантаження студентів: " + (err.response?.data?.error || err.message));
         }
     };
 
@@ -43,7 +46,29 @@ const AdminShowParents = () => {
         fetchStudents();
     }, []);
 
-    // Функція пошуку студентів
+    // Функції для редагування
+    const handleEdit = (parent) => {
+        setSelectedParent(parent);
+        setShowEditPopup(true);
+    };
+
+    const handleUpdateParent = (updatedParent) => {
+        setParents(prev => prev.map(p =>
+            p._id === updatedParent._id ? updatedParent : p
+        ));
+    };
+
+    // Функції для видалення
+    const handleDelete = (parent) => {
+        setSelectedParent(parent);
+        setShowDeletePopup(true);
+    };
+
+    const handleDeleteParent = (parentId) => {
+        setParents(prev => prev.filter(p => p._id !== parentId));
+    };
+
+    // Функції для пошуку та додавання дітей
     const handleSearch = (query) => {
         setSearchQuery(query);
 
@@ -55,7 +80,6 @@ const AdminShowParents = () => {
 
         setIsSearching(true);
 
-        // Фільтруємо студентів за запитом
         const filteredStudents = students.filter(student => {
             const searchLower = query.toLowerCase();
             return (
@@ -65,7 +89,6 @@ const AdminShowParents = () => {
             );
         });
 
-        // Виключаємо студентів, які вже додані до батька
         const parentChildrenIds = selectedParent?.children ?
             selectedParent.children.map(child => child._id) : [];
         const availableStudents = filteredStudents.filter(student =>
@@ -92,7 +115,7 @@ const AdminShowParents = () => {
             setSelectedParent(null);
             setSearchQuery("");
             setSearchResults([]);
-            fetchParents(); // Оновити список батьків
+            fetchParents();
         } catch (err) {
             console.error("Помилка додавання дитини:", err);
             alert(err.response?.data?.error || "Помилка додавання дитини");
@@ -105,7 +128,7 @@ const AdminShowParents = () => {
                 await axios.put(`${API_URL}/${parentId}/remove-child`, {
                     childId: childId
                 });
-                fetchParents(); // Оновити список батьків
+                fetchParents();
             } catch (err) {
                 console.error("Помилка видалення дитини:", err);
                 alert("Помилка видалення дитини");
@@ -239,6 +262,7 @@ const AdminShowParents = () => {
                                         Знайти дитину
                                     </button>
                                     <button
+                                        onClick={() => handleEdit(parent)}
                                         style={{
                                             padding: '6px 12px',
                                             backgroundColor: 'rgba(105, 180, 185, 1)',
@@ -256,6 +280,7 @@ const AdminShowParents = () => {
                                         Редагувати
                                     </button>
                                     <button
+                                        onClick={() => handleDelete(parent)}
                                         style={{
                                             padding: '6px 12px',
                                             backgroundColor: '#ef4444',
@@ -540,6 +565,30 @@ const AdminShowParents = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Попап редагування батька */}
+            {showEditPopup && (
+                <AdminParentEdit
+                    parent={selectedParent}
+                    onClose={() => {
+                        setShowEditPopup(false);
+                        setSelectedParent(null);
+                    }}
+                    onUpdate={handleUpdateParent}
+                />
+            )}
+
+            {/* Попап видалення батька */}
+            {showDeletePopup && (
+                <AdminParentDelete
+                    parent={selectedParent}
+                    onClose={() => {
+                        setShowDeletePopup(false);
+                        setSelectedParent(null);
+                    }}
+                    onDelete={handleDeleteParent}
+                />
             )}
         </div>
     );
