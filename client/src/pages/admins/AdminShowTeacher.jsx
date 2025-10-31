@@ -1,30 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { FaChevronDown, FaChevronUp, FaUser, FaEnvelope, FaBook } from "react-icons/fa";
 import axios from "axios";
+import EditTeacherPopup from "./EditTeacherPopup";
+import DeleteTeacherPopup from "./DeleteTeacherPopup";
 
 const AdminShowTeacher = () => {
     const [teachers, setTeachers] = useState([]);
     const [expandedSubjects, setExpandedSubjects] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [selectedTeacher, setSelectedTeacher] = useState(null);
+    const [showEditPopup, setShowEditPopup] = useState(false);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
+
+    const fetchTeachers = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/users/teachers");
+            setTeachers(response.data);
+            setLoading(false);
+        } catch (err) {
+            setError("Помилка завантаження викладачів");
+            setLoading(false);
+            console.error("Помилка завантаження викладачів:", err);
+        }
+    };
 
     useEffect(() => {
-        const fetchTeachers = async () => {
-            try {
-                const response = await axios.get("http://localhost:3001/api/teachers");
-                setTeachers(response.data);
-                setLoading(false);
-            } catch (err) {
-                setError("Помилка завантаження викладачів");
-                setLoading(false);
-                console.error("Помилка завантаження викладачів:", err);
-            }
-        };
-
         fetchTeachers();
     }, []);
 
-    // Групування викладачів по предметах
     const groupTeachersBySubject = () => {
         const subjects = {};
 
@@ -36,7 +40,6 @@ const AdminShowTeacher = () => {
             subjects[subject].push(teacher);
         });
 
-        // Сортування предметів за алфавітом
         const sortedSubjects = {};
         Object.keys(subjects).sort().forEach(key => {
             sortedSubjects[key] = subjects[key];
@@ -45,7 +48,6 @@ const AdminShowTeacher = () => {
         return sortedSubjects;
     };
 
-    // Функція для розгортання/згортання предмету
     const toggleSubject = (subject) => {
         setExpandedSubjects(prev => ({
             ...prev,
@@ -53,7 +55,6 @@ const AdminShowTeacher = () => {
         }));
     };
 
-    // Розгорнути/згорнути всі предмети
     const toggleAllSubjects = () => {
         const subjects = groupTeachersBySubject();
         const allExpanded = Object.values(expandedSubjects).every(Boolean);
@@ -62,6 +63,28 @@ const AdminShowTeacher = () => {
             newExpandedState[subject] = !allExpanded;
         });
         setExpandedSubjects(newExpandedState);
+    };
+
+    const handleEditTeacher = (teacher) => {
+        setSelectedTeacher(teacher);
+        setShowEditPopup(true);
+    };
+
+    const handleDeleteTeacher = (teacher) => {
+        setSelectedTeacher(teacher);
+        setShowDeletePopup(true);
+    };
+
+    const handleUpdateTeacher = () => {
+        fetchTeachers();
+        setShowEditPopup(false);
+        setSelectedTeacher(null);
+    };
+
+    const handleDeleteConfirm = () => {
+        fetchTeachers();
+        setShowDeletePopup(false);
+        setSelectedTeacher(null);
     };
 
     if (loading) {
@@ -119,7 +142,6 @@ const AdminShowTeacher = () => {
                             borderRadius: '8px',
                             overflow: 'hidden'
                         }}>
-                            {/* Заголовок предмету */}
                             <div
                                 style={{
                                     backgroundColor: expandedSubjects[subject] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb',
@@ -132,10 +154,10 @@ const AdminShowTeacher = () => {
                                 }}
                                 onClick={() => toggleSubject(subject)}
                                 onMouseOver={(e) => {
-                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
+                                    e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
                                 }}
                                 onMouseOut={(e) => {
-                                    e.target.style.backgroundColor = expandedSubjects[subject] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb';
+                                    e.currentTarget.style.backgroundColor = expandedSubjects[subject] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb';
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -158,7 +180,6 @@ const AdminShowTeacher = () => {
                                 </div>
                             </div>
 
-                            {/* Вміст предмету (викладачі) */}
                             {expandedSubjects[subject] && (
                                 <div style={{
                                     backgroundColor: 'white',
@@ -214,6 +235,10 @@ const AdminShowTeacher = () => {
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditTeacher(teacher);
+                                                        }}
                                                         style={{
                                                             padding: '6px 12px',
                                                             backgroundColor: 'rgba(105, 180, 185, 1)',
@@ -227,6 +252,10 @@ const AdminShowTeacher = () => {
                                                         Редагувати
                                                     </button>
                                                     <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteTeacher(teacher);
+                                                        }}
                                                         style={{
                                                             padding: '6px 12px',
                                                             backgroundColor: '#ef4444',
@@ -248,6 +277,29 @@ const AdminShowTeacher = () => {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Попапи */}
+            {showEditPopup && selectedTeacher && (
+                <EditTeacherPopup
+                    teacher={selectedTeacher}
+                    onClose={() => {
+                        setShowEditPopup(false);
+                        setSelectedTeacher(null);
+                    }}
+                    onUpdate={handleUpdateTeacher}
+                />
+            )}
+
+            {showDeletePopup && selectedTeacher && (
+                <DeleteTeacherPopup
+                    teacher={selectedTeacher}
+                    onClose={() => {
+                        setShowDeletePopup(false);
+                        setSelectedTeacher(null);
+                    }}
+                    onDelete={handleDeleteConfirm}
+                />
             )}
         </div>
     );

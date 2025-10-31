@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { FaChevronDown, FaChevronUp, FaUser, FaEnvelope } from "react-icons/fa";
 import axios from "axios";
+import EditStudentPopup from "./EditStudentPopup";
+import DeleteStudentPopup from "./DeleteStudentPopup";
 
 const AdminShowStudent = () => {
     const [groups, setGroups] = useState([]);
     const [expandedGroups, setExpandedGroups] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [showEditPopup, setShowEditPopup] = useState(false);
+    const [showDeletePopup, setShowDeletePopup] = useState(false);
 
     const sortGroups = (groups) => {
         return groups.sort((a, b) => {
@@ -26,24 +31,23 @@ const AdminShowStudent = () => {
         });
     };
 
-    useEffect(() => {
-        const fetchGroups = async () => {
-            try {
-                const response = await axios.get("http://localhost:3001/api/groups");
-                const sortedGroups = sortGroups(response.data);
-                setGroups(sortedGroups);
-                setLoading(false);
-            } catch (err) {
-                setError("Помилка завантаження груп");
-                setLoading(false);
-                console.error("Помилка завантаження груп:", err);
-            }
-        };
+    const fetchGroups = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/groups");
+            const sortedGroups = sortGroups(response.data);
+            setGroups(sortedGroups);
+            setLoading(false);
+        } catch (err) {
+            setError("Помилка завантаження груп");
+            setLoading(false);
+            console.error("Помилка завантаження груп:", err);
+        }
+    };
 
+    useEffect(() => {
         fetchGroups();
     }, []);
 
-    // РОЗГОРТАННЯ/ЗГОРТАННЯ ОДНІЄЇ ГРУПИ
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => ({
             ...prev,
@@ -51,7 +55,6 @@ const AdminShowStudent = () => {
         }));
     };
 
-    // РОЗГОРТАННЯ/ЗГОРТАННЯ ВСІХ ГРУПИ
     const toggleAllGroups = () => {
         const allExpanded = Object.values(expandedGroups).every(Boolean);
         const newExpandedState = {};
@@ -61,7 +64,6 @@ const AdminShowStudent = () => {
         setExpandedGroups(newExpandedState);
     };
 
-    // ШКОЛА ЧИ УНІВЕР
     const getGroupType = (groupName) => {
         const lowerName = groupName.toLowerCase();
         if (lowerName.includes('а') || lowerName.includes('б') || lowerName.includes('в') ||
@@ -69,6 +71,28 @@ const AdminShowStudent = () => {
             return 'school';
         }
         return 'university';
+    };
+
+    const handleEditStudent = (student) => {
+        setSelectedStudent(student);
+        setShowEditPopup(true);
+    };
+
+    const handleDeleteStudent = (student) => {
+        setSelectedStudent(student);
+        setShowDeletePopup(true);
+    };
+
+    const handleUpdateStudent = () => {
+        fetchGroups();
+        setShowEditPopup(false);
+        setSelectedStudent(null);
+    };
+
+    const handleDeleteConfirm = () => {
+        fetchGroups();
+        setShowDeletePopup(false);
+        setSelectedStudent(null);
     };
 
     if (loading) {
@@ -126,7 +150,6 @@ const AdminShowStudent = () => {
                                 borderRadius: '8px',
                                 overflow: 'hidden'
                             }}>
-                                {/* НАЗВА ГРУПИ */}
                                 <div
                                     style={{
                                         backgroundColor: expandedGroups[group._id] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb',
@@ -139,10 +162,10 @@ const AdminShowStudent = () => {
                                     }}
                                     onClick={() => toggleGroup(group._id)}
                                     onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
+                                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
                                     }}
                                     onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = expandedGroups[group._id] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb';
+                                        e.currentTarget.style.backgroundColor = expandedGroups[group._id] ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb';
                                     }}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -188,7 +211,6 @@ const AdminShowStudent = () => {
                                     </div>
                                 </div>
 
-                                {/* ВМІСТ ГРУПИ */}
                                 {expandedGroups[group._id] && (
                                     <div style={{
                                         backgroundColor: 'white',
@@ -236,6 +258,10 @@ const AdminShowStudent = () => {
                                                         </div>
                                                         <div style={{ display: 'flex', gap: '10px' }}>
                                                             <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEditStudent(student);
+                                                                }}
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     backgroundColor: 'rgba(105, 180, 185, 1)',
@@ -249,6 +275,10 @@ const AdminShowStudent = () => {
                                                                 Редагувати
                                                             </button>
                                                             <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteStudent(student);
+                                                                }}
                                                                 style={{
                                                                     padding: '6px 12px',
                                                                     backgroundColor: '#ef4444',
@@ -280,6 +310,29 @@ const AdminShowStudent = () => {
                         );
                     })}
                 </div>
+            )}
+
+            {/* Попапи */}
+            {showEditPopup && selectedStudent && (
+                <EditStudentPopup
+                    student={selectedStudent}
+                    onClose={() => {
+                        setShowEditPopup(false);
+                        setSelectedStudent(null);
+                    }}
+                    onUpdate={handleUpdateStudent}
+                />
+            )}
+
+            {showDeletePopup && selectedStudent && (
+                <DeleteStudentPopup
+                    student={selectedStudent}
+                    onClose={() => {
+                        setShowDeletePopup(false);
+                        setSelectedStudent(null);
+                    }}
+                    onDelete={handleDeleteConfirm}
+                />
             )}
         </div>
     );
