@@ -96,7 +96,14 @@ const AdminPage = ({ onLogout, userFullName }) => {
                         padding: '8px 16px',
                         borderRadius: '8px',
                         border: 'none',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'background-color 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        e.target.style.backgroundColor = '#db1a1aff';
+                    }}
+                    onMouseOut={(e) => {
+                        e.target.style.backgroundColor = '#ef4444';
                     }}
                 >
                     Вихід
