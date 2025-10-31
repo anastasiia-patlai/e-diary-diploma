@@ -30,6 +30,14 @@ const AdminPage = ({ onLogout, userFullName }) => {
                     </div>
                 );
 
+            case "Класні керівники":
+                return (
+                    <div>
+                        <h3>Звіти та статистика</h3>
+                        <p>Тут будуть різні звіти та статистика по системі.</p>
+                    </div>
+                );
+
             case "Звіти":
                 return (
                     <div>
