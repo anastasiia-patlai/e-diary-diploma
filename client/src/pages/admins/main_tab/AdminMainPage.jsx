@@ -148,7 +148,7 @@ const AdminMainPage = () => {
                 gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
                 gap: '20px'
             }}>
-                <div style={{
+                {/* <div style={{
                     backgroundColor: 'white',
                     padding: '24px',
                     borderRadius: '12px',
@@ -200,7 +200,7 @@ const AdminMainPage = () => {
                             </span>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 <div style={{
                     backgroundColor: 'white',
