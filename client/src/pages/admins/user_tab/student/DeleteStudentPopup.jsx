@@ -41,7 +41,6 @@ const DeleteStudentPopup = ({ student, onClose, onDelete }) => {
                 width: '90%',
                 maxWidth: '450px'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -77,7 +76,7 @@ const DeleteStudentPopup = ({ student, onClose, onDelete }) => {
                     </div>
                 )}
 
-                {/* Попередження */}
+                {/* ПОПЕРЕДЖЕННЯ */}
                 <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -103,7 +102,6 @@ const DeleteStudentPopup = ({ student, onClose, onDelete }) => {
                     </div>
                 </div>
 
-                {/* Кнопки */}
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button
                         onClick={handleDelete}

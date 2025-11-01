@@ -18,11 +18,9 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Завантаження груп
                 const groupsResponse = await axios.get("http://localhost:3001/api/groups");
                 setGroups(groupsResponse.data);
 
-                // Завантаження повних даних студента
                 const userResponse = await axios.get(`http://localhost:3001/api/users/${student._id}`);
                 const userData = userResponse.data;
 
@@ -180,7 +178,7 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* Email */}
+                        {/* ПОШТА */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -221,7 +219,7 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* Телефон */}
+                        {/* ТЕЛЕФОН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -262,7 +260,7 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* Дата народження */}
+                        {/* ДН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -302,7 +300,7 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* Група */}
+                        {/* ГРУПА */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -350,7 +348,6 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             </select>
                         </div>
 
-                        {/* Кнопки */}
                         <div style={{
                             display: 'flex',
                             gap: '10px',
