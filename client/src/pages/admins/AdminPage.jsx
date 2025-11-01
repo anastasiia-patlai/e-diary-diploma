@@ -4,7 +4,8 @@ import {
     FaUserCog,
     FaCog,
     FaChartLine,
-    FaUserTie
+    FaUserTie,
+    FaCalendarAlt
 } from "react-icons/fa";
 import AdminUserSystem from "./AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
@@ -17,6 +18,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
         { name: "Головна", icon: <FaHome /> },
         { name: "Користувачі", icon: <FaUserCog /> },
         { name: "Класні керівники", icon: <FaUserTie /> },
+        { name: "Розклад", icon: <FaCalendarAlt /> },
         { name: "Налаштування", icon: <FaCog /> },
         { name: "Звіти", icon: <FaChartLine /> }
     ];
@@ -29,6 +31,17 @@ const AdminPage = ({ onLogout, userFullName }) => {
             case "Користувачі":
                 return <AdminUserSystem />;
 
+            case "Класні керівники":
+                return <AdminShowCurators />;
+
+            case "Розклад":
+                return (
+                    <div>
+                        <h3>Розклад</h3>
+                        <p>Тут буде відображатись розклад занять для всіх класів.</p>
+                    </div>
+                );
+
             case "Налаштування":
                 return (
                     <div>
@@ -36,10 +49,6 @@ const AdminPage = ({ onLogout, userFullName }) => {
                         <p>Тут будуть налаштування системи, ролей, прав доступу тощо.</p>
                     </div>
                 );
-
-            case "Класні керівники":
-                return <AdminShowCurators />;
-
             case "Звіти":
                 return (
                     <div>
