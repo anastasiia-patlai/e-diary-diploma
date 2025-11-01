@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import AdminUserSystem from "./AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
+import AdminMainPage from "./main_tab/AdminMainPage";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -22,6 +23,9 @@ const AdminPage = ({ onLogout, userFullName }) => {
 
     const renderAdminContent = () => {
         switch (activeSection) {
+            case "Головна":
+                return <AdminMainPage />;
+
             case "Користувачі":
                 return <AdminUserSystem />;
 
