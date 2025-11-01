@@ -7,7 +7,7 @@ import {
     FaUserTie
 } from "react-icons/fa";
 import AdminUserSystem from "./AdminUserSystem";
-import AdminShowCurators from "./AdminShowCurators";
+import AdminShowCurators from "./curator_tab/AdminShowCurators";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");

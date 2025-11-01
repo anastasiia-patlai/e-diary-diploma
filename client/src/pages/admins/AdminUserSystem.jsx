@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUserFriends } from "react-icons/fa";
 import Signup from "./Signup";
-import AdminShowStudent from "./AdminShowStudent";
-import AdminShowTeacher from "./AdminShowTeacher";
-import AdminShowParent from "./AdminShowParent";
+import AdminShowStudent from "./user_tab/student/AdminShowStudent";
+import AdminShowTeacher from "./user_tab/teacher/AdminShowTeacher";
+import AdminShowParent from "./user_tab/parent/AdminShowParent";
 
 const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
