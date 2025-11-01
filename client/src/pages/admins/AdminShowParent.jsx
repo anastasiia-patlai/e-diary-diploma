@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus, FaTimes, FaSearch } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus, FaTimes, FaSearch, FaSortAlphaDown, FaSortAlphaUp } from "react-icons/fa";
 import axios from "axios";
 import AdminParentEdit from './AdminParentEdit';
 import AdminParentDelete from './AdminParentDelete';
@@ -16,6 +17,7 @@ const AdminShowParents = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' або 'desc'
 
     const API_URL = "http://localhost:3001/api/users";
 
@@ -45,6 +47,28 @@ const AdminShowParents = () => {
         fetchParents();
         fetchStudents();
     }, []);
+
+    // Функція для сортування батьків за алфавітом
+    const sortParents = (parentsArray, order) => {
+        return [...parentsArray].sort((a, b) => {
+            const nameA = a.fullName?.toLowerCase() || '';
+            const nameB = b.fullName?.toLowerCase() || '';
+
+            if (order === 'asc') {
+                return nameA.localeCompare(nameB);
+            } else {
+                return nameB.localeCompare(nameA);
+            }
+        });
+    };
+
+    // Обробник зміни порядку сортування
+    const handleSortToggle = () => {
+        setSortOrder(prevOrder => prevOrder === 'asc' ? 'desc' : 'asc');
+    };
+
+    // Отримуємо відсортований список батьків
+    const sortedParents = sortParents(parents, sortOrder);
 
     // Функції для редагування
     const handleEdit = (parent) => {
@@ -160,7 +184,35 @@ const AdminShowParents = () => {
                 alignItems: 'center',
                 marginBottom: '20px'
             }}>
-                <h3 style={{ margin: 0 }}>Батьки</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h3 style={{ margin: 0 }}>Батьки</h3>
+                    <button
+                        onClick={handleSortToggle}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 12px',
+                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                            color: 'rgba(105, 180, 185, 1)',
+                            border: '1px solid rgba(105, 180, 185, 0.3)',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                        }}
+                    >
+                        {sortOrder === 'asc' ? <FaSortAlphaDown /> : <FaSortAlphaUp />}
+                        {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
+                    </button>
+                </div>
                 <button
                     style={{
                         display: 'flex',
@@ -172,7 +224,14 @@ const AdminShowParents = () => {
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => {
+                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                     }}
                 >
                     <FaPlus />
@@ -180,19 +239,27 @@ const AdminShowParents = () => {
                 </button>
             </div>
 
-            {parents.length === 0 ? (
+            {sortedParents.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                     <p>Батьки не знайдені</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {parents.map(parent => (
+                    {sortedParents.map(parent => (
                         <div key={parent._id} style={{
                             border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                             padding: '20px',
-                            backgroundColor: '#f9fafb'
-                        }}>
+                            backgroundColor: '#f9fafb',
+                            transition: 'box-shadow 0.2s'
+                        }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.boxShadow = 'none';
+                            }}
+                        >
                             <div style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
@@ -255,7 +322,14 @@ const AdminShowParents = () => {
                                             fontSize: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '5px'
+                                            gap: '5px',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                                         }}
                                     >
                                         <FaSearch />
@@ -273,7 +347,14 @@ const AdminShowParents = () => {
                                             fontSize: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '5px'
+                                            gap: '5px',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                                         }}
                                     >
                                         <FaEdit />
@@ -291,7 +372,14 @@ const AdminShowParents = () => {
                                             fontSize: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '5px'
+                                            gap: '5px',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = '#dc2626';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = '#ef4444';
                                         }}
                                     >
                                         <FaTrash />
@@ -327,8 +415,16 @@ const AdminShowParents = () => {
                                                 padding: '8px 12px',
                                                 backgroundColor: 'white',
                                                 borderRadius: '6px',
-                                                border: '1px solid #e5e7eb'
-                                            }}>
+                                                border: '1px solid #e5e7eb',
+                                                transition: 'background-color 0.2s'
+                                            }}
+                                                onMouseOver={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.currentTarget.style.backgroundColor = 'white';
+                                                }}
+                                            >
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <FaChild style={{ color: 'rgba(105, 180, 185, 1)' }} />
                                                     <span style={{ fontWeight: '500' }}>{child.fullName}</span>
@@ -356,7 +452,14 @@ const AdminShowParents = () => {
                                                         fontSize: '11px',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        gap: '4px'
+                                                        gap: '4px',
+                                                        transition: 'background-color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.target.style.backgroundColor = '#dc2626';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.target.style.backgroundColor = '#ef4444';
                                                     }}
                                                 >
                                                     <FaTimes size={10} />
@@ -383,7 +486,7 @@ const AdminShowParents = () => {
                 </div>
             )}
 
-            {/* Попап пошуку дитини */}
+            {/* ПОПАП ПОШУКУ ДИТИНИ */}
             {showAddChildPopup && selectedParent && (
                 <div style={{
                     position: 'fixed',
@@ -432,7 +535,6 @@ const AdminShowParents = () => {
                             </button>
                         </div>
 
-                        {/* Поле пошуку */}
                         <div style={{ position: 'relative', marginBottom: '20px' }}>
                             <div style={{ position: 'relative' }}>
                                 <input
@@ -478,7 +580,6 @@ const AdminShowParents = () => {
                             )}
                         </div>
 
-                        {/* Результати пошуку */}
                         <div>
                             {isSearching && searchQuery.length >= 3 && (
                                 <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
@@ -567,7 +668,7 @@ const AdminShowParents = () => {
                 </div>
             )}
 
-            {/* Попап редагування батька */}
+            {/* ПОПАП ДЛЯ РЕДАГУВАННЯ БАТЬКІВ */}
             {showEditPopup && (
                 <AdminParentEdit
                     parent={selectedParent}
@@ -579,7 +680,7 @@ const AdminShowParents = () => {
                 />
             )}
 
-            {/* Попап видалення батька */}
+            {/* ПОПАП ДЛЯ ВИДАЛЕННЯ БАТЬКІВ */}
             {showDeletePopup && (
                 <AdminParentDelete
                     parent={selectedParent}
