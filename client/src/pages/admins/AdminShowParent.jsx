@@ -1,6 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus, FaTimes, FaSearch, FaSortAlphaDown, FaSortAlphaUp } from "react-icons/fa";
+import {
+    FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus,
+    FaTimes, FaSearch, FaSortAlphaDown, FaSortAlphaUp, FaChevronLeft, FaChevronRight,
+    FaAngleDoubleLeft, FaAngleDoubleRight
+} from "react-icons/fa";
 import axios from "axios";
 import AdminParentEdit from './AdminParentEdit';
 import AdminParentDelete from './AdminParentDelete';
@@ -17,7 +20,11 @@ const AdminShowParents = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' або 'desc'
+    const [sortOrder, setSortOrder] = useState('asc');
+
+    // СТАНИ ДЛЯ ПАГІНАЦІЇ
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     const API_URL = "http://localhost:3001/api/users";
 
@@ -48,7 +55,7 @@ const AdminShowParents = () => {
         fetchStudents();
     }, []);
 
-    // Функція для сортування батьків за алфавітом
+    // СОРТУВАННЯ БАТЬКІВ ЗА АЛФАВІТОМ
     const sortParents = (parentsArray, order) => {
         return [...parentsArray].sort((a, b) => {
             const nameA = a.fullName?.toLowerCase() || '';
@@ -62,15 +69,60 @@ const AdminShowParents = () => {
         });
     };
 
-    // Обробник зміни порядку сортування
     const handleSortToggle = () => {
         setSortOrder(prevOrder => prevOrder === 'asc' ? 'desc' : 'asc');
+        setCurrentPage(1);
     };
 
-    // Отримуємо відсортований список батьків
     const sortedParents = sortParents(parents, sortOrder);
 
-    // Функції для редагування
+    // РОЗРАХУНКИ ДЛЯ ПАГІНАЦІЇ
+    const totalItems = sortedParents.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentParents = sortedParents.slice(startIndex, endIndex);
+
+    const goToPage = (page) => {
+        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    };
+
+    const goToFirstPage = () => {
+        setCurrentPage(1);
+    };
+
+    const goToLastPage = () => {
+        setCurrentPage(totalPages);
+    };
+
+    const goToPreviousPage = () => {
+        setCurrentPage(prev => Math.max(1, prev - 1));
+    };
+
+    const goToNextPage = () => {
+        setCurrentPage(prev => Math.min(totalPages, prev + 1));
+    };
+
+    // ГЕНЕРАЦІЯ НОМЕРІВ ДЛЯ ПАГІНАЦІЇ
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisiblePages = 5;
+
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return pages;
+    };
+
+    // ДЛЯ РЕДАГУВАННЯ
     const handleEdit = (parent) => {
         setSelectedParent(parent);
         setShowEditPopup(true);
@@ -82,7 +134,7 @@ const AdminShowParents = () => {
         ));
     };
 
-    // Функції для видалення
+    // ДЛЯ ВИДАЛЕННЯ
     const handleDelete = (parent) => {
         setSelectedParent(parent);
         setShowDeletePopup(true);
@@ -90,9 +142,12 @@ const AdminShowParents = () => {
 
     const handleDeleteParent = (parentId) => {
         setParents(prev => prev.filter(p => p._id !== parentId));
+        if (currentParents.length === 1 && currentPage > 1) {
+            setCurrentPage(prev => prev - 1);
+        }
     };
 
-    // Функції для пошуку та додавання дітей
+    // ДЛЯ ПОШУКУ І ДОДАВАННЯ ДІТЕЙ
     const handleSearch = (query) => {
         setSearchQuery(query);
 
@@ -239,251 +294,452 @@ const AdminShowParents = () => {
                 </button>
             </div>
 
-            {sortedParents.length === 0 ? (
+            {/* ІНФО ПРО ПАГІНАЦІЮ*/}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '15px',
+                padding: '10px 15px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+            }}>
+                <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                    Показано {startIndex + 1}-{Math.min(endIndex, totalItems)} з {totalItems} батьків
+                </div>
+                <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                    Сторінка {currentPage} з {totalPages}
+                </div>
+            </div>
+
+            {currentParents.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                     <p>Батьки не знайдені</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {sortedParents.map(parent => (
-                        <div key={parent._id} style={{
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            padding: '20px',
-                            backgroundColor: '#f9fafb',
-                            transition: 'box-shadow 0.2s'
-                        }}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
+                        {currentParents.map(parent => (
+                            <div key={parent._id} style={{
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                padding: '20px',
+                                backgroundColor: '#f9fafb',
+                                transition: 'box-shadow 0.2s'
                             }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.boxShadow = 'none';
-                            }}
-                        >
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                marginBottom: '15px'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <div style={{
-                                        width: '50px',
-                                        height: '50px',
-                                        borderRadius: '50%',
-                                        backgroundColor: 'rgba(105, 180, 185, 0.2)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: 'rgba(105, 180, 185, 1)'
-                                    }}>
-                                        <FaUserFriends />
-                                    </div>
-                                    <div>
-                                        <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
-                                            {parent.fullName}
-                                        </div>
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                            >
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'flex-start',
+                                    marginBottom: '15px'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                         <div style={{
+                                            width: '50px',
+                                            height: '50px',
+                                            borderRadius: '50%',
+                                            backgroundColor: 'rgba(105, 180, 185, 0.2)',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '14px',
-                                            color: '#6b7280'
+                                            justifyContent: 'center',
+                                            color: 'rgba(105, 180, 185, 1)'
                                         }}>
-                                            <FaEnvelope size={12} />
-                                            {parent.email}
+                                            <FaUserFriends />
                                         </div>
-                                        {parent.phone && (
+                                        <div>
+                                            <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
+                                                {parent.fullName}
+                                            </div>
                                             <div style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '8px',
                                                 fontSize: '14px',
-                                                color: '#6b7280',
-                                                marginTop: '2px'
+                                                color: '#6b7280'
                                             }}>
-                                                <FaPhone size={12} />
-                                                {parent.phone}
+                                                <FaEnvelope size={12} />
+                                                {parent.email}
                                             </div>
-                                        )}
+                                            {parent.phone && (
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    fontSize: '14px',
+                                                    color: '#6b7280',
+                                                    marginTop: '2px'
+                                                }}>
+                                                    <FaPhone size={12} />
+                                                    {parent.phone}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button
-                                        onClick={() => handleAddChild(parent)}
-                                        style={{
-                                            padding: '6px 12px',
-                                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            transition: 'background-color 0.2s'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                        }}
-                                    >
-                                        <FaSearch />
-                                        Знайти дитину
-                                    </button>
-                                    <button
-                                        onClick={() => handleEdit(parent)}
-                                        style={{
-                                            padding: '6px 12px',
-                                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            transition: 'background-color 0.2s'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                        }}
-                                    >
-                                        <FaEdit />
-                                        Редагувати
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(parent)}
-                                        style={{
-                                            padding: '6px 12px',
-                                            backgroundColor: '#ef4444',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            transition: 'background-color 0.2s'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.target.style.backgroundColor = '#dc2626';
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.target.style.backgroundColor = '#ef4444';
-                                        }}
-                                    >
-                                        <FaTrash />
-                                        Видалити
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Діти батька */}
-                            <div>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '10px'
-                                }}>
-                                    <div style={{
-                                        fontWeight: '600',
-                                        color: 'rgba(105, 180, 185, 1)'
-                                    }}>
-                                        Діти ({parent.children ? parent.children.length : 0})
-                                    </div>
-                                </div>
-
-                                {parent.children && parent.children.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        {parent.children.map(child => (
-                                            <div key={child._id} style={{
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            onClick={() => handleAddChild(parent)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
                                                 display: 'flex',
-                                                justifyContent: 'space-between',
                                                 alignItems: 'center',
-                                                gap: '10px',
-                                                padding: '8px 12px',
-                                                backgroundColor: 'white',
-                                                borderRadius: '6px',
-                                                border: '1px solid #e5e7eb',
+                                                gap: '5px',
                                                 transition: 'background-color 0.2s'
                                             }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                                            onMouseOver={(e) => {
+                                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                            }}
+                                        >
+                                            <FaSearch />
+                                            Знайти дитину
+                                        </button>
+                                        <button
+                                            onClick={() => handleEdit(parent)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '5px',
+                                                transition: 'background-color 0.2s'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                            }}
+                                        >
+                                            <FaEdit />
+                                            Редагувати
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(parent)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                backgroundColor: '#ef4444',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '5px',
+                                                transition: 'background-color 0.2s'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.target.style.backgroundColor = '#dc2626';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.target.style.backgroundColor = '#ef4444';
+                                            }}
+                                        >
+                                            <FaTrash />
+                                            Видалити
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '10px'
+                                    }}>
+                                        <div style={{
+                                            fontWeight: '600',
+                                            color: 'rgba(105, 180, 185, 1)'
+                                        }}>
+                                            Діти ({parent.children ? parent.children.length : 0})
+                                        </div>
+                                    </div>
+
+                                    {parent.children && parent.children.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {parent.children.map(child => (
+                                                <div key={child._id} style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    gap: '10px',
+                                                    padding: '8px 12px',
+                                                    backgroundColor: 'white',
+                                                    borderRadius: '6px',
+                                                    border: '1px solid #e5e7eb',
+                                                    transition: 'background-color 0.2s'
                                                 }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'white';
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <FaChild style={{ color: 'rgba(105, 180, 185, 1)' }} />
-                                                    <span style={{ fontWeight: '500' }}>{child.fullName}</span>
-                                                    {child.group && (
-                                                        <span style={{
-                                                            fontSize: '12px',
-                                                            color: '#6b7280',
-                                                            backgroundColor: '#f3f4f6',
-                                                            padding: '2px 6px',
-                                                            borderRadius: '4px'
-                                                        }}>
-                                                            {child.group.name}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    onClick={() => handleRemoveChild(parent._id, child._id)}
-                                                    style={{
-                                                        padding: '4px 8px',
-                                                        backgroundColor: '#ef4444',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '11px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                        transition: 'background-color 0.2s'
-                                                    }}
                                                     onMouseOver={(e) => {
-                                                        e.target.style.backgroundColor = '#dc2626';
+                                                        e.currentTarget.style.backgroundColor = '#f8fafc';
                                                     }}
                                                     onMouseOut={(e) => {
-                                                        e.target.style.backgroundColor = '#ef4444';
+                                                        e.currentTarget.style.backgroundColor = 'white';
                                                     }}
                                                 >
-                                                    <FaTimes size={10} />
-                                                    Видалити
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div style={{
-                                        textAlign: 'center',
-                                        padding: '20px',
-                                        color: '#6b7280',
-                                        backgroundColor: 'white',
-                                        borderRadius: '6px',
-                                        border: '1px dashed #e5e7eb'
-                                    }}>
-                                        <p>Дітей не додано</p>
-                                    </div>
-                                )}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <FaChild style={{ color: 'rgba(105, 180, 185, 1)' }} />
+                                                        <span style={{ fontWeight: '500' }}>{child.fullName}</span>
+                                                        {child.group && (
+                                                            <span style={{
+                                                                fontSize: '12px',
+                                                                color: '#6b7280',
+                                                                backgroundColor: '#f3f4f6',
+                                                                padding: '2px 6px',
+                                                                borderRadius: '4px'
+                                                            }}>
+                                                                {child.group.name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemoveChild(parent._id, child._id)}
+                                                        style={{
+                                                            padding: '4px 8px',
+                                                            backgroundColor: '#ef4444',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '11px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px',
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.target.style.backgroundColor = '#dc2626';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.target.style.backgroundColor = '#ef4444';
+                                                        }}
+                                                    >
+                                                        <FaTimes size={10} />
+                                                        Видалити
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '20px',
+                                            color: '#6b7280',
+                                            backgroundColor: 'white',
+                                            borderRadius: '6px',
+                                            border: '1px dashed #e5e7eb'
+                                        }}>
+                                            <p>Дітей не додано</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '8px',
+                            marginTop: '20px',
+                            padding: '15px',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb'
+                        }}>
+                            {/* Кнопка першої сторінки */}
+                            <button
+                                onClick={goToFirstPage}
+                                disabled={currentPage === 1}
+                                style={{
+                                    padding: '8px 12px',
+                                    backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
+                                    color: currentPage === 1 ? '#9ca3af' : '#374151',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '14px',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#d1d5db';
+                                    }
+                                }}
+                            >
+                                <FaChevronDoubleLeft size={12} />
+                            </button>
+
+                            <button
+                                onClick={goToPreviousPage}
+                                disabled={currentPage === 1}
+                                style={{
+                                    padding: '8px 12px',
+                                    backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
+                                    color: currentPage === 1 ? '#9ca3af' : '#374151',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '14px',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#d1d5db';
+                                    }
+                                }}
+                            >
+                                <FaChevronLeft size={12} />
+                                Попередня
+                            </button>
+
+                            {/* НОМЕРИ СТОРІНОК */}
+                            {getPageNumbers().map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => goToPage(page)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        backgroundColor: currentPage === page ? 'rgba(105, 180, 185, 1)' : 'white',
+                                        color: currentPage === page ? 'white' : '#374151',
+                                        border: `1px solid ${currentPage === page ? 'rgba(105, 180, 185, 1)' : '#d1d5db'}`,
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: currentPage === page ? '600' : '400',
+                                        transition: 'all 0.2s',
+                                        minWidth: '40px'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        if (currentPage !== page) {
+                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                            e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
+                                        }
+                                    }}
+                                    onMouseOut={(e) => {
+                                        if (currentPage !== page) {
+                                            e.target.style.backgroundColor = 'white';
+                                            e.target.style.borderColor = '#d1d5db';
+                                        }
+                                    }}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            {/* -> */}
+                            <button
+                                onClick={goToNextPage}
+                                disabled={currentPage === totalPages}
+                                style={{
+                                    padding: '8px 12px',
+                                    backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
+                                    color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '14px',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (currentPage !== totalPages) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (currentPage !== totalPages) {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#d1d5db';
+                                    }
+                                }}
+                            >
+                                Наступна
+                                <FaChevronRight size={12} />
+                            </button>
+
+                            {/* <- */}
+                            <button
+                                onClick={goToLastPage}
+                                disabled={currentPage === totalPages}
+                                style={{
+                                    padding: '8px 12px',
+                                    backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
+                                    color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '14px',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (currentPage !== totalPages) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (currentPage !== totalPages) {
+                                        e.target.style.backgroundColor = 'white';
+                                        e.target.style.borderColor = '#d1d5db';
+                                    }
+                                }}
+                            >
+                                <FaChevronDoubleRight size={12} />
+                            </button>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
 
             {/* ПОПАП ПОШУКУ ДИТИНИ */}
