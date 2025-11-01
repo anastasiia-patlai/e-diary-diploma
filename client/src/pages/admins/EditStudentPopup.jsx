@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaUsers } from "react-icons/fa";
 import axios from "axios";
 
 const EditStudentPopup = ({ student, onClose, onUpdate }) => {
@@ -94,14 +94,15 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     marginBottom: '20px'
                 }}>
-                    <h2 style={{ margin: 0, fontSize: '20px' }}>Редагувати студента</h2>
+                    <h2 style={{ margin: 0, fontSize: '20px', color: '#374151' }}>
+                        Редагувати студента
+                    </h2>
                     <button
                         onClick={onClose}
                         style={{
@@ -122,8 +123,12 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                         color: '#dc2626',
                         padding: '12px',
                         borderRadius: '6px',
-                        marginBottom: '16px'
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                     }}>
+                        <FaTimes />
                         {error}
                     </div>
                 )}
@@ -134,9 +139,21 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>
+                        {/* ПІБ */}
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                ПІБ
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaUser style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                ПІБ *
                             </label>
                             <input
                                 type="text"
@@ -146,18 +163,38 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
+                        {/* Email */}
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Email
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaEnvelope style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Email *
                             </label>
                             <input
                                 type="email"
@@ -167,18 +204,38 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
+                        {/* Телефон */}
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Телефон
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaPhone style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Телефон *
                             </label>
                             <input
                                 type="tel"
@@ -188,17 +245,37 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
+                        {/* Дата народження */}
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaCalendar style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
                                 Дата народження
                             </label>
                             <input
@@ -208,18 +285,38 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                                 onChange={handleChange}
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
+                        {/* Група */}
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Група
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaUsers style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Група *
                             </label>
                             <select
                                 name="group"
@@ -228,11 +325,20 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s',
+                                    cursor: 'pointer'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             >
                                 <option value="">Оберіть групу</option>
@@ -244,39 +350,75 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                             </select>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+                        {/* Кнопки */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '10px',
+                            marginTop: '24px',
+                            paddingTop: '16px',
+                            borderTop: '1px solid #e5e7eb'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    backgroundColor: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#4b5563';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = '#6b7280';
+                                }}
+                            >
+                                <FaTimes />
+                                Скасувати
+                            </button>
                             <button
                                 type="submit"
                                 disabled={loading}
                                 style={{
                                     flex: 1,
-                                    padding: '10px',
+                                    padding: '12px',
                                     backgroundColor: 'rgba(105, 180, 185, 1)',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '6px',
                                     cursor: loading ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
-                                    opacity: loading ? 0.6 : 1
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    opacity: loading ? 0.6 : 1,
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                    }
                                 }}
                             >
-                                {loading ? 'Збереження...' : 'Зберегти'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    backgroundColor: '#6b7280',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontWeight: '600'
-                                }}
-                            >
-                                Скасувати
+                                {loading ? 'Збереження...' : 'Зберегти зміни'}
                             </button>
                         </div>
                     </form>

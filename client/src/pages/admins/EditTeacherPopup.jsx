@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher } from "react-icons/fa";
 import axios from "axios";
 
 const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
@@ -88,14 +88,23 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     marginBottom: '20px'
                 }}>
-                    <h2 style={{ margin: 0, fontSize: '20px' }}>Редагувати викладача</h2>
+                    <h2 style={{
+                        margin: 0,
+                        fontSize: '20px',
+                        color: '#374151',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                    }}>
+                        {/* <FaChalkboardTeacher /> */}
+                        Редагувати викладача
+                    </h2>
                     <button
                         onClick={onClose}
                         style={{
@@ -103,7 +112,14 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                             border: 'none',
                             cursor: 'pointer',
                             fontSize: '20px',
-                            color: '#6b7280'
+                            color: '#6b7280',
+                            transition: 'color 0.2s'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.color = '#374151';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.color = '#6b7280';
                         }}
                     >
                         <FaTimes />
@@ -116,8 +132,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                         color: '#dc2626',
                         padding: '12px',
                         borderRadius: '6px',
-                        marginBottom: '16px'
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                     }}>
+                        <FaTimes />
                         {error}
                     </div>
                 )}
@@ -129,8 +149,19 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                 ) : (
                     <form onSubmit={handleSubmit}>
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                ПІБ
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaUser style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                ПІБ *
                             </label>
                             <input
                                 type="text"
@@ -140,18 +171,37 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Email
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaEnvelope style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Email *
                             </label>
                             <input
                                 type="email"
@@ -161,18 +211,37 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Телефон
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaPhone style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Телефон *
                             </label>
                             <input
                                 type="tel"
@@ -182,17 +251,36 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                 required
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaCalendar style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
                                 Дата народження
                             </label>
                             <input
@@ -202,18 +290,37 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                 onChange={handleChange}
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
                         <div style={{ marginBottom: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                Предмет
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaChalkboardTeacher style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Предмет *
                             </label>
                             <input
                                 type="text"
@@ -224,48 +331,91 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                 placeholder="Наприклад: Математика"
                                 style={{
                                     width: '100%',
-                                    padding: '10px',
+                                    padding: '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+                        <div style={{
+                            display: 'flex',
+                            gap: '10px',
+                            marginTop: '24px',
+                            paddingTop: '16px',
+                            borderTop: '1px solid #e5e7eb'
+                        }}>
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    backgroundColor: '#6b7280',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#4b5563';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = '#6b7280';
+                                }}
+                            >
+                                <FaTimes />
+                                Скасувати
+                            </button>
                             <button
                                 type="submit"
                                 disabled={loading}
                                 style={{
                                     flex: 1,
-                                    padding: '10px',
+                                    padding: '12px',
                                     backgroundColor: 'rgba(105, 180, 185, 1)',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '6px',
                                     cursor: loading ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
-                                    opacity: loading ? 0.6 : 1
+                                    fontSize: '14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    opacity: loading ? 0.6 : 1,
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                    }
+                                }}
+                                onMouseOut={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                    }
                                 }}
                             >
-                                {loading ? 'Збереження...' : 'Зберегти'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    backgroundColor: '#6b7280',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontWeight: '600'
-                                }}
-                            >
-                                Скасувати
+                                {loading ? 'Збереження...' : 'Зберегти зміни'}
                             </button>
                         </div>
                     </form>
