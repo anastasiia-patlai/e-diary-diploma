@@ -4,7 +4,7 @@ import axios from "axios";
 
 import ParentSearch from './ParentSearch';
 import ParentSort from './ParentSort';
-import Pagination from './ParentPagination';
+import ParentPagination from './ParentPagination';
 import ParentCard from './ParentCard';
 import AddChildPopup from './AddChildPopup';
 import AdminParentEdit from './AdminParentEdit';
@@ -282,7 +282,7 @@ const AdminShowParent = () => {
                         ))}
                     </div>
 
-                    <Pagination
+                    <ParentPagination
                         currentPage={currentPage}
                         totalPages={totalPages}
                         totalItems={totalItems}
