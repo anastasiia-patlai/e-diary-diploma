@@ -114,24 +114,33 @@ router.delete('/:id/curator', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const group = await Group.findById(id);
-        if (!group) {
+        console.log("Видалення куратора з групи ID:", id);
+
+        const updatedGroup = await Group.findByIdAndUpdate(
+            id,
+            { $set: { curator: null } },
+            { new: true, runValidators: true }
+        ).populate('students', 'fullName email phone dateOfBirth');
+
+        if (!updatedGroup) {
             return res.status(404).json({ error: 'Групу не знайдено' });
         }
 
-        group.curator = null;
-        await group.save();
-
-        const updatedGroup = await Group.findById(id)
-            .populate('students', 'fullName email phone dateOfBirth');
+        console.log("Куратор успішно видалений, оновлена група:", updatedGroup);
 
         res.json({
             message: 'Куратора успішно видалено',
             group: updatedGroup
         });
     } catch (err) {
-        console.error('Помилка видалення куратора:', err);
-        res.status(400).json({ error: err.message });
+        console.error('Детальна помилка видалення куратора:', err);
+        console.log('Код помилки:', err.code);
+        console.log('Повідомлення помилки:', err.message);
+
+        res.status(400).json({
+            error: err.message,
+            code: err.code
+        });
     }
 });
 
