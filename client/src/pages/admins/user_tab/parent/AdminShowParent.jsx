@@ -200,16 +200,14 @@ const AdminShowParent = () => {
     };
 
     const handleRemoveChild = async (parentId, childId) => {
-        if (window.confirm("Ви впевнені, що хочете видалити дитину з цього батька?")) {
-            try {
-                await axios.put(`${API_URL}/${parentId}/remove-child`, {
-                    childId: childId
-                });
-                fetchParents();
-            } catch (err) {
-                console.error("Помилка видалення дитини:", err);
-                alert("Помилка видалення дитини");
-            }
+        try {
+            await axios.put(`${API_URL}/${parentId}/remove-child`, {
+                childId: childId
+            });
+            fetchParents();
+        } catch (err) {
+            console.error("Помилка видалення дитини:", err);
+            alert("Помилка видалення дитини");
         }
     };
 

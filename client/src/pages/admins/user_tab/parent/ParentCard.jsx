@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     FaUserFriends, FaEnvelope, FaPhone, FaChild,
     FaSearch, FaEdit, FaTrash, FaTimes
 } from "react-icons/fa";
+import DeleteChildPopup from './DeleteChildPopup';
 
 const ParentCard = ({
     parent,
@@ -11,6 +12,24 @@ const ParentCard = ({
     onDelete,
     onRemoveChild
 }) => {
+    const [showDeleteChildPopup, setShowDeleteChildPopup] = useState(false);
+    const [childToDelete, setChildToDelete] = useState(null);
+
+    const openDeleteChildConfirmation = (child) => {
+        setChildToDelete(child);
+        setShowDeleteChildPopup(true);
+    };
+
+    const closeDeleteChildConfirmation = () => {
+        setShowDeleteChildPopup(false);
+        setChildToDelete(null);
+    };
+
+    const handleDeleteConfirm = (childId) => {
+        onRemoveChild(parent._id, childId);
+        closeDeleteChildConfirmation();
+    };
+
     return (
         <div key={parent._id} style={{
             border: '1px solid #e5e7eb',
@@ -189,7 +208,7 @@ const ParentCard = ({
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => onRemoveChild(parent._id, child._id)}
+                                    onClick={() => openDeleteChildConfirmation(child)}
                                     style={{
                                         padding: '4px 8px',
                                         backgroundColor: '#ef4444',
@@ -223,6 +242,16 @@ const ParentCard = ({
                     </div>
                 )}
             </div>
+
+            {/* Попап підтвердження видалення дитини */}
+            {showDeleteChildPopup && (
+                <DeleteChildPopup
+                    child={childToDelete}
+                    parent={parent}
+                    onConfirm={handleDeleteConfirm}
+                    onClose={closeDeleteChildConfirmation}
+                />
+            )}
         </div>
     );
 };
