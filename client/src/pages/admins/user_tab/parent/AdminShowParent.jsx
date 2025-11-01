@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FaPlus } from "react-icons/fa";
 import axios from "axios";
 
-import ParentSearch from './ParentSearch';
-import ParentSort from './ParentSort';
-import ParentPagination from './ParentPagination';
-import ParentCard from './ParentCard';
-import AddChildPopup from './AddChildPopup';
-import AdminParentEdit from './AdminParentEdit';
-import AdminParentDelete from './AdminParentDelete';
+import ParentSearch from "./ParentSearch";
+import ParentSort from "./ParentSort";
+import ParentPagination from "./ParentPagination";
+import ParentCard from "./ParentCard";
+import AddChildPopup from "./AddChildPopup";
+import AdminParentEdit from "./AdminParentEdit";
+import AdminParentDelete from "./AdminParentDelete";
 
 const AdminShowParent = () => {
     const [parents, setParents] = useState([]);
