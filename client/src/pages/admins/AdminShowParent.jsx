@@ -22,6 +22,10 @@ const AdminShowParents = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [sortOrder, setSortOrder] = useState('asc');
 
+    // НОВІ СТАНИ ДЛЯ ПОШУКУ БАТЬКІВ
+    const [parentSearchQuery, setParentSearchQuery] = useState("");
+    const [filteredParents, setFilteredParents] = useState([]);
+
     // СТАНИ ДЛЯ ПАГІНАЦІЇ
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -32,6 +36,7 @@ const AdminShowParents = () => {
         try {
             const response = await axios.get(`${API_URL}/parents`);
             setParents(response.data);
+            setFilteredParents(response.data); // Ініціалізуємо відфільтрований список
             setLoading(false);
         } catch (err) {
             setError("Помилка завантаження батьків");
@@ -55,6 +60,31 @@ const AdminShowParents = () => {
         fetchStudents();
     }, []);
 
+    // ФУНКЦІЯ ДЛЯ ПОШУКУ БАТЬКІВ
+    const handleParentSearch = (query) => {
+        setParentSearchQuery(query);
+        setCurrentPage(1); // Скидаємо на першу сторінку при пошуку
+
+        if (query.trim() === '') {
+            setFilteredParents(parents);
+            return;
+        }
+
+        const searchLower = query.toLowerCase();
+        const filtered = parents.filter(parent => {
+            return (
+                parent.fullName?.toLowerCase().includes(searchLower) ||
+                parent.email?.toLowerCase().includes(searchLower) ||
+                parent.phone?.toLowerCase().includes(searchLower) ||
+                (parent.children && parent.children.some(child =>
+                    child.fullName?.toLowerCase().includes(searchLower)
+                ))
+            );
+        });
+
+        setFilteredParents(filtered);
+    };
+
     // СОРТУВАННЯ БАТЬКІВ ЗА АЛФАВІТОМ
     const sortParents = (parentsArray, order) => {
         return [...parentsArray].sort((a, b) => {
@@ -74,7 +104,7 @@ const AdminShowParents = () => {
         setCurrentPage(1);
     };
 
-    const sortedParents = sortParents(parents, sortOrder);
+    const sortedParents = sortParents(filteredParents, sortOrder);
 
     // РОЗРАХУНКИ ДЛЯ ПАГІНАЦІЇ
     const totalItems = sortedParents.length;
@@ -132,6 +162,9 @@ const AdminShowParents = () => {
         setParents(prev => prev.map(p =>
             p._id === updatedParent._id ? updatedParent : p
         ));
+        setFilteredParents(prev => prev.map(p =>
+            p._id === updatedParent._id ? updatedParent : p
+        ));
     };
 
     // ДЛЯ ВИДАЛЕННЯ
@@ -142,6 +175,7 @@ const AdminShowParents = () => {
 
     const handleDeleteParent = (parentId) => {
         setParents(prev => prev.filter(p => p._id !== parentId));
+        setFilteredParents(prev => prev.filter(p => p._id !== parentId));
         if (currentParents.length === 1 && currentPage > 1) {
             setCurrentPage(prev => prev - 1);
         }
@@ -294,6 +328,61 @@ const AdminShowParents = () => {
                 </button>
             </div>
 
+            {/* ПОЛЕ ПОШУКУ БАТЬКІВ */}
+            <div style={{
+                marginBottom: '20px',
+                padding: '15px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb'
+            }}>
+                <div style={{ position: 'relative' }}>
+                    <input
+                        type="text"
+                        placeholder="Пошук батьків за іменем, email, телефоном або іменем дитини..."
+                        value={parentSearchQuery}
+                        onChange={(e) => handleParentSearch(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px 45px 12px 15px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s'
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                        }}
+                    />
+                    <FaSearch
+                        style={{
+                            position: 'absolute',
+                            right: '15px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#6b7280'
+                        }}
+                    />
+                </div>
+                {parentSearchQuery && (
+                    <div style={{
+                        fontSize: '14px',
+                        color: '#6b7280',
+                        marginTop: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        <FaSearch size={12} />
+                        Знайдено {filteredParents.length} батьків за запитом "{parentSearchQuery}"
+                    </div>
+                )}
+            </div>
+
             {/* ІНФО ПРО ПАГІНАЦІЮ*/}
             <div style={{
                 display: 'flex',
@@ -315,7 +404,12 @@ const AdminShowParents = () => {
 
             {currentParents.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <p>Батьки не знайдені</p>
+                    <p>
+                        {parentSearchQuery
+                            ? `Батьки за запитом "${parentSearchQuery}" не знайдені`
+                            : 'Батьки не знайдені'
+                        }
+                    </p>
                 </div>
             ) : (
                 <>
