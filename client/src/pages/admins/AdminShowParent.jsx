@@ -1,42 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import {
-    FaUser, FaEnvelope, FaPhone, FaUserFriends, FaChild, FaEdit, FaTrash, FaPlus,
-    FaTimes, FaSearch, FaSortAlphaDown, FaSortAlphaUp, FaChevronLeft, FaChevronRight,
-    FaAngleDoubleLeft, FaAngleDoubleRight
-} from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import axios from "axios";
+
+import ParentSearch from './ParentSearch';
+import ParentSort from './ParentSort';
+import Pagination from './ParentPagination';
+import ParentCard from './ParentCard';
+import AddChildPopup from './AddChildPopup';
 import AdminParentEdit from './AdminParentEdit';
 import AdminParentDelete from './AdminParentDelete';
 
-const AdminShowParents = () => {
+const AdminShowParent = () => {
     const [parents, setParents] = useState([]);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    // СТАНИ ДЛЯ МОДАЛЬНИХ ВІКОН
     const [showAddChildPopup, setShowAddChildPopup] = useState(false);
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [selectedParent, setSelectedParent] = useState(null);
+
+    // СТАНИ ДЛЯ ПОШУКУ ДІТЕЙ
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [sortOrder, setSortOrder] = useState('asc');
 
-    // НОВІ СТАНИ ДЛЯ ПОШУКУ БАТЬКІВ
+    // СТАНИ ДЛЯ СОРТУВАННЯ ТА ФІЛЬТРАЦІЇ
+    const [sortOrder, setSortOrder] = useState('asc');
     const [parentSearchQuery, setParentSearchQuery] = useState("");
     const [filteredParents, setFilteredParents] = useState([]);
 
     // СТАНИ ДЛЯ ПАГІНАЦІЇ
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [itemsPerPage] = useState(20);
 
     const API_URL = "http://localhost:3001/api/users";
 
+    // ФУНКЦІЇ ДЛЯ ОТРИМАННЯ ДАНИХ
     const fetchParents = async () => {
         try {
             const response = await axios.get(`${API_URL}/parents`);
             setParents(response.data);
-            setFilteredParents(response.data); // Ініціалізуємо відфільтрований список
+            setFilteredParents(response.data);
             setLoading(false);
         } catch (err) {
             setError("Помилка завантаження батьків");
@@ -51,7 +58,6 @@ const AdminShowParents = () => {
             setStudents(response.data);
         } catch (err) {
             console.error("Помилка завантаження студентів:", err);
-            console.error("Деталі помилки:", err.response?.data);
         }
     };
 
@@ -60,10 +66,10 @@ const AdminShowParents = () => {
         fetchStudents();
     }, []);
 
-    // ФУНКЦІЯ ДЛЯ ПОШУКУ БАТЬКІВ
+    // ДЛЯ ПОШУКУ БАТЬКІВ
     const handleParentSearch = (query) => {
         setParentSearchQuery(query);
-        setCurrentPage(1); // Скидаємо на першу сторінку при пошуку
+        setCurrentPage(1);
 
         if (query.trim() === '') {
             setFilteredParents(parents);
@@ -85,17 +91,12 @@ const AdminShowParents = () => {
         setFilteredParents(filtered);
     };
 
-    // СОРТУВАННЯ БАТЬКІВ ЗА АЛФАВІТОМ
+    // ДЯЛ СОРТУВАННЯ БАТЬКІВ
     const sortParents = (parentsArray, order) => {
         return [...parentsArray].sort((a, b) => {
             const nameA = a.fullName?.toLowerCase() || '';
             const nameB = b.fullName?.toLowerCase() || '';
-
-            if (order === 'asc') {
-                return nameA.localeCompare(nameB);
-            } else {
-                return nameB.localeCompare(nameA);
-            }
+            return order === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
         });
     };
 
@@ -113,61 +114,24 @@ const AdminShowParents = () => {
     const endIndex = startIndex + itemsPerPage;
     const currentParents = sortedParents.slice(startIndex, endIndex);
 
-    const goToPage = (page) => {
-        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    };
+    // ДДЯ ПАГІНАЦІЇ
+    const goToPage = (page) => setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    const goToFirstPage = () => setCurrentPage(1);
+    const goToLastPage = () => setCurrentPage(totalPages);
+    const goToPreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
+    const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
-    const goToFirstPage = () => {
-        setCurrentPage(1);
-    };
-
-    const goToLastPage = () => {
-        setCurrentPage(totalPages);
-    };
-
-    const goToPreviousPage = () => {
-        setCurrentPage(prev => Math.max(1, prev - 1));
-    };
-
-    const goToNextPage = () => {
-        setCurrentPage(prev => Math.min(totalPages, prev + 1));
-    };
-
-    // ГЕНЕРАЦІЯ НОМЕРІВ ДЛЯ ПАГІНАЦІЇ
-    const getPageNumbers = () => {
-        const pages = [];
-        const maxVisiblePages = 5;
-
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            pages.push(i);
-        }
-
-        return pages;
-    };
-
-    // ДЛЯ РЕДАГУВАННЯ
+    // УПРАВЛННЯ БАТЬКАМИ
     const handleEdit = (parent) => {
         setSelectedParent(parent);
         setShowEditPopup(true);
     };
 
     const handleUpdateParent = (updatedParent) => {
-        setParents(prev => prev.map(p =>
-            p._id === updatedParent._id ? updatedParent : p
-        ));
-        setFilteredParents(prev => prev.map(p =>
-            p._id === updatedParent._id ? updatedParent : p
-        ));
+        setParents(prev => prev.map(p => p._id === updatedParent._id ? updatedParent : p));
+        setFilteredParents(prev => prev.map(p => p._id === updatedParent._id ? updatedParent : p));
     };
 
-    // ДЛЯ ВИДАЛЕННЯ
     const handleDelete = (parent) => {
         setSelectedParent(parent);
         setShowDeletePopup(true);
@@ -181,7 +145,7 @@ const AdminShowParents = () => {
         }
     };
 
-    // ДЛЯ ПОШУКУ І ДОДАВАННЯ ДІТЕЙ
+    // ПОШУК ТА ДОДАВАННЯ ДИТИНИ
     const handleSearch = (query) => {
         setSearchQuery(query);
 
@@ -250,19 +214,11 @@ const AdminShowParents = () => {
     };
 
     if (loading) {
-        return (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-                <p>Завантаження батьків...</p>
-            </div>
-        );
+        return <div style={{ textAlign: 'center', padding: '20px' }}><p>Завантаження батьків...</p></div>;
     }
 
     if (error) {
-        return (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-                <p>{error}</p>
-            </div>
-        );
+        return <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}><p>{error}</p></div>;
     }
 
     return (
@@ -275,32 +231,7 @@ const AdminShowParents = () => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <h3 style={{ margin: 0 }}>Батьки</h3>
-                    <button
-                        onClick={handleSortToggle}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '6px 12px',
-                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                            color: 'rgba(105, 180, 185, 1)',
-                            border: '1px solid rgba(105, 180, 185, 0.3)',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                        }}
-                    >
-                        {sortOrder === 'asc' ? <FaSortAlphaDown /> : <FaSortAlphaUp />}
-                        {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
-                    </button>
+                    <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
                 <button
                     style={{
@@ -313,14 +244,7 @@ const AdminShowParents = () => {
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        fontSize: '14px',
-                        transition: 'background-color 0.2s'
-                    }}
-                    onMouseOver={(e) => {
-                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                    }}
-                    onMouseOut={(e) => {
-                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        fontSize: '14px'
                     }}
                 >
                     <FaPlus />
@@ -328,79 +252,11 @@ const AdminShowParents = () => {
                 </button>
             </div>
 
-            {/* ПОЛЕ ПОШУКУ БАТЬКІВ */}
-            <div style={{
-                marginBottom: '20px',
-                padding: '15px',
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
-            }}>
-                <div style={{ position: 'relative' }}>
-                    <input
-                        type="text"
-                        placeholder="Пошук батьків за іменем, email, телефоном або іменем дитини..."
-                        value={parentSearchQuery}
-                        onChange={(e) => handleParentSearch(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '12px 45px 12px 15px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            outline: 'none',
-                            transition: 'border-color 0.2s'
-                        }}
-                        onFocus={(e) => {
-                            e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                        }}
-                        onBlur={(e) => {
-                            e.target.style.borderColor = '#e5e7eb';
-                        }}
-                    />
-                    <FaSearch
-                        style={{
-                            position: 'absolute',
-                            right: '15px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            color: '#6b7280'
-                        }}
-                    />
-                </div>
-                {parentSearchQuery && (
-                    <div style={{
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        marginTop: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}>
-                        <FaSearch size={12} />
-                        Знайдено {filteredParents.length} батьків за запитом "{parentSearchQuery}"
-                    </div>
-                )}
-            </div>
-
-            {/* ІНФО ПРО ПАГІНАЦІЮ*/}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '15px',
-                padding: '10px 15px',
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
-            }}>
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Показано {startIndex + 1}-{Math.min(endIndex, totalItems)} з {totalItems} батьків
-                </div>
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Сторінка {currentPage} з {totalPages}
-                </div>
-            </div>
+            <ParentSearch
+                searchQuery={parentSearchQuery}
+                onSearchChange={handleParentSearch}
+                filteredParentsCount={filteredParents.length}
+            />
 
             {currentParents.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -415,610 +271,47 @@ const AdminShowParents = () => {
                 <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
                         {currentParents.map(parent => (
-                            <div key={parent._id} style={{
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px',
-                                padding: '20px',
-                                backgroundColor: '#f9fafb',
-                                transition: 'box-shadow 0.2s'
-                            }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            >
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'flex-start',
-                                    marginBottom: '15px'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <div style={{
-                                            width: '50px',
-                                            height: '50px',
-                                            borderRadius: '50%',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.2)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'rgba(105, 180, 185, 1)'
-                                        }}>
-                                            <FaUserFriends />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
-                                                {parent.fullName}
-                                            </div>
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                fontSize: '14px',
-                                                color: '#6b7280'
-                                            }}>
-                                                <FaEnvelope size={12} />
-                                                {parent.email}
-                                            </div>
-                                            {parent.phone && (
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    fontSize: '14px',
-                                                    color: '#6b7280',
-                                                    marginTop: '2px'
-                                                }}>
-                                                    <FaPhone size={12} />
-                                                    {parent.phone}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                            onClick={() => handleAddChild(parent)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                backgroundColor: 'rgba(105, 180, 185, 1)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                fontSize: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '5px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                            }}
-                                            onMouseOut={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                            }}
-                                        >
-                                            <FaSearch />
-                                            Знайти дитину
-                                        </button>
-                                        <button
-                                            onClick={() => handleEdit(parent)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                backgroundColor: 'rgba(105, 180, 185, 1)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                fontSize: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '5px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                            }}
-                                            onMouseOut={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                            }}
-                                        >
-                                            <FaEdit />
-                                            Редагувати
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(parent)}
-                                            style={{
-                                                padding: '6px 12px',
-                                                backgroundColor: '#ef4444',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                fontSize: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '5px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                e.target.style.backgroundColor = '#dc2626';
-                                            }}
-                                            onMouseOut={(e) => {
-                                                e.target.style.backgroundColor = '#ef4444';
-                                            }}
-                                        >
-                                            <FaTrash />
-                                            Видалити
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        marginBottom: '10px'
-                                    }}>
-                                        <div style={{
-                                            fontWeight: '600',
-                                            color: 'rgba(105, 180, 185, 1)'
-                                        }}>
-                                            Діти ({parent.children ? parent.children.length : 0})
-                                        </div>
-                                    </div>
-
-                                    {parent.children && parent.children.length > 0 ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {parent.children.map(child => (
-                                                <div key={child._id} style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    gap: '10px',
-                                                    padding: '8px 12px',
-                                                    backgroundColor: 'white',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #e5e7eb',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                                    onMouseOver={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#f8fafc';
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        e.currentTarget.style.backgroundColor = 'white';
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                        <FaChild style={{ color: 'rgba(105, 180, 185, 1)' }} />
-                                                        <span style={{ fontWeight: '500' }}>{child.fullName}</span>
-                                                        {child.group && (
-                                                            <span style={{
-                                                                fontSize: '12px',
-                                                                color: '#6b7280',
-                                                                backgroundColor: '#f3f4f6',
-                                                                padding: '2px 6px',
-                                                                borderRadius: '4px'
-                                                            }}>
-                                                                {child.group.name}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleRemoveChild(parent._id, child._id)}
-                                                        style={{
-                                                            padding: '4px 8px',
-                                                            backgroundColor: '#ef4444',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            fontSize: '11px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '4px',
-                                                            transition: 'background-color 0.2s'
-                                                        }}
-                                                        onMouseOver={(e) => {
-                                                            e.target.style.backgroundColor = '#dc2626';
-                                                        }}
-                                                        onMouseOut={(e) => {
-                                                            e.target.style.backgroundColor = '#ef4444';
-                                                        }}
-                                                    >
-                                                        <FaTimes size={10} />
-                                                        Видалити
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div style={{
-                                            textAlign: 'center',
-                                            padding: '20px',
-                                            color: '#6b7280',
-                                            backgroundColor: 'white',
-                                            borderRadius: '6px',
-                                            border: '1px dashed #e5e7eb'
-                                        }}>
-                                            <p>Дітей не додано</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            <ParentCard
+                                key={parent._id}
+                                parent={parent}
+                                onAddChild={handleAddChild}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                                onRemoveChild={handleRemoveChild}
+                            />
                         ))}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '8px',
-                            marginTop: '20px',
-                            padding: '15px',
-                            backgroundColor: '#f8fafc',
-                            borderRadius: '8px',
-                            border: '1px solid #e5e7eb'
-                        }}>
-                            {/* Кнопка першої сторінки */}
-                            <button
-                                onClick={goToFirstPage}
-                                disabled={currentPage === 1}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
-                                    color: currentPage === 1 ? '#9ca3af' : '#374151',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    fontSize: '14px',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                    if (currentPage !== 1) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentPage !== 1) {
-                                        e.target.style.backgroundColor = 'white';
-                                        e.target.style.borderColor = '#d1d5db';
-                                    }
-                                }}
-                            >
-                                <FaChevronDoubleLeft size={12} />
-                            </button>
-
-                            <button
-                                onClick={goToPreviousPage}
-                                disabled={currentPage === 1}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
-                                    color: currentPage === 1 ? '#9ca3af' : '#374151',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    fontSize: '14px',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                    if (currentPage !== 1) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentPage !== 1) {
-                                        e.target.style.backgroundColor = 'white';
-                                        e.target.style.borderColor = '#d1d5db';
-                                    }
-                                }}
-                            >
-                                <FaChevronLeft size={12} />
-                                Попередня
-                            </button>
-
-                            {/* НОМЕРИ СТОРІНОК */}
-                            {getPageNumbers().map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => goToPage(page)}
-                                    style={{
-                                        padding: '8px 12px',
-                                        backgroundColor: currentPage === page ? 'rgba(105, 180, 185, 1)' : 'white',
-                                        color: currentPage === page ? 'white' : '#374151',
-                                        border: `1px solid ${currentPage === page ? 'rgba(105, 180, 185, 1)' : '#d1d5db'}`,
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '14px',
-                                        fontWeight: currentPage === page ? '600' : '400',
-                                        transition: 'all 0.2s',
-                                        minWidth: '40px'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        if (currentPage !== page) {
-                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                            e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
-                                        }
-                                    }}
-                                    onMouseOut={(e) => {
-                                        if (currentPage !== page) {
-                                            e.target.style.backgroundColor = 'white';
-                                            e.target.style.borderColor = '#d1d5db';
-                                        }
-                                    }}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-
-                            {/* -> */}
-                            <button
-                                onClick={goToNextPage}
-                                disabled={currentPage === totalPages}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
-                                    color: currentPage === totalPages ? '#9ca3af' : '#374151',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    fontSize: '14px',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                    if (currentPage !== totalPages) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentPage !== totalPages) {
-                                        e.target.style.backgroundColor = 'white';
-                                        e.target.style.borderColor = '#d1d5db';
-                                    }
-                                }}
-                            >
-                                Наступна
-                                <FaChevronRight size={12} />
-                            </button>
-
-                            {/* <- */}
-                            <button
-                                onClick={goToLastPage}
-                                disabled={currentPage === totalPages}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
-                                    color: currentPage === totalPages ? '#9ca3af' : '#374151',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    fontSize: '14px',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseOver={(e) => {
-                                    if (currentPage !== totalPages) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 0.3)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentPage !== totalPages) {
-                                        e.target.style.backgroundColor = 'white';
-                                        e.target.style.borderColor = '#d1d5db';
-                                    }
-                                }}
-                            >
-                                <FaChevronDoubleRight size={12} />
-                            </button>
-                        </div>
-                    )}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        startIndex={startIndex}
+                        endIndex={endIndex}
+                        onPageChange={goToPage}
+                        onFirstPage={goToFirstPage}
+                        onLastPage={goToLastPage}
+                        onPreviousPage={goToPreviousPage}
+                        onNextPage={goToNextPage}
+                    />
                 </>
             )}
 
-            {/* ПОПАП ПОШУКУ ДИТИНИ */}
-            {showAddChildPopup && selectedParent && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '24px',
-                        width: '90%',
-                        maxWidth: '500px',
-                        maxHeight: '80vh',
-                        overflowY: 'auto'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '20px'
-                        }}>
-                            <h3 style={{ margin: 0 }}>Знайти дитину для {selectedParent.fullName}</h3>
-                            <button
-                                onClick={() => {
-                                    setShowAddChildPopup(false);
-                                    setSelectedParent(null);
-                                    setSearchQuery("");
-                                    setSearchResults([]);
-                                }}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontSize: '20px',
-                                    color: '#6b7280'
-                                }}
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
+            <AddChildPopup
+                selectedParent={selectedParent}
+                searchQuery={searchQuery}
+                searchResults={searchResults}
+                isSearching={isSearching}
+                onClose={() => {
+                    setShowAddChildPopup(false);
+                    setSelectedParent(null);
+                    setSearchQuery("");
+                    setSearchResults([]);
+                }}
+                onSearchChange={handleSearch}
+                onAddChild={handleAddChildToParent}
+            />
 
-                        <div style={{ position: 'relative', marginBottom: '20px' }}>
-                            <div style={{ position: 'relative' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Введіть ім'я, email або назву групи (мінімум 3 символи)..."
-                                    value={searchQuery}
-                                    onChange={(e) => handleSearch(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 45px 12px 15px',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '8px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.target.style.borderColor = '#e5e7eb';
-                                    }}
-                                />
-                                <FaSearch
-                                    style={{
-                                        position: 'absolute',
-                                        right: '15px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        color: '#6b7280'
-                                    }}
-                                />
-                            </div>
-
-                            {searchQuery.length > 0 && searchQuery.length < 3 && (
-                                <div style={{
-                                    fontSize: '12px',
-                                    color: '#ef4444',
-                                    marginTop: '5px'
-                                }}>
-                                    Введіть щонайменше 3 символи для пошуку
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            {isSearching && searchQuery.length >= 3 && (
-                                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
-                                    Знайдено: {searchResults.length} студентів
-                                </div>
-                            )}
-
-                            {searchQuery.length >= 3 ? (
-                                searchResults.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {searchResults.map(student => (
-                                            <div
-                                                key={student._id}
-                                                onClick={() => handleAddChildToParent(student._id)}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px',
-                                                    padding: '12px 15px',
-                                                    backgroundColor: '#f9fafb',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #e5e7eb',
-                                                    cursor: 'pointer',
-                                                    transition: 'background-color 0.2s'
-                                                }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                                                }}
-                                            >
-                                                <div style={{
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: 'rgba(105, 180, 185, 0.2)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    color: 'rgba(105, 180, 185, 1)'
-                                                }}>
-                                                    <FaChild />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                                                        {student.fullName}
-                                                    </div>
-                                                    <div style={{
-                                                        fontSize: '14px',
-                                                        color: '#6b7280',
-                                                        marginBottom: '2px'
-                                                    }}>
-                                                        {student.email}
-                                                    </div>
-                                                    {student.group && (
-                                                        <div style={{
-                                                            fontSize: '13px',
-                                                            color: '#6b7280'
-                                                        }}>
-                                                            Група: {student.group.name}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                                        <p>Студентів за запитом "{searchQuery}" не знайдено</p>
-                                        <p style={{ fontSize: '14px', marginTop: '8px' }}>
-                                            Спробуйте змінити запит пошуку
-                                        </p>
-                                    </div>
-                                )
-                            ) : (
-                                <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                                    <p>Введіть запит для пошуку студентів</p>
-                                    <p style={{ fontSize: '14px', marginTop: '8px' }}>
-                                        Пошук працює за іменем, email або назвою групи
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ПОПАП ДЛЯ РЕДАГУВАННЯ БАТЬКІВ */}
             {showEditPopup && (
                 <AdminParentEdit
                     parent={selectedParent}
@@ -1030,7 +323,6 @@ const AdminShowParents = () => {
                 />
             )}
 
-            {/* ПОПАП ДЛЯ ВИДАЛЕННЯ БАТЬКІВ */}
             {showDeletePopup && (
                 <AdminParentDelete
                     parent={selectedParent}
@@ -1045,4 +337,4 @@ const AdminShowParents = () => {
     );
 };
 
-export default AdminShowParents;
+export default AdminShowParent;
