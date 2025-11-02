@@ -231,23 +231,6 @@ const AdminShowParent = () => {
                     <h3 style={{ margin: 0 }}>Батьки</h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
-                <button
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        backgroundColor: 'rgba(105, 180, 185, 1)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '14px'
-                    }}
-                >
-                    <FaPlus />
-                    Додати батька
-                </button>
             </div>
 
             <ParentSearch
