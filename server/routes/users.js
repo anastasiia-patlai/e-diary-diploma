@@ -42,7 +42,7 @@ router.get('/students', async (req, res) => {
 router.get('/teachers', async (req, res) => {
     try {
         const teachers = await User.find({ role: 'teacher' })
-            .select('fullName email phone position dateOfBirth')
+            .select('fullName email phone positions position dateOfBirth')
             .sort({ fullName: 1 });
         res.json(teachers);
     } catch (err) {
@@ -54,7 +54,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, phone, dateOfBirth, group, position } = req.body;
+        const { fullName, email, phone, dateOfBirth, group, positions, position } = req.body;
 
         const user = await User.findById(id);
         if (!user) {
@@ -62,7 +62,6 @@ router.put('/:id', async (req, res) => {
         }
 
         if (user.role === 'student' && group && user.group?.toString() !== group) {
-            // Видалити студента зі старої групи
             if (user.group) {
                 await Group.findByIdAndUpdate(
                     user.group,
@@ -86,7 +85,13 @@ router.put('/:id', async (req, res) => {
         if (user.role === 'student') {
             updateData.group = group;
         } else if (user.role === 'teacher') {
-            updateData.position = position;
+            if (positions && Array.isArray(positions)) {
+                updateData.positions = positions.filter(pos => pos.trim() !== "");
+                updateData.position = positions.join(", ");
+            } else if (position) {
+                updateData.position = position;
+                updateData.positions = position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
+            }
         }
 
         const updatedUser = await User.findByIdAndUpdate(

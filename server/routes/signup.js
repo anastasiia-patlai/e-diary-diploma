@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Group = require('../models/Group');
 
 router.post('/signup', async (req, res) => {
-    const { fullName, role, phone, dateOfBirth, email, password, group, position } = req.body;
+    const { fullName, role, phone, dateOfBirth, email, password, group, positions } = req.body;
 
     try {
         const existingUser = await User.findOne({ email });
@@ -27,6 +27,9 @@ router.post('/signup', async (req, res) => {
             groupId = existingGroup._id;
         }
 
+        // ФІЛЬТРУЄМО ПОРОЖНІ ПРЕДМЕТИ
+        const filteredPositions = positions ? positions.filter(pos => pos.trim() !== "") : [];
+
         const newUser = new User({
             fullName,
             role,
@@ -35,7 +38,8 @@ router.post('/signup', async (req, res) => {
             email,
             password: hashedPassword,
             group: groupId,
-            position: role === 'teacher' ? position : undefined
+            positions: filteredPositions,
+            position: filteredPositions.join(", ")
         });
 
         await newUser.save();
@@ -49,7 +53,13 @@ router.post('/signup', async (req, res) => {
 
         res.status(201).json({
             message: 'Користувача успішно зареєстровано',
-            user: { id: newUser._id, fullName: newUser.fullName, role: newUser.role, email: newUser.email }
+            user: {
+                id: newUser._id,
+                fullName: newUser.fullName,
+                role: newUser.role,
+                email: newUser.email,
+                positions: newUser.positions
+            }
         });
 
     } catch (err) {

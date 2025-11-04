@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
 
 function Signup({ onClose }) {
     const [formData, setFormData] = useState({
@@ -13,12 +13,38 @@ function Signup({ onClose }) {
         password: "",
         confirmPassword: "",
         group: "",
-        position: "",
+        positions: [""],
     });
 
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
+
+    // НОВЕ ПОЛЕ ДЛЯ ПРЕДМЕТУ
+    const addPositionField = () => {
+        setFormData(prev => ({
+            ...prev,
+            positions: [...prev.positions, ""]
+        }));
+    };
+
+    // ВИДАЛИТИ ПОЛЕ ДЛЯ ПРЕДМЕТУ
+    const removePositionField = (index) => {
+        if (formData.positions.length > 1) {
+            setFormData(prev => ({
+                ...prev,
+                positions: prev.positions.filter((_, i) => i !== index)
+            }));
+        }
+    };
+
+    // ОНОВИТИ ПРЕДМЕТ
+    const updatePosition = (index, value) => {
+        setFormData(prev => ({
+            ...prev,
+            positions: prev.positions.map((pos, i) => i === index ? value : pos)
+        }));
+    };
 
     const validateField = (name, value) => {
         let error = "";
@@ -49,8 +75,10 @@ function Signup({ onClose }) {
             case "group":
                 if (formData.role === "student" && !value.trim()) error = "Вкажіть групу / клас";
                 break;
-            case "position":
-                if (formData.role === "teacher" && !value.trim()) error = "Вкажіть предмет або посаду";
+            case "positions":
+                if (formData.role === "teacher" && formData.positions.every(pos => !pos.trim())) {
+                    error = "Вкажіть хоча б один предмет";
+                }
                 break;
             default:
                 break;
@@ -73,10 +101,24 @@ function Signup({ onClose }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        Object.keys(formData).forEach((field) => validateField(field, formData[field]));
+        Object.keys(formData).forEach((field) => {
+            if (field === "positions") {
+                validateField(field, formData[field]);
+            } else {
+                validateField(field, formData[field]);
+            }
+        });
 
         if (Object.values(errors).every((err) => !err)) {
-            axios.post("http://localhost:3001/api/signup", formData)
+            const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
+
+            const submitData = {
+                ...formData,
+                positions: filteredPositions,
+                position: filteredPositions.join(", ")
+            };
+
+            axios.post("http://localhost:3001/api/signup", submitData)
                 .then((res) => {
                     setSuccessMessage(`Користувач ${formData.fullName} доданий!`);
                     setFormData({
@@ -88,7 +130,7 @@ function Signup({ onClose }) {
                         password: "",
                         confirmPassword: "",
                         group: "",
-                        position: "",
+                        positions: [""],
                     });
                     setTouched({});
                     setErrors({});
@@ -183,7 +225,7 @@ function Signup({ onClose }) {
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="Прізвище, Ім’я, По-батькові"
+                                placeholder="Прізвище, Ім'я, По-батькові"
                             />
                             <div className="invalid-feedback">{errors.fullName}</div>
                         </div>
@@ -224,20 +266,55 @@ function Signup({ onClose }) {
                             </div>
                         )}
 
-                        {/* ВИКЛАДАЧ */}
+                        {/* ВИКЛАДАЧ - КІЛЬКА ПРЕДМЕТІВ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
-                                <label className="form-label">Посада / Предмет</label>
-                                <input
-                                    type="text"
-                                    name="position"
-                                    className={getInputClass("position")}
-                                    value={formData.position}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    placeholder="Напр. Математика"
-                                />
-                                <div className="invalid-feedback">{errors.position}</div>
+                                <label className="form-label">Предмети</label>
+                                {formData.positions.map((position, index) => (
+                                    <div key={index} className="input-group mb-2">
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={position}
+                                            onChange={(e) => updatePosition(index, e.target.value)}
+                                            onBlur={() => validateField("positions", formData.positions)}
+                                            placeholder={`Предмет ${index + 1} (напр. Математика)`}
+                                        />
+                                        {formData.positions.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-danger"
+                                                onClick={() => removePositionField(index)}
+                                            >
+                                                <FaMinus />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    style={{
+                                        backgroundColor: 'rgba(85, 160, 165, 1)',
+                                        color: 'white',
+                                        border: '1px solid rgba(85, 160, 165, 1)'
+                                    }}
+                                    className="btn btn-sm"
+                                    onClick={addPositionField}
+                                    onMouseOver={(e) => {
+                                        e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
+                                        e.target.style.borderColor = 'rgba(61, 117, 121, 1)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                        e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                    }}
+                                >
+                                    <FaPlus className="me-1" />
+                                    Додати ще предмет
+                                </button>
+                                {errors.positions && (
+                                    <div className="invalid-feedback d-block">{errors.positions}</div>
+                                )}
                             </div>
                         )}
 
@@ -296,20 +373,6 @@ function Signup({ onClose }) {
                                 onBlur={handleBlur}
                             />
                             <div className="invalid-feedback">{errors.password}</div>
-                        </div>
-
-                        {/* ПІДТВЕРДЖЕННЯ ПАРОЛЮ */}
-                        <div className="mb-4">
-                            <label className="form-label">Підтвердження пароля</label>
-                            <input
-                                type="password"
-                                name="confirmPassword"
-                                className={getInputClass("confirmPassword")}
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                            />
-                            <div className="invalid-feedback">{errors.confirmPassword}</div>
                         </div>
 
                         {/* КНОПКА */}

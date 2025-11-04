@@ -33,10 +33,8 @@ const ParentPagination = ({
         return pages;
     };
 
-    // Завжди показуємо інформацію про пагінацію, навіть якщо сторінка одна
     return (
         <>
-            {/* Інформація про пагінацію - показуємо завжди */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher } from "react-icons/fa";
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus } from "react-icons/fa";
 import axios from "axios";
 
 const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
@@ -8,7 +8,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
         email: "",
         phone: "",
         dateOfBirth: "",
-        position: ""
+        positions: [""]
     });
     const [loading, setLoading] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(true);
@@ -20,12 +20,19 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                 const response = await axios.get(`http://localhost:3001/api/users/${teacher._id}`);
                 const userData = response.data;
 
+                let positionsArray = [""];
+                if (userData.positions && userData.positions.length > 0) {
+                    positionsArray = [...userData.positions];
+                } else if (userData.position) {
+                    positionsArray = userData.position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
+                }
+
                 setFormData({
                     fullName: userData.fullName || "",
                     email: userData.email || "",
                     phone: userData.phone || "",
                     dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : "",
-                    position: userData.position || ""
+                    positions: positionsArray.length > 0 ? positionsArray : [""]
                 });
 
                 setFetchingUser(false);
@@ -38,6 +45,32 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
 
         fetchUserData();
     }, [teacher._id]);
+
+    // НОВЕ ПОЛЕ ДЛЯ ПРЕДМЕТУ
+    const addPositionField = () => {
+        setFormData(prev => ({
+            ...prev,
+            positions: [...prev.positions, ""]
+        }));
+    };
+
+    // ВИДАЛИТИ ПОЛЕ ПРЕДМЕТУ
+    const removePositionField = (index) => {
+        if (formData.positions.length > 1) {
+            setFormData(prev => ({
+                ...prev,
+                positions: prev.positions.filter((_, i) => i !== index)
+            }));
+        }
+    };
+
+    // Оновити конкретний предмет
+    const updatePosition = (index, value) => {
+        setFormData(prev => ({
+            ...prev,
+            positions: prev.positions.map((pos, i) => i === index ? value : pos)
+        }));
+    };
 
     const handleChange = (e) => {
         setFormData({
@@ -52,9 +85,27 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
         setError("");
 
         try {
+            // Фільтруємо порожні предмети
+            const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
+
+            if (filteredPositions.length === 0) {
+                setError("Вкажіть хоча б один предмет");
+                setLoading(false);
+                return;
+            }
+
+            const submitData = {
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                dateOfBirth: formData.dateOfBirth,
+                positions: filteredPositions,
+                position: filteredPositions.join(", ") // Для зворотної сумісності
+            };
+
             const response = await axios.put(
                 `http://localhost:3001/api/users/${teacher._id}`,
-                formData
+                submitData
             );
 
             onUpdate(response.data.user);
@@ -102,7 +153,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                         alignItems: 'center',
                         gap: '10px'
                     }}>
-                        {/* <FaChalkboardTeacher /> */}
+                        <FaChalkboardTeacher />
                         Редагувати викладача
                     </h2>
                     <button
@@ -307,6 +358,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                             />
                         </div>
 
+                        {/* КІЛЬКА ПРЕДМЕТІВ */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -320,32 +372,97 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Предмет *
+                                Предмети *
                             </label>
-                            <input
-                                type="text"
-                                name="position"
-                                value={formData.position}
-                                onChange={handleChange}
-                                required
-                                placeholder="Наприклад: Математика"
+
+                            {formData.positions.map((position, index) => (
+                                <div key={index} style={{
+                                    display: 'flex',
+                                    gap: '8px',
+                                    marginBottom: '8px',
+                                    alignItems: 'center'
+                                }}>
+                                    <input
+                                        type="text"
+                                        value={position}
+                                        onChange={(e) => updatePosition(index, e.target.value)}
+                                        placeholder={`Предмет ${index + 1} (напр. Математика)`}
+                                        style={{
+                                            flex: 1,
+                                            padding: '10px 12px',
+                                            border: '1px solid #e5e7eb',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            boxSizing: 'border-box',
+                                            outline: 'none',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                        onFocus={(e) => {
+                                            e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                        }}
+                                        onBlur={(e) => {
+                                            e.target.style.borderColor = '#e5e7eb';
+                                        }}
+                                    />
+                                    {formData.positions.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removePositionField(index)}
+                                            style={{
+                                                padding: '10px 12px',
+                                                backgroundColor: '#ef4444',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'background-color 0.2s'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.target.style.backgroundColor = '#dc2626';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.target.style.backgroundColor = '#ef4444';
+                                            }}
+                                        >
+                                            <FaMinus />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            <button
+                                type="button"
+                                onClick={addPositionField}
                                 style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1px solid #e5e7eb',
+                                    padding: '8px 12px',
+                                    backgroundColor: 'transparent',
+                                    color: 'rgba(255, 255, 255, 1)',
+                                    border: '1px solid rgba(105, 180, 185, 1)',
                                     borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
                                     fontSize: '14px',
-                                    boxSizing: 'border-box',
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s'
+                                    transition: 'all 0.2s'
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                onMouseOver={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                    }
                                 }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
+                                onMouseOut={(e) => {
+                                    if (!loading) {
+                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                    }
                                 }}
-                            />
+                            >
+                                <FaPlus />
+                                Додати ще предмет
+                            </button>
                         </div>
 
                         <div style={{

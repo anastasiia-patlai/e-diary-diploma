@@ -30,17 +30,42 @@ const AdminShowTeacher = () => {
         fetchTeachers();
     }, []);
 
+    // НОВА ФУНКЦІЯ ДЛЯ РОЗДІЛЕННЯ ПРЕДМЕТІВ
     const groupTeachersBySubject = () => {
         const subjects = {};
 
         teachers.forEach(teacher => {
-            const subject = teacher.position || "Без предмета";
-            if (!subjects[subject]) {
-                subjects[subject] = [];
+            let teacherSubjects = [];
+
+            // Якщо є поле position з кількома предметами через кому
+            if (teacher.position) {
+                // Розділяємо предмети по комах та обрізаємо пробіли
+                teacherSubjects = teacher.position.split(',').map(subj => subj.trim());
             }
-            subjects[subject].push(teacher);
+
+            // Якщо є поле positions (масив)
+            if (teacher.positions && teacher.positions.length > 0) {
+                teacherSubjects = [...teacherSubjects, ...teacher.positions];
+            }
+
+            // Якщо немає предметів
+            if (teacherSubjects.length === 0) {
+                teacherSubjects = ["Без предмета"];
+            }
+
+            // Додаємо викладача до кожного предмету окремо
+            teacherSubjects.forEach(subject => {
+                if (!subjects[subject]) {
+                    subjects[subject] = [];
+                }
+                // Перевіряємо, щоб не додавати дублікати
+                if (!subjects[subject].some(t => t._id === teacher._id)) {
+                    subjects[subject].push(teacher);
+                }
+            });
         });
 
+        // Сортування предметів за алфавітом
         const sortedSubjects = {};
         Object.keys(subjects).sort().forEach(key => {
             sortedSubjects[key] = subjects[key];

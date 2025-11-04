@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },      // тільки для студентів
+    positions: [{ type: String }],
     position: { type: String },                                         // тільки для викладачів
     children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]   // тільки для батьків
 }, { timestamps: true });
