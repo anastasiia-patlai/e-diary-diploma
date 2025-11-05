@@ -21,8 +21,8 @@ const AdminPage = ({ onLogout, userFullName }) => {
         { name: "Головна", icon: <FaHome /> },
         { name: "Користувачі", icon: <FaUserCog /> },
         { name: "Класні керівники", icon: <FaUserTie /> },
-        { name: "Розклад", icon: <FaCalendarAlt /> },
-        { name: "Час", icon: <FaClock /> },
+        { name: "Розклад занять", icon: <FaCalendarAlt /> },
+        { name: "Розклад часу", icon: <FaClock /> },
         { name: "Налаштування", icon: <FaCog /> },
         { name: "Звіти", icon: <FaChartLine /> }
     ];
