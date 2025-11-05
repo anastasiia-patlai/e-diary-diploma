@@ -1,4 +1,3 @@
-// src/pages/admins/time_tab/components/DaysNavigation.jsx
 import React from "react";
 import { Row, Col, Card, Badge } from "react-bootstrap";
 import { FaCalendarAlt } from "react-icons/fa";
@@ -8,12 +7,6 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
     const getLessonCount = (dayId) => {
         const summary = daysSummary.find(item => item._id === dayId);
         return summary ? summary.count : 0;
-    };
-
-    // Отримати кількість активних уроків для дня
-    const getActiveLessonCount = (dayId) => {
-        const summary = daysSummary.find(item => item._id === dayId);
-        return summary ? summary.activeCount : 0;
     };
 
     return (
@@ -49,17 +42,17 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
                         }}>
                             {days.map((day) => (
                                 <button
-                                    key={day.id}
-                                    onClick={() => onDayChange(day.id)}
+                                    key={day._id}
+                                    onClick={() => onDayChange(day._id)}
                                     style={{
                                         flex: "1 1 calc(20% - 8px)",
                                         minWidth: "120px",
                                         padding: "12px 16px",
-                                        backgroundColor: selectedDay === day.id
+                                        backgroundColor: selectedDay === day._id
                                             ? "rgba(105, 180, 185, 1)"
                                             : "white",
-                                        color: selectedDay === day.id ? "white" : "#374151",
-                                        border: `1px solid ${selectedDay === day.id
+                                        color: selectedDay === day._id ? "white" : "#374151",
+                                        border: `1px solid ${selectedDay === day._id
                                             ? "rgba(105, 180, 185, 1)"
                                             : "#e5e7eb"
                                             }`,
@@ -74,28 +67,26 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
                                         gap: "4px"
                                     }}
                                     onMouseOver={(e) => {
-                                        if (selectedDay !== day.id) {
+                                        if (selectedDay !== day._id) {
                                             e.target.style.backgroundColor = "#f9fafb";
                                             e.target.style.borderColor = "rgba(105, 180, 185, 1)";
                                         }
                                     }}
                                     onMouseOut={(e) => {
-                                        if (selectedDay !== day.id) {
+                                        if (selectedDay !== day._id) {
                                             e.target.style.backgroundColor = "white";
                                             e.target.style.borderColor = "#e5e7eb";
                                         }
                                     }}
                                 >
                                     <span>{day.name}</span>
-                                    <div style={{ display: "flex", gap: "4px", fontSize: "12px" }}>
-                                        <Badge
-                                            bg="light"
-                                            text="dark"
-                                            style={{ fontSize: "10px" }}
-                                        >
-                                            {getLessonCount(day.id)} уроків
-                                        </Badge>
-                                    </div>
+                                    <Badge
+                                        bg="light"
+                                        text="dark"
+                                        style={{ fontSize: "10px" }}
+                                    >
+                                        {getLessonCount(day._id)} уроків
+                                    </Badge>
                                 </button>
                             ))}
                         </div>

@@ -55,13 +55,32 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
 
     // ЗБЕРЕГТИ НАЛАШТУВАННЯ
     const handleSave = () => {
-        const validationError = validateTimeSlots(timeSlots);
-        if (validationError) {
-            setError(validationError);
-            return;
+        console.log("=== ПЕРЕВІРКА ДАНИХ ПЕРЕД ЗБЕРЕЖЕННЯМ ===");
+        console.log("timeSlots перед валідацією:", timeSlots);
+
+        // Валідація
+        for (let i = 0; i < timeSlots.length; i++) {
+            const slot = timeSlots[i];
+            console.log(`Перевірка уроку ${i + 1}:`, slot);
+
+            if (!slot.startTime || !slot.endTime) {
+                setError("Усі поля повинні бути заповнені");
+                return;
+            }
+            if (slot.startTime >= slot.endTime) {
+                setError(`У уроку ${i + 1} час початку повинен бути раніше за час закінчення`);
+                return;
+            }
         }
 
-        onSave(timeSlots);
+        const dataToSave = timeSlots.map(slot => ({
+            order: parseInt(slot.order) || 1,
+            startTime: slot.startTime,
+            endTime: slot.endTime
+        }));
+
+        console.log("✅ ДАНІ ГОТОВІ ДО ЗБЕРЕЖЕННЯ:", dataToSave);
+        onSave(dataToSave);
     };
 
     if (!show) return null;

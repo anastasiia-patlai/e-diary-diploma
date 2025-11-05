@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const TimeSlot = require('../models/TimeTab');
+const DayOfWeek = require('../models/DayOfWeek');
 
 // ОТРИМАТИ ЧАСОВІ СЛОТИ ЗІ ФІЛЬТРАЦІЄЮ ЗА ДНЕМ ТИЖНЯ
 router.get('/', async (req, res) => {
     try {
-        const { dayOfWeek } = req.query;
+        const { dayOfWeekId } = req.query;
         let query = {};
 
-        if (dayOfWeek) {
-            query.dayOfWeek = parseInt(dayOfWeek);
+        if (dayOfWeekId) {
+            query.dayOfWeek = dayOfWeekId;
         }
 
-        const timeSlots = await TimeSlot.find(query).sort({ dayOfWeek: 1, order: 1 });
+        const timeSlots = await TimeSlot.find(query)
+            .populate('dayOfWeek')
+            .sort({ 'dayOfWeek.order': 1, order: 1 });
         res.json(timeSlots);
     } catch (error) {
         console.error('Error fetching time slots:', error);
@@ -23,14 +26,22 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ЗБЕРЕГТИ ЧАСОВІ СЛОТИ ДЛЯ ДНЯ
+// ЗБЕРЕГТИ ЧАСОВІ СЛОТИ ДЛЯ КОНКРЕТНОГО ДНЯ
 router.post('/', async (req, res) => {
     try {
-        const { dayOfWeek, timeSlots } = req.body;
+        const { dayOfWeekId, timeSlots } = req.body;
 
-        if (!dayOfWeek || dayOfWeek < 1 || dayOfWeek > 5) {
+        if (!dayOfWeekId) {
             return res.status(400).json({
-                message: 'Невірний день тижня'
+                message: 'ID дня тижня обов\'язковий'
+            });
+        }
+
+        // Тепер DayOfWeek буде визначено, оскільки ми його імпортували
+        const dayExists = await DayOfWeek.findById(dayOfWeekId);
+        if (!dayExists) {
+            return res.status(400).json({
+                message: 'День тижня не знайдено'
             });
         }
 
@@ -49,16 +60,19 @@ router.post('/', async (req, res) => {
             }
         }
 
-        await TimeSlot.deleteMany({ dayOfWeek });
+        await TimeSlot.deleteMany({ dayOfWeek: dayOfWeekId });
 
         const slotsWithDay = timeSlots.map(slot => ({
             ...slot,
-            dayOfWeek
+            dayOfWeek: dayOfWeekId
         }));
 
         const savedTimeSlots = await TimeSlot.insertMany(slotsWithDay);
 
-        res.status(201).json(savedTimeSlots);
+        const populatedSlots = await TimeSlot.find({ _id: { $in: savedTimeSlots.map(s => s._id) } })
+            .populate('dayOfWeek');
+
+        res.status(201).json(populatedSlots);
     } catch (error) {
         console.error('Error saving time slots:', error);
         if (error.code === 11000) {
@@ -131,14 +145,30 @@ router.get('/days/summary', async (req, res) => {
             {
                 $group: {
                     _id: '$dayOfWeek',
-                    count: { $sum: 1 },
-                    activeCount: {
-                        $sum: { $cond: ['$isActive', 1, 0] }
-                    }
+                    count: { $sum: 1 }
                 }
             },
             {
-                $sort: { _id: 1 }
+                $lookup: {
+                    from: 'dayofweeks',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'dayInfo'
+                }
+            },
+            {
+                $unwind: '$dayInfo'
+            },
+            {
+                $sort: { 'dayInfo.order': 1 }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    count: 1,
+                    dayName: '$dayInfo.name',
+                    dayOrder: '$dayInfo.order'
+                }
             }
         ]);
 

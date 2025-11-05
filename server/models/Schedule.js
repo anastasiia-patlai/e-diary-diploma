@@ -5,7 +5,7 @@ const scheduleSchema = new mongoose.Schema({
     teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'Classroom', required: true },
     timeSlot: { type: mongoose.Schema.Types.ObjectId, ref: 'TimeTab', required: true },
-    dayOfWeek: { type: Number, required: true, min: 1, max: 7 }
+    dayOfWeek: { type: mongoose.Schema.Types.ObjectId, ref: 'DayOfWeek', required: true }
 }, {
     timestamps: true
 });
