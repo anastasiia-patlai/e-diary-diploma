@@ -1,21 +1,30 @@
 export const validateTimeSlots = (timeSlots) => {
+    // ПЕРЕВІРКА ЗАПОВНЕННОСТІ ТА ЛОГІКИ ЧАСУ
     for (let i = 0; i < timeSlots.length; i++) {
         const slot = timeSlots[i];
         if (!slot.startTime || !slot.endTime) {
             return "Усі поля повинні бути заповнені";
         }
         if (slot.startTime >= slot.endTime) {
-            return `У уроку ${i + 1} час початку повинен бути раніше за час закінчення`;
+            return `Урок ${i + 1} час початку повинен бути раніше за час закінчення`;
         }
     }
 
-    // Перевірка на перекриття часу
-    for (let i = 0; i < timeSlots.length - 1; i++) {
-        const currentEnd = timeSlots[i].endTime;
-        const nextStart = timeSlots[i + 1].startTime;
+    // ПЕРЕВІРКА ПЕРЕКРИВАННЯ ЧАСІВ
+    const sortedSlots = [...timeSlots].sort((a, b) => a.order - b.order);
+    for (let i = 0; i < sortedSlots.length - 1; i++) {
+        const currentEnd = sortedSlots[i].endTime;
+        const nextStart = sortedSlots[i + 1].startTime;
         if (currentEnd > nextStart) {
             return `Урок ${i + 1} закінчується після початку уроку ${i + 2}`;
         }
+    }
+
+    // ПЕРЕВІРКА УНІКАЛЬНОСТІ ПОРЯДКУ
+    const orders = sortedSlots.map(slot => slot.order);
+    const uniqueOrders = new Set(orders);
+    if (uniqueOrders.size !== orders.length) {
+        return "Порядок уроків повинен бути унікальним";
     }
 
     return null;

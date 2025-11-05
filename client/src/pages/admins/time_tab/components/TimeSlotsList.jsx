@@ -1,8 +1,15 @@
+// src/pages/admins/time_tab/components/TimeSlotsList.jsx
 import React from "react";
-import { Row, Col, Card, Button } from "react-bootstrap";
-import { FaClock, FaTrash } from "react-icons/fa";
+import { Row, Col, Card, Button, Badge } from "react-bootstrap";
+import { FaClock, FaTrash, FaExclamationTriangle } from "react-icons/fa";
 
-const TimeSlotsList = ({ timeSlots, loading, onDeleteTimeSlot }) => {
+const TimeSlotsList = ({
+    timeSlots,
+    loading,
+    currentDay,
+    onDeleteTimeSlot
+
+}) => {
     return (
         <Row>
             <Col>
@@ -15,18 +22,39 @@ const TimeSlotsList = ({ timeSlots, loading, onDeleteTimeSlot }) => {
                         borderBottom: "1px solid #e5e7eb",
                         padding: "16px 20px"
                     }}>
-                        <h5 style={{
-                            margin: 0,
-                            fontSize: "18px",
-                            color: "#374151",
-                            fontWeight: "600",
+                        <div style={{
                             display: "flex",
-                            alignItems: "center",
-                            gap: "8px"
+                            justifyContent: "space-between",
+                            alignItems: "center"
                         }}>
-                            <FaClock />
-                            Поточний час уроків
-                        </h5>
+                            <h5 style={{
+                                margin: 0,
+                                fontSize: "18px",
+                                color: "#374151",
+                                fontWeight: "600",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px"
+                            }}>
+                                <FaClock />
+                                Розклад уроків для {currentDay.name}
+                            </h5>
+                            <div style={{
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                color: 'white',
+                                padding: '0.35em 0.65em',
+                                fontSize: '0.75em',
+                                fontWeight: '700',
+                                lineHeight: '1',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                verticalAlign: 'baseline',
+                                borderRadius: '0.375rem',
+                                display: 'inline-block'
+                            }}>
+                                {timeSlots.length} уроків
+                            </div>
+                        </div>
                     </Card.Header>
                     <Card.Body style={{ padding: "24px" }}>
                         {loading ? (
@@ -35,9 +63,16 @@ const TimeSlotsList = ({ timeSlots, loading, onDeleteTimeSlot }) => {
                             </div>
                         ) : timeSlots.length === 0 ? (
                             <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                                <h6 style={{ color: "#6b7280", marginBottom: "8px" }}>Час уроків ще не налаштовано</h6>
+                                <FaExclamationTriangle style={{
+                                    fontSize: "48px",
+                                    color: "#d1d5db",
+                                    marginBottom: "16px"
+                                }} />
+                                <h6 style={{ color: "#6b7280", marginBottom: "8px" }}>
+                                    Для {currentDay.name} ще не налаштовано розклад
+                                </h6>
                                 <p style={{ color: "#6b7280", margin: 0 }}>
-                                    Натисніть кнопку "Налаштувати час" щоб додати розклад уроків
+                                    Натисніть кнопку "Налаштувати час" щоб додати уроки для цього дня
                                 </p>
                             </div>
                         ) : (
@@ -59,7 +94,8 @@ const TimeSlotsList = ({ timeSlots, loading, onDeleteTimeSlot }) => {
     );
 };
 
-const TimeSlotListItem = ({ slot, index, onDelete }) => {
+// Допоміжний компонент для елемента списку
+const TimeSlotListItem = ({ slot, index, onDelete }) => {  // Видалили onToggle
     return (
         <div style={{
             display: "flex",
@@ -83,13 +119,19 @@ const TimeSlotListItem = ({ slot, index, onDelete }) => {
                     fontWeight: "600",
                     fontSize: "14px"
                 }}>
-                    {index + 1}
+                    {slot.order}
                 </div>
                 <div>
-                    <div style={{ fontWeight: "600", color: "#374151" }}>
-                        Урок {index + 1}
+                    <div style={{
+                        fontWeight: "600",
+                        color: "#374151"
+                    }}>
+                        Урок {slot.order}
                     </div>
-                    <div style={{ color: "#6b7280", fontSize: "14px" }}>
+                    <div style={{
+                        color: "#6b7280",
+                        fontSize: "14px"
+                    }}>
                         {slot.startTime} - {slot.endTime}
                     </div>
                 </div>

@@ -29,7 +29,6 @@ const TimeSlotItem = ({ slot, index, onUpdate, onRemove }) => {
                 {slot.order}
             </div>
 
-            {/* Початок уроку */}
             <div style={{ flex: 1 }}>
                 <label style={{
                     display: 'block',
@@ -62,7 +61,6 @@ const TimeSlotItem = ({ slot, index, onUpdate, onRemove }) => {
                 />
             </div>
 
-            {/* Кінець уроку */}
             <div style={{ flex: 1 }}>
                 <label style={{
                     display: 'block',

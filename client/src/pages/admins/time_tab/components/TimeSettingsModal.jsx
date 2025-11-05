@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaPlus, FaSave, FaClock } from "react-icons/fa";
+import { FaTimes, FaPlus, FaSave, FaCalendarDay } from "react-icons/fa";
 
 import { validateTimeSlots } from "./timeValidation";
 import TimeSlotItem from "./TimeSlotItem";
 
-const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
+const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDay }) => {
     const [timeSlots, setTimeSlots] = useState([]);
     const [error, setError] = useState("");
 
@@ -19,7 +19,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
         }
     }, [show, existingTimeSlots]);
 
-    // ДОДАТИ НОВИЙ ЧАС ДЛЯ УРОКУ
+    // ДОДАТИ НОВИЙ УРОК
     const addTimeSlot = () => {
         const newOrder = timeSlots.length + 1;
         setTimeSlots([
@@ -27,16 +27,16 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
             {
                 order: newOrder,
                 startTime: "08:30",
-                endTime: "09:15"
+                endTime: "09:15",
+                isActive: true
             }
         ]);
     };
 
-    // ВИДАЛИТИ ЧАС ДЛЯ УРОКУ
+    // ВИДАЛИТИ УРОК
     const removeTimeSlot = (index) => {
         if (timeSlots.length > 0) {
             const newTimeSlots = timeSlots.filter((_, i) => i !== index);
-            // Оновити порядок
             const reorderedSlots = newTimeSlots.map((slot, idx) => ({
                 ...slot,
                 order: idx + 1
@@ -45,7 +45,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
         }
     };
 
-    // ОНОВИТИ ЧАС ДЛЯ УРОКУ
+    // ОНОВИТИ ЧАС УРОКУ
     const updateTimeSlot = (index, field, value) => {
         const newTimeSlots = timeSlots.map((slot, i) =>
             i === index ? { ...slot, [field]: value } : slot
@@ -53,7 +53,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
         setTimeSlots(newTimeSlots);
     };
 
-    // ЗБЕРЕЖЕННЯ
+    // ЗБЕРЕГТИ НАЛАШТУВАННЯ
     const handleSave = () => {
         const validationError = validateTimeSlots(timeSlots);
         if (validationError) {
@@ -88,24 +88,33 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     marginBottom: '20px'
                 }}>
-                    <h2 style={{
-                        margin: 0,
-                        fontSize: '20px',
-                        color: '#374151',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px'
-                    }}>
-                        <FaClock />
-                        Налаштування часу уроків
-                    </h2>
+                    <div>
+                        <h2 style={{
+                            margin: 0,
+                            fontSize: '20px',
+                            color: '#374151',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            <FaCalendarDay />
+                            Налаштування часу уроків
+                        </h2>
+                        <p style={{
+                            margin: 0,
+                            color: '#6b7280',
+                            fontSize: '14px',
+                            marginTop: '4px'
+                        }}>
+                            Для дня: <strong>{currentDay.name}</strong>
+                        </p>
+                    </div>
                     <button
                         onClick={onClose}
                         style={{
@@ -146,7 +155,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
                 <div style={{ marginBottom: '20px' }}>
                     {timeSlots.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
-                            Ще не додано жодного уроку
+                            Ще не додано жодного уроку для {currentDay.name}
                         </div>
                     ) : (
                         timeSlots.map((slot, index) => (
@@ -189,7 +198,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
                     }}
                 >
                     <FaPlus />
-                    Додати урок
+                    Додати урок для {currentDay.name}
                 </button>
 
                 <div style={{
@@ -255,7 +264,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots }) => {
                         }}
                     >
                         <FaSave />
-                        Зберегти
+                        Зберегти для {currentDay.name}
                     </button>
                 </div>
             </div>

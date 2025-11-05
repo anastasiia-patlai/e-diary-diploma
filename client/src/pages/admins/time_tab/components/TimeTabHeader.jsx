@@ -1,7 +1,10 @@
 import React from "react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaCalendarDay } from "react-icons/fa";
 
-const TimeTabHeader = ({ onShowModal }) => {
+const TimeTabHeader = ({ onShowModal, currentDay }) => {
+    // Значення за замовчуванням для currentDay
+    const safeCurrentDay = currentDay || { id: 1, name: "Понеділок" };
+
     return (
         <div style={{
             display: 'flex',
@@ -9,7 +12,20 @@ const TimeTabHeader = ({ onShowModal }) => {
             alignItems: 'center',
             marginBottom: '20px'
         }}>
-            <h3 style={{ margin: 0 }}>Час уроків</h3>
+            <div>
+                <h3 style={{ margin: 0, marginBottom: '4px' }}>Час уроків</h3>
+                <p style={{
+                    margin: 0,
+                    color: '#6b7280',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                }}>
+                    <FaCalendarDay />
+                    Обраний день: <strong>{safeCurrentDay.name}</strong>
+                </p>
+            </div>
             <button
                 onClick={onShowModal}
                 style={{
@@ -34,7 +50,7 @@ const TimeTabHeader = ({ onShowModal }) => {
                 }}
             >
                 <FaPlus />
-                Налаштувати час
+                Налаштувати час для {safeCurrentDay.name}
             </button>
         </div>
     );
