@@ -19,28 +19,41 @@ const AdminMainPage = () => {
         try {
             setLoading(true);
 
-            const [usersRes, studentsRes, teachersRes, parentsRes, groupsRes] = await Promise.all([
+            // Отримуємо всіх користувачів і фільтруємо на фронтенді
+            const [usersRes, groupsRes] = await Promise.all([
                 axios.get("http://localhost:3001/api/users"),
-                axios.get("http://localhost:3001/api/users/students"),
-                axios.get("http://localhost:3001/api/users/teachers"),
-                axios.get("http://localhost:3001/api/users/parents"),
                 axios.get("http://localhost:3001/api/groups")
             ]);
 
-            const uniqueSubjects = [...new Set(teachersRes.data.map(teacher => teacher.position).filter(Boolean))];
+            const users = usersRes.data;
+
+            // Фільтруємо користувачів за ролями
+            const students = users.filter(user => user.role === 'student');
+            const teachers = users.filter(user => user.role === 'teacher');
+            const parents = users.filter(user => user.role === 'parent');
+
+            // Отримуємо унікальні предмети з позицій викладачів
+            const teacherPositions = teachers.flatMap(teacher => {
+                if (teacher.positions && teacher.positions.length > 0) {
+                    return teacher.positions;
+                }
+                return teacher.position ? [teacher.position] : [];
+            });
+            const uniqueSubjects = [...new Set(teacherPositions.filter(Boolean))];
 
             setStats({
-                totalUsers: usersRes.data.length,
-                students: studentsRes.data.length,
-                teachers: teachersRes.data.length,
-                parents: parentsRes.data.length,
+                totalUsers: users.length,
+                students: students.length,
+                teachers: teachers.length,
+                parents: parents.length,
                 groups: groupsRes.data.length,
                 subjects: uniqueSubjects.length
             });
 
+            setError("");
             setLoading(false);
         } catch (err) {
-            setError("Помилка завантаження статистики");
+            setError("Помилка завантаження статистики: " + (err.response?.data?.message || err.message));
             setLoading(false);
             console.error("Помилка завантаження статистики:", err);
         }
@@ -67,8 +80,31 @@ const AdminMainPage = () => {
 
     if (error) {
         return (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-                <p>{error}</p>
+            <div style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: '#dc2626',
+                backgroundColor: '#fef2f2',
+                borderRadius: '8px',
+                margin: '20px 0'
+            }}>
+                <h3 style={{ margin: '0 0 10px 0' }}>Помилка завантаження</h3>
+                <p style={{ margin: '0 0 20px 0' }}>{error}</p>
+                <button
+                    onClick={fetchStats}
+                    style={{
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        color: 'white',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600'
+                    }}
+                >
+                    Спробувати знову
+                </button>
             </div>
         );
     }
@@ -148,7 +184,7 @@ const AdminMainPage = () => {
                 gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
                 gap: '20px'
             }}>
-                {/* <div style={{
+                <div style={{
                     backgroundColor: 'white',
                     padding: '24px',
                     borderRadius: '12px',
@@ -196,11 +232,11 @@ const AdminMainPage = () => {
                         }}>
                             <span style={{ color: '#6b7280' }}>Студентів з батьками</span>
                             <span style={{ fontWeight: '600', color: '#1f2937' }}>
-                                {stats.students > 0 ? Math.min(stats.parents, stats.students) : 0} / {stats.students}
+                                {Math.min(stats.parents, stats.students)} / {stats.students}
                             </span>
                         </div>
                     </div>
-                </div> */}
+                </div>
 
                 <div style={{
                     backgroundColor: 'white',

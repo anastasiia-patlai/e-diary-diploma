@@ -18,6 +18,7 @@ mongoose.connect('mongodb://localhost:27017/db-e-diary')
     .catch(err => console.error('Помилка підключення MongoDB:', err));
 
 const signupRouter = require('./routes/signup');
+const statsRoutes = require('./routes/stats');
 const loginRouter = require('./routes/login');
 const groupsRouter = require('./routes/groups');
 const usersRouter = require('./routes/users');
@@ -27,6 +28,7 @@ const classroomsRoutes = require('./routes/classrooms');
 
 console.log('Реєстрація роутів...');
 app.use('/api', signupRouter);
+app.use('/api/stats', statsRoutes);
 app.use('/api', loginRouter);
 app.use('/api/groups', groupsRouter);
 app.use('/api/users', usersRouter);

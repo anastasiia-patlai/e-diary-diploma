@@ -252,4 +252,66 @@ router.put('/:id/remove-child', async (req, res) => {
     }
 });
 
+// СТОТИСТИКА КОРИСТУВАЧІВ
+router.get('/stats', async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const students = await User.countDocuments({ role: 'student' });
+        const teachers = await User.countDocuments({ role: 'teacher' });
+        const parents = await User.countDocuments({ role: 'parent' });
+
+        const teachersWithSubjects = await User.find(
+            { role: 'teacher' },
+            'positions position'
+        );
+
+        const allSubjects = teachersWithSubjects.flatMap(teacher => {
+            if (teacher.positions && teacher.positions.length > 0) {
+                return teacher.positions;
+            }
+            return teacher.position ? [teacher.position] : [];
+        });
+
+        const uniqueSubjects = [...new Set(allSubjects.filter(Boolean))];
+
+        res.json({
+            totalUsers,
+            students,
+            teachers,
+            parents,
+            subjects: uniqueSubjects.length
+        });
+    } catch (error) {
+        console.error('Error fetching user stats:', error);
+        res.status(500).json({
+            message: 'Помилка при отриманні статистики',
+            error: error.message
+        });
+    }
+});
+
+// КОРИСТУВАЧІ ЗА РОЛЛЮ
+router.get('/by-role/:role', async (req, res) => {
+    try {
+        const { role } = req.params;
+
+        // Валідація ролі
+        const validRoles = ['student', 'teacher', 'parent', 'admin'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({
+                message: 'Невірна роль'
+            });
+        }
+
+        const users = await User.find({ role });
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users by role:', error);
+        res.status(500).json({
+            message: 'Помилка при отриманні користувачів',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
