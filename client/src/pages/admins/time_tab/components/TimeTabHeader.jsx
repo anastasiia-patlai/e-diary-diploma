@@ -2,7 +2,6 @@ import React from "react";
 import { FaPlus, FaCalendarDay } from "react-icons/fa";
 
 const TimeTabHeader = ({ onShowModal, currentDay }) => {
-    // Значення за замовчуванням для currentDay
     const safeCurrentDay = currentDay || { id: 1, name: "Понеділок" };
 
     return (

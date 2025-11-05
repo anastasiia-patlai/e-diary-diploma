@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Container, Alert } from "react-bootstrap";
 import axios from "axios";
 
-// Імпорт компонентів
 import TimeTabHeader from "./components/TimeTabHeader";
 import DaysNavigation from "./components/DaysNavigation";
 import TimeSlotsList from "./components/TimeSlotsList";

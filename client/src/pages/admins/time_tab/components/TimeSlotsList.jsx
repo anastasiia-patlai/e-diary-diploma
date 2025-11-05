@@ -1,4 +1,3 @@
-// src/pages/admins/time_tab/components/TimeSlotsList.jsx
 import React from "react";
 import { Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { FaClock, FaTrash, FaExclamationTriangle } from "react-icons/fa";
