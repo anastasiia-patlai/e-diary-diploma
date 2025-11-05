@@ -10,7 +10,7 @@ import {
 import AdminUserSystem from "./user_tab/AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
 import AdminMainPage from "./main_tab/AdminMainPage";
-import ScheduleDashboard from "./schedule/ScheduleDashboard";
+import ScheduleDashboard from "./schedule_tab/ScheduleDashboard";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");

@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Button } from "react-bootstrap";
 import { FaEdit, FaTrash, FaChalkboardTeacher, FaUsers, FaDoorOpen, FaCalendarAlt } from "react-icons/fa";
-import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "../scheduleHelpers";
+import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./scheduleHelpers";
 
 const ScheduleCard = ({ schedule, onEdit, onDelete }) => {
     if (!schedule || typeof schedule !== "object") {
