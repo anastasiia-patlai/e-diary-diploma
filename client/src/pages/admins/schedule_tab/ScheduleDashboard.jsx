@@ -1,100 +1,126 @@
 import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Alert } from "react-bootstrap";
+import { Container, Alert } from "react-bootstrap";
 import axios from "axios";
 
 import ScheduleHeader from "./components/ScheduleHeader";
-import ScheduleList from "./components/ScheduleList";
-import LoadingState from "./components/LoadingState";
-import ScheduleStats from "./components/ScheduleStats";
-
-import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./components/scheduleHelpers";
+import ScheduleTable from "./components/ScheduleTable";
+import CreateScheduleModal from "./components/CreateScheduleModal";
 
 const ScheduleDashboard = () => {
     const [schedules, setSchedules] = useState([]);
+    const [groups, setGroups] = useState([]);
+    const [teachers, setTeachers] = useState([]);
+    const [classrooms, setClassrooms] = useState([]);
+    const [timeSlots, setTimeSlots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [formData, setFormData] = useState({
-        teachers: [],
-        groups: [],
-        classrooms: []
-    });
+    const [showModal, setShowModal] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState("");
 
-    const loadSchedules = async () => {
+    // Завантажити всі дані
+    const loadAllData = async () => {
         try {
             setLoading(true);
-            const response = await axios.get("/api/schedule");
 
-            if (response.data && Array.isArray(response.data)) {
-                setSchedules(response.data);
-            } else {
-                console.warn("Отримані дані не є масивом:", response.data);
-                setSchedules([]);
-            }
+            const [schedulesRes, groupsRes, teachersRes, classroomsRes, timeSlotsRes] = await Promise.all([
+                axios.get("http://localhost:3001/api/schedule"),
+                axios.get("http://localhost:3001/api/groups"),
+                axios.get("http://localhost:3001/api/users/teachers"),
+                axios.get("http://localhost:3001/api/classrooms"),
+                axios.get("http://localhost:3001/api/time-slots?dayOfWeek=1") // Для понеділка
+            ]);
+
+            setSchedules(schedulesRes.data);
+            setGroups(groupsRes.data);
+            setTeachers(teachersRes.data);
+            setClassrooms(classroomsRes.data.filter(classroom => classroom.isActive));
+            setTimeSlots(timeSlotsRes.data);
             setError("");
         } catch (err) {
-            setError("Помилка при завантаженні розкладу: " + (err.response?.data?.message || err.message));
-            console.error("Error loading schedules:", err);
-            setSchedules([]);
+            console.error("Error loading data:", err);
+            setError("Помилка при завантаженні даних");
         } finally {
             setLoading(false);
         }
     };
 
-    const loadFormData = async () => {
+    useEffect(() => {
+        loadAllData();
+    }, []);
+
+    const handleCreateSchedule = async (scheduleData) => {
         try {
-            const response = await axios.get("/api/schedule/form-data");
-            setFormData({
-                teachers: Array.isArray(response.data?.teachers) ? response.data.teachers : [],
-                groups: Array.isArray(response.data?.groups) ? response.data.groups : [],
-                classrooms: Array.isArray(response.data?.classrooms) ? response.data.classrooms : []
-            });
+            setLoading(true);
+            const response = await axios.post("http://localhost:3001/api/schedule", scheduleData);
+            await loadAllData(); // Перезавантажити дані
+            setShowModal(false);
+            setError("");
         } catch (err) {
-            console.error("Error loading form data:", err);
-            setFormData({ teachers: [], groups: [], classrooms: [] });
+            setError(err.response?.data?.message || "Помилка при створенні розкладу");
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadSchedules();
-        loadFormData();
-    }, []);
+    const handleDeleteSchedule = async (id) => {
+        if (!window.confirm("Ви впевнені, що хочете видалити це заняття?")) {
+            return;
+        }
 
-    const handleAddSchedule = () => {
-        // Тут буде відкриття модального вікна
-        console.log("Додати нове заняття");
+        try {
+            await axios.delete(`http://localhost:3001/api/schedule/${id}`);
+            await loadAllData();
+            setError("");
+        } catch (err) {
+            setError(err.response?.data?.message || "Помилка при видаленні заняття");
+        }
     };
 
-    if (loading) {
-        return <LoadingState />;
-    }
+    // Фільтруємо розклад для вибраної групи
+    const filteredSchedules = selectedGroup
+        ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
+        : schedules;
 
     return (
         <Container fluid style={{ padding: "0 0 24px 0" }}>
-            <ScheduleHeader onAddSchedule={handleAddSchedule} />
-
-            {error && (
-                <Row style={{ marginBottom: "16px" }}>
-                    <Col>
-                        <Alert variant="danger" dismissible onClose={() => setError("")}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                borderRadius: "6px"
-                            }}
-                        >
-                            {error}
-                        </Alert>
-                    </Col>
-                </Row>
-            )}
-
-            <ScheduleList
-                schedules={schedules}
-                onRefresh={loadSchedules}
+            <ScheduleHeader
+                onShowModal={() => setShowModal(true)}
+                groups={groups}
+                selectedGroup={selectedGroup}
+                onGroupChange={setSelectedGroup}
             />
 
-            <ScheduleStats formData={formData} />
+            {error && (
+                <Alert variant="danger" dismissible onClose={() => setError("")}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        borderRadius: "6px",
+                        marginBottom: "16px"
+                    }}
+                >
+                    {error}
+                </Alert>
+            )}
+
+            <ScheduleTable
+                schedules={filteredSchedules}
+                groups={groups}
+                timeSlots={timeSlots}
+                loading={loading}
+                onDeleteSchedule={handleDeleteSchedule}
+            />
+
+            <CreateScheduleModal
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                onSave={handleCreateSchedule}
+                groups={groups}
+                teachers={teachers}
+                classrooms={classrooms}
+                timeSlots={timeSlots}
+            />
         </Container>
     );
 };
