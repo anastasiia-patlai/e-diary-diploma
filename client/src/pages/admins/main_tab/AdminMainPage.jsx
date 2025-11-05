@@ -197,60 +197,6 @@ const AdminMainPage = () => {
                         fontSize: '18px',
                         fontWeight: '600'
                     }}>
-                        Швидкі цифри
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '12px 0',
-                            borderBottom: '1px solid #f3f4f6'
-                        }}>
-                            <span style={{ color: '#6b7280' }}>Студентів на групу</span>
-                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
-                                {stats.groups > 0 ? (stats.students / stats.groups).toFixed(1) : 0}
-                            </span>
-                        </div>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '12px 0',
-                            borderBottom: '1px solid #f3f4f6'
-                        }}>
-                            <span style={{ color: '#6b7280' }}>Відношення студент/викладач</span>
-                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
-                                {stats.teachers > 0 ? (stats.students / stats.teachers).toFixed(1) : 0}
-                            </span>
-                        </div>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '12px 0'
-                        }}>
-                            <span style={{ color: '#6b7280' }}>Студентів з батьками</span>
-                            <span style={{ fontWeight: '600', color: '#1f2937' }}>
-                                {Math.min(stats.parents, stats.students)} / {stats.students}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{
-                    backgroundColor: 'white',
-                    padding: '24px',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                }}>
-                    <h3 style={{
-                        margin: '0 0 20px 0',
-                        color: '#1f2937',
-                        fontSize: '18px',
-                        fontWeight: '600'
-                    }}>
                         Системна інформація
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
