@@ -5,12 +5,14 @@ import {
     FaCog,
     FaChartLine,
     FaUserTie,
-    FaCalendarAlt
+    FaCalendarAlt,
+    FaClock
 } from "react-icons/fa";
 import AdminUserSystem from "./user_tab/AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
 import AdminMainPage from "./main_tab/AdminMainPage";
 import ScheduleDashboard from "./schedule_tab/ScheduleDashboard";
+import TimeSlot from "./time_tab/TimeTab";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -20,6 +22,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
         { name: "Користувачі", icon: <FaUserCog /> },
         { name: "Класні керівники", icon: <FaUserTie /> },
         { name: "Розклад", icon: <FaCalendarAlt /> },
+        { name: "Час", icon: <FaClock /> },
         { name: "Налаштування", icon: <FaCog /> },
         { name: "Звіти", icon: <FaChartLine /> }
     ];
@@ -37,6 +40,9 @@ const AdminPage = ({ onLogout, userFullName }) => {
 
             case "Розклад":
                 return <ScheduleDashboard />;
+
+            case "Час":
+                return <TimeSlot />;
 
             case "Налаштування":
                 return (

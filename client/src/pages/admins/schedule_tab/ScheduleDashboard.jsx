@@ -7,7 +7,7 @@ import ScheduleList from "./components/ScheduleList";
 import LoadingState from "./components/LoadingState";
 import ScheduleStats from "./components/ScheduleStats";
 
-import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./scheduleHelpers";
+import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./components/scheduleHelpers";
 
 const ScheduleDashboard = () => {
     const [schedules, setSchedules] = useState([]);
