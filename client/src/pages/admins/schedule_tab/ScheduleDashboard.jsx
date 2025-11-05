@@ -42,23 +42,20 @@ const ScheduleDashboard = () => {
         try {
             setLoading(true);
 
-            const [schedulesRes, groupsRes, teachersRes, classroomsRes, timeSlotsRes] = await Promise.all([
+            const [schedulesRes, groupsRes, teachersRes, classroomsRes] = await Promise.all([
                 axios.get("http://localhost:3001/api/schedule"),
                 axios.get("http://localhost:3001/api/groups"),
                 axios.get("http://localhost:3001/api/users/teachers"),
-                axios.get("http://localhost:3001/api/classrooms"),
-                axios.get("http://localhost:3001/api/time-slots?dayOfWeek=1") // Для понеділка
+                axios.get("http://localhost:3001/api/classrooms")
             ]);
 
             setSchedules(schedulesRes.data);
 
-            // Сортуємо групи перед збереженням у стан
             const sortedGroups = sortGroupsByGrade(groupsRes.data);
             setGroups(sortedGroups);
 
             setTeachers(teachersRes.data);
             setClassrooms(classroomsRes.data.filter(classroom => classroom.isActive));
-            setTimeSlots(timeSlotsRes.data);
             setError("");
         } catch (err) {
             console.error("Error loading data:", err);

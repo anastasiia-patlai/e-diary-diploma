@@ -1,45 +1,81 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaSave, FaUsers, FaCalendar, FaClock, FaChalkboardTeacher, FaDoorOpen } from "react-icons/fa";
+import axios from "axios";
 
-const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classrooms, timeSlots }) => {
+const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classrooms }) => {
     const [formData, setFormData] = useState({
         group: "",
-        dayOfWeek: 1,
+        dayOfWeek: "",
         timeSlot: "",
         teacher: "",
         classroom: ""
     });
     const [error, setError] = useState("");
-    const [filteredTeachers, setFilteredTeachers] = useState([]);
-    const [filteredClassrooms, setFilteredClassrooms] = useState([]);
+    const [timeSlots, setTimeSlots] = useState([]);
+    const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
 
     // Скидання форми при відкритті
     useEffect(() => {
         if (show) {
             setFormData({
                 group: "",
-                dayOfWeek: 1,
+                dayOfWeek: "",
                 timeSlot: "",
                 teacher: "",
                 classroom: ""
             });
             setError("");
-            setFilteredTeachers(teachers);
-            setFilteredClassrooms(classrooms);
+            setTimeSlots([]);
         }
-    }, [show, teachers, classrooms]);
+    }, [show]);
+
+    // Завантажити часові слоти при зміні дня тижня
+    useEffect(() => {
+        const loadTimeSlots = async () => {
+            if (!formData.dayOfWeek) {
+                setTimeSlots([]);
+                return;
+            }
+
+            try {
+                setLoadingTimeSlots(true);
+                const response = await axios.get(`http://localhost:3001/api/time-slots?dayOfWeekId=${formData.dayOfWeek}`);
+                setTimeSlots(response.data);
+                setError("");
+            } catch (err) {
+                console.error("Error loading time slots:", err);
+                setTimeSlots([]);
+                setError("Помилка при завантаженні часу уроків");
+            } finally {
+                setLoadingTimeSlots(false);
+            }
+        };
+
+        loadTimeSlots();
+    }, [formData.dayOfWeek]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        setFormData(prev => {
+            // Якщо змінюється день тижня, скидаємо вибраний часовий слот
+            if (name === "dayOfWeek") {
+                return {
+                    ...prev,
+                    [name]: value,
+                    timeSlot: "" // Скидаємо вибраний час
+                };
+            }
+            return {
+                ...prev,
+                [name]: value
+            };
+        });
     };
 
     const handleSave = () => {
         // Валідація
-        if (!formData.group || !formData.timeSlot || !formData.teacher || !formData.classroom) {
+        if (!formData.group || !formData.dayOfWeek || !formData.timeSlot || !formData.teacher || !formData.classroom) {
             setError("Усі поля повинні бути заповнені");
             return;
         }
@@ -206,11 +242,12 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                                 transition: 'border-color 0.2s'
                             }}
                         >
-                            <option value={1}>Понеділок</option>
-                            <option value={2}>Вівторок</option>
-                            <option value={3}>Середа</option>
-                            <option value={4}>Четвер</option>
-                            <option value={5}>П'ятниця</option>
+                            <option value="">Оберіть день</option>
+                            <option value="1">Понеділок</option>
+                            <option value="2">Вівторок</option>
+                            <option value="3">Середа</option>
+                            <option value="4">Четвер</option>
+                            <option value="5">П'ятниця</option>
                         </select>
                     </div>
 
@@ -234,6 +271,7 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                             name="timeSlot"
                             value={formData.timeSlot}
                             onChange={handleChange}
+                            disabled={!formData.dayOfWeek || loadingTimeSlots}
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
@@ -242,16 +280,31 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
-                                transition: 'border-color 0.2s'
+                                transition: 'border-color 0.2s',
+                                opacity: !formData.dayOfWeek || loadingTimeSlots ? 0.6 : 1
                             }}
                         >
-                            <option value="">Оберіть час</option>
+                            <option value="">
+                                {loadingTimeSlots ? 'Завантаження...' :
+                                    !formData.dayOfWeek ? 'Спочатку оберіть день' :
+                                        'Оберіть час'}
+                            </option>
                             {timeSlots.map(slot => (
                                 <option key={slot._id} value={slot._id}>
                                     {slot.order}. {slot.startTime} - {slot.endTime}
+                                    {slot.dayOfWeek && slot.dayOfWeek.name ? ` (${slot.dayOfWeek.name})` : ''}
                                 </option>
                             ))}
                         </select>
+                        {formData.dayOfWeek && timeSlots.length === 0 && !loadingTimeSlots && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                marginTop: '4px'
+                            }}>
+                                Для цього дня не налаштовано розклад дзвінків
+                            </div>
+                        )}
                     </div>
 
                     {/* Викладач */}

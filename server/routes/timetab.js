@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const TimeSlot = require('../models/TimeTab');
 const DayOfWeek = require('../models/DayOfWeek');
@@ -9,13 +10,25 @@ router.get('/', async (req, res) => {
         const { dayOfWeekId } = req.query;
         let query = {};
 
+        console.log("Отримано dayOfWeekId:", dayOfWeekId);
+
         if (dayOfWeekId) {
-            query.dayOfWeek = dayOfWeekId;
+            const dayOfWeek = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
+
+            if (!dayOfWeek) {
+                return res.status(404).json({
+                    message: 'День тижня не знайдено'
+                });
+            }
+
+            query.dayOfWeek = dayOfWeek._id;
         }
 
         const timeSlots = await TimeSlot.find(query)
             .populate('dayOfWeek')
             .sort({ 'dayOfWeek.order': 1, order: 1 });
+
+        console.log("Знайдено timeSlots:", timeSlots.length);
         res.json(timeSlots);
     } catch (error) {
         console.error('Error fetching time slots:', error);
