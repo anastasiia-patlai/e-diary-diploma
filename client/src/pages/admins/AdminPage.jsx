@@ -38,10 +38,10 @@ const AdminPage = ({ onLogout, userFullName }) => {
             case "Класні керівники":
                 return <AdminShowCurators />;
 
-            case "Розклад":
+            case "Розклад занять":
                 return <ScheduleDashboard />;
 
-            case "Час":
+            case "Розклад часу":
                 return <TimeSlot />;
 
             case "Налаштування":
