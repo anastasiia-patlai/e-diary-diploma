@@ -23,6 +23,7 @@ const groupsRouter = require('./routes/groups');
 const usersRouter = require('./routes/users');
 const scheduleRouter = require('./routes/schedule');
 const timeSlotsRouter = require('./routes/timetab');
+const classroomsRoutes = require('./routes/classrooms');
 
 console.log('Реєстрація роутів...');
 app.use('/api', signupRouter);
@@ -31,6 +32,8 @@ app.use('/api/groups', groupsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/time-slots', timeSlotsRouter);
+app.use('/api/classrooms', classroomsRoutes);
+
 console.log('Роути зареєстровано!');
 
 // СТАРТ
