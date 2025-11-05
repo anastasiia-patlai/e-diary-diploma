@@ -7,9 +7,10 @@ import {
     FaUserTie,
     FaCalendarAlt
 } from "react-icons/fa";
-import AdminUserSystem from "./AdminUserSystem";
+import AdminUserSystem from "./user_tab/AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
 import AdminMainPage from "./main_tab/AdminMainPage";
+import ScheduleDashboard from "./schedule/ScheduleDashboard";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -35,12 +36,7 @@ const AdminPage = ({ onLogout, userFullName }) => {
                 return <AdminShowCurators />;
 
             case "Розклад":
-                return (
-                    <div>
-                        <h3>Розклад</h3>
-                        <p>Тут буде відображатись розклад занять для всіх класів.</p>
-                    </div>
-                );
+                return <ScheduleDashboard />;
 
             case "Налаштування":
                 return (

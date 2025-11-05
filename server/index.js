@@ -21,12 +21,14 @@ const signupRouter = require('./routes/signup');
 const loginRouter = require('./routes/login');
 const groupsRouter = require('./routes/groups');
 const usersRouter = require('./routes/users');
+const scheduleRouter = require('./routes/schedule');
 
 console.log('Реєстрація роутів...');
 app.use('/api', signupRouter);
 app.use('/api', loginRouter);
 app.use('/api/groups', groupsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/schedule', scheduleRouter);
 console.log('Роути зареєстровано!');
 
 // СТАРТ
