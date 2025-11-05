@@ -26,8 +26,8 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
             ...timeSlots,
             {
                 order: newOrder,
-                startTime: "08:30",
-                endTime: "09:15",
+                startTime: "08:00",
+                endTime: "08:45",
                 isActive: true
             }
         ]);
