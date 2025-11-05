@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Alert } from "react-bootstrap";
 import axios from "axios";
 
-import ScheduleHeader from "./ScheduleHeader";
-import ScheduleList from "./ScheduleList";
-import LoadingState from "./LoadingState";
-import ScheduleStats from "./ScheduleStats";
+import ScheduleHeader from "./components/ScheduleHeader";
+import ScheduleList from "./components/ScheduleList";
+import LoadingState from "./components/LoadingState";
+import ScheduleStats from "./components/ScheduleStats";
 
 import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./scheduleHelpers";
 
