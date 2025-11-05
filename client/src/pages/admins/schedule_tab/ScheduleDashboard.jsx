@@ -17,6 +17,26 @@ const ScheduleDashboard = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState("");
 
+    // Функція для сортування груп від молодших до старших
+    const sortGroupsByGrade = (groupsArray) => {
+        return groupsArray.sort((a, b) => {
+            // Витягуємо цифри з назв груп (наприклад, "6-А" -> 6, "11-В" -> 11)
+            const gradeA = parseInt(a.name.match(/\d+/)?.[0] || 0);
+            const gradeB = parseInt(b.name.match(/\d+/)?.[0] || 0);
+
+            // Спочатку сортуємо за класом (від меншого до більшого)
+            if (gradeA !== gradeB) {
+                return gradeA - gradeB;
+            }
+
+            // Якщо клас однаковий, сортуємо за літерою в алфавітному порядку
+            const letterA = a.name.match(/[А-ЯҐЄІЇ]/)?.[0] || '';
+            const letterB = b.name.match(/[А-ЯҐЄІЇ]/)?.[0] || '';
+
+            return letterA.localeCompare(letterB);
+        });
+    };
+
     // Завантажити всі дані
     const loadAllData = async () => {
         try {
@@ -31,7 +51,11 @@ const ScheduleDashboard = () => {
             ]);
 
             setSchedules(schedulesRes.data);
-            setGroups(groupsRes.data);
+
+            // Сортуємо групи перед збереженням у стан
+            const sortedGroups = sortGroupsByGrade(groupsRes.data);
+            setGroups(sortedGroups);
+
             setTeachers(teachersRes.data);
             setClassrooms(classroomsRes.data.filter(classroom => classroom.isActive));
             setTimeSlots(timeSlotsRes.data);
