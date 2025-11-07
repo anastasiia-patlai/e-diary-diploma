@@ -55,7 +55,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
 
     // ЗБЕРЕГТИ НАЛАШТУВАННЯ
     const handleSave = () => {
-        console.log("=== ПЕРЕВІРКА ДАНИХ ПЕРЕД ЗБЕРЕЖЕННЯМ ===");
         console.log("timeSlots перед валідацією:", timeSlots);
 
         // Валідація
@@ -79,7 +78,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
             endTime: slot.endTime
         }));
 
-        console.log("✅ ДАНІ ГОТОВІ ДО ЗБЕРЕЖЕННЯ:", dataToSave);
+        console.log("ДАНІ ГОТОВІ ДО ЗБЕРЕЖЕННЯ:", dataToSave);
         onSave(dataToSave);
     };
 
