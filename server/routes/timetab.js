@@ -10,14 +10,28 @@ router.get('/', async (req, res) => {
         const { dayOfWeekId } = req.query;
         let query = {};
 
+        console.log("=== ЗАПИТ TIME-SLOTS ===");
         console.log("Отримано dayOfWeekId:", dayOfWeekId);
+        console.log("Тип dayOfWeekId:", typeof dayOfWeekId);
 
         if (dayOfWeekId) {
+            // Перевіряємо всі дні тижня в базі
+            const allDays = await DayOfWeek.find();
+            console.log("Всі дні в базі:", allDays.map(d => ({ id: d.id, name: d.name, _id: d._id, isActive: d.isActive })));
+
+            // Шукаємо день тижня за числовим id
             const dayOfWeek = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
+            console.log("Знайдений день:", dayOfWeek);
 
             if (!dayOfWeek) {
                 return res.status(404).json({
-                    message: 'День тижня не знайдено'
+                    message: `День тижня не знайдено. ID: ${dayOfWeekId}. Доступні ID: ${allDays.map(d => d.id).join(', ')}`
+                });
+            }
+
+            if (!dayOfWeek.isActive) {
+                return res.status(400).json({
+                    message: `День тижня "${dayOfWeek.name}" не активний`
                 });
             }
 
@@ -50,8 +64,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // Тепер DayOfWeek буде визначено, оскільки ми його імпортували
-        const dayExists = await DayOfWeek.findById(dayOfWeekId);
+        const dayExists = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
         if (!dayExists) {
             return res.status(400).json({
                 message: 'День тижня не знайдено'
@@ -73,11 +86,11 @@ router.post('/', async (req, res) => {
             }
         }
 
-        await TimeSlot.deleteMany({ dayOfWeek: dayOfWeekId });
+        await TimeSlot.deleteMany({ dayOfWeek: dayExists._id });
 
         const slotsWithDay = timeSlots.map(slot => ({
             ...slot,
-            dayOfWeek: dayOfWeekId
+            dayOfWeek: dayExists._id
         }));
 
         const savedTimeSlots = await TimeSlot.insertMany(slotsWithDay);
@@ -127,29 +140,29 @@ router.delete('/:id', async (req, res) => {
 });
 
 // ПЕРЕМИКАННЯ СТАТУСУ АКТИВНОСТІ ЧАСОВОГО СЛОТУ
-router.patch('/:id/toggle', async (req, res) => {
-    try {
-        const { id } = req.params;
+// router.patch('/:id/toggle', async (req, res) => {
+//     try {
+//         const { id } = req.params;
 
-        const timeSlot = await TimeSlot.findById(id);
-        if (!timeSlot) {
-            return res.status(404).json({
-                message: 'Часовий слот не знайдено'
-            });
-        }
+//         const timeSlot = await TimeSlot.findById(id);
+//         if (!timeSlot) {
+//             return res.status(404).json({
+//                 message: 'Часовий слот не знайдено'
+//             });
+//         }
 
-        timeSlot.isActive = !timeSlot.isActive;
-        const updatedTimeSlot = await timeSlot.save();
+//         timeSlot.isActive = !timeSlot.isActive;
+//         const updatedTimeSlot = await timeSlot.save();
 
-        res.json(updatedTimeSlot);
-    } catch (error) {
-        console.error('Error toggling time slot:', error);
-        res.status(500).json({
-            message: 'Помилка при зміні статусу часового слоту',
-            error: error.message
-        });
-    }
-});
+//         res.json(updatedTimeSlot);
+//     } catch (error) {
+//         console.error('Error toggling time slot:', error);
+//         res.status(500).json({
+//             message: 'Помилка при зміні статусу часового слоту',
+//             error: error.message
+//         });
+//     }
+// });
 
 // ОТРИМАТИ РЕЗЮМЕ ПО ДНЯХ
 router.get('/days/summary', async (req, res) => {

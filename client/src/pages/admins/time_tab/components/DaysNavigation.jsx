@@ -3,9 +3,11 @@ import { Row, Col, Card, Badge } from "react-bootstrap";
 import { FaCalendarAlt } from "react-icons/fa";
 
 const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
-    // Отримати кількість уроків для дня
     const getLessonCount = (dayId) => {
-        const summary = daysSummary.find(item => item._id === dayId);
+        const summary = daysSummary.find(item => {
+            const day = days.find(d => d._id === item._id);
+            return day && day.id === dayId;
+        });
         return summary ? summary.count : 0;
     };
 
@@ -43,16 +45,16 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
                             {days.map((day) => (
                                 <button
                                     key={day._id}
-                                    onClick={() => onDayChange(day._id)}
+                                    onClick={() => onDayChange(day.id)}
                                     style={{
                                         flex: "1 1 calc(20% - 8px)",
                                         minWidth: "120px",
                                         padding: "12px 16px",
-                                        backgroundColor: selectedDay === day._id
+                                        backgroundColor: selectedDay === day.id
                                             ? "rgba(105, 180, 185, 1)"
                                             : "white",
-                                        color: selectedDay === day._id ? "white" : "#374151",
-                                        border: `1px solid ${selectedDay === day._id
+                                        color: selectedDay === day.id ? "white" : "#374151",
+                                        border: `1px solid ${selectedDay === day.id
                                             ? "rgba(105, 180, 185, 1)"
                                             : "#e5e7eb"
                                             }`,
@@ -67,13 +69,13 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
                                         gap: "4px"
                                     }}
                                     onMouseOver={(e) => {
-                                        if (selectedDay !== day._id) {
+                                        if (selectedDay !== day.id) {
                                             e.target.style.backgroundColor = "#f9fafb";
                                             e.target.style.borderColor = "rgba(105, 180, 185, 1)";
                                         }
                                     }}
                                     onMouseOut={(e) => {
-                                        if (selectedDay !== day._id) {
+                                        if (selectedDay !== day.id) {
                                             e.target.style.backgroundColor = "white";
                                             e.target.style.borderColor = "#e5e7eb";
                                         }
@@ -85,7 +87,7 @@ const DaysNavigation = ({ days, selectedDay, onDayChange, daysSummary }) => {
                                         text="dark"
                                         style={{ fontSize: "10px" }}
                                     >
-                                        {getLessonCount(day._id)} уроків
+                                        {getLessonCount(day.id)} уроків
                                     </Badge>
                                 </button>
                             ))}

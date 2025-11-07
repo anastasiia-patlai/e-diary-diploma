@@ -12,28 +12,16 @@ const defaultDays = [
     { id: 7, name: 'Неділя', nameShort: 'Нд', order: 7, isActive: false }
 ];
 
-// Функція для ініціалізації днів
-const initializeDays = async () => {
-    try {
-        const existingDays = await DayOfWeek.find();
-        if (existingDays.length > 0) {
-            return { message: 'Дні тижня вже існують', days: existingDays };
-        }
-
-        const createdDays = await DayOfWeek.insertMany(defaultDays);
-        console.log('✅ Дні тижня успішно створені:', createdDays.length);
-        return { message: 'Дні тижня успішно створені', days: createdDays };
-    } catch (error) {
-        console.error('❌ Помилка при створенні днів тижня:', error);
-        throw error;
-    }
-};
-
-// ПРИМУСОВА ІНІЦІАЛІЗАЦІЯ ДНІВ ТИЖНЯ ДЛЯ АДМІНА
 router.post('/initialize', async (req, res) => {
     try {
-        const result = await initializeDays();
-        res.status(201).json(result);
+        await DayOfWeek.deleteMany({});
+        const createdDays = await DayOfWeek.insertMany(defaultDays);
+
+        res.status(201).json({
+            message: 'Дні тижня успішно створені',
+            days: createdDays,
+            count: createdDays.length
+        });
     } catch (error) {
         res.status(500).json({
             message: 'Помилка при створенні днів тижня',
@@ -42,13 +30,11 @@ router.post('/initialize', async (req, res) => {
     }
 });
 
-// ОТРИМАТИ ВСІ ДНІ ТИЖНЯ
 router.get('/', async (req, res) => {
     try {
         const days = await DayOfWeek.find().sort({ order: 1 });
         res.json(days);
     } catch (error) {
-        console.error('Error fetching days of week:', error);
         res.status(500).json({
             message: 'Помилка при отриманні днів тижня',
             error: error.message
@@ -56,13 +42,11 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ОТРИМАТИ АКТИВНІ ДНІ ТИЖНЯ
 router.get('/active', async (req, res) => {
     try {
         const days = await DayOfWeek.find({ isActive: true }).sort({ order: 1 });
         res.json(days);
     } catch (error) {
-        console.error('Error fetching active days:', error);
         res.status(500).json({
             message: 'Помилка при отриманні активних днів тижня',
             error: error.message
@@ -70,7 +54,6 @@ router.get('/active', async (req, res) => {
     }
 });
 
-// ОТРИМАТИ ДЕНЬ ТИЖНЯ ЗА ID
 router.get('/:id', async (req, res) => {
     try {
         const day = await DayOfWeek.findById(req.params.id);
@@ -81,7 +64,6 @@ router.get('/:id', async (req, res) => {
         }
         res.json(day);
     } catch (error) {
-        console.error('Error fetching day:', error);
         res.status(500).json({
             message: 'Помилка при отриманні дня тижня',
             error: error.message
