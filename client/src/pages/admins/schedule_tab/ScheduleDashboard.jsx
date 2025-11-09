@@ -11,7 +11,7 @@ const ScheduleDashboard = () => {
     const [groups, setGroups] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [classrooms, setClassrooms] = useState([]);
-    const [timeSlots, setTimeSlots] = useState([]);
+    const [timeSlots, setTimeSlots] = useState([]); // Додаємо стан для timeSlots
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
@@ -20,16 +20,13 @@ const ScheduleDashboard = () => {
     // Функція для сортування груп від молодших до старших
     const sortGroupsByGrade = (groupsArray) => {
         return groupsArray.sort((a, b) => {
-            // Витягуємо цифри з назв груп (наприклад, "6-А" -> 6, "11-В" -> 11)
             const gradeA = parseInt(a.name.match(/\d+/)?.[0] || 0);
             const gradeB = parseInt(b.name.match(/\d+/)?.[0] || 0);
 
-            // Спочатку сортуємо за класом (від меншого до більшого)
             if (gradeA !== gradeB) {
                 return gradeA - gradeB;
             }
 
-            // Якщо клас однаковий, сортуємо за літерою в алфавітному порядку
             const letterA = a.name.match(/[А-ЯҐЄІЇ]/)?.[0] || '';
             const letterB = b.name.match(/[А-ЯҐЄІЇ]/)?.[0] || '';
 
@@ -37,29 +34,73 @@ const ScheduleDashboard = () => {
         });
     };
 
+    // Завантажити часові слоти
+    const loadTimeSlots = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/time-slots");
+            setTimeSlots(response.data);
+        } catch (err) {
+            console.error("❌ Помилка завантаження часових слотів:", err);
+            setTimeSlots([]); // Встановлюємо пустий масив у разі помилки
+        }
+    };
+
     // Завантажити всі дані
     const loadAllData = async () => {
         try {
             setLoading(true);
+            setError("");
 
-            const [schedulesRes, groupsRes, teachersRes, classroomsRes] = await Promise.all([
-                axios.get("http://localhost:3001/api/schedule"),
-                axios.get("http://localhost:3001/api/groups"),
-                axios.get("http://localhost:3001/api/users/teachers"),
-                axios.get("http://localhost:3001/api/classrooms")
-            ]);
+            console.log("🔄 Початок завантаження даних...");
+
+            // Завантажуємо часові слоти окремо
+            await loadTimeSlots();
+
+            // Решта запитів
+            let schedulesRes, groupsRes, teachersRes, classroomsRes;
+
+            try {
+                schedulesRes = await axios.get("http://localhost:3001/api/schedule");
+                console.log("✅ Розклади завантажені:", schedulesRes.data.length);
+            } catch (err) {
+                console.error("❌ Помилка завантаження розкладів:", err.response?.data || err.message);
+                throw new Error(`Розклади: ${err.response?.data?.message || err.message}`);
+            }
+
+            try {
+                groupsRes = await axios.get("http://localhost:3001/api/groups");
+                console.log("✅ Групи завантажені:", groupsRes.data.length);
+            } catch (err) {
+                console.error("❌ Помилка завантаження груп:", err.response?.data || err.message);
+                throw new Error(`Групи: ${err.response?.data?.message || err.message}`);
+            }
+
+            try {
+                teachersRes = await axios.get("http://localhost:3001/api/users/teachers");
+                console.log("✅ Викладачі завантажені:", teachersRes.data.length);
+            } catch (err) {
+                console.error("❌ Помилка завантаження викладачів:", err.response?.data || err.message);
+                throw new Error(`Викладачі: ${err.response?.data?.message || err.message}`);
+            }
+
+            try {
+                classroomsRes = await axios.get("http://localhost:3001/api/classrooms");
+                console.log("✅ Аудиторії завантажені:", classroomsRes.data.length);
+            } catch (err) {
+                console.error("❌ Помилка завантаження аудиторій:", err.response?.data || err.message);
+                throw new Error(`Аудиторії: ${err.response?.data?.message || err.message}`);
+            }
 
             setSchedules(schedulesRes.data);
-
-            const sortedGroups = sortGroupsByGrade(groupsRes.data);
-            setGroups(sortedGroups);
-
+            setGroups(sortGroupsByGrade(groupsRes.data));
             setTeachers(teachersRes.data);
             setClassrooms(classroomsRes.data.filter(classroom => classroom.isActive));
-            setError("");
+
+            console.log("✅ Всі дані успішно завантажені");
+
         } catch (err) {
-            console.error("Error loading data:", err);
-            setError("Помилка при завантаженні даних");
+            console.error("❌ Критична помилка завантаження даних:", err);
+            setError("Помилка при завантаженні даних: " + err.message);
         } finally {
             setLoading(false);
         }
@@ -73,7 +114,7 @@ const ScheduleDashboard = () => {
         try {
             setLoading(true);
             const response = await axios.post("http://localhost:3001/api/schedule", scheduleData);
-            await loadAllData(); // Перезавантажити дані
+            await loadAllData();
             setShowModal(false);
             setError("");
         } catch (err) {
@@ -128,7 +169,7 @@ const ScheduleDashboard = () => {
             <ScheduleTable
                 schedules={filteredSchedules}
                 groups={groups}
-                timeSlots={timeSlots}
+                timeSlots={timeSlots} // Тепер передаємо timeSlots
                 loading={loading}
                 onDeleteSchedule={handleDeleteSchedule}
             />
@@ -140,7 +181,6 @@ const ScheduleDashboard = () => {
                 groups={groups}
                 teachers={teachers}
                 classrooms={classrooms}
-                timeSlots={timeSlots}
             />
         </Container>
     );

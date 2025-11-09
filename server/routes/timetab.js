@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const TimeSlot = require('../models/TimeTab');
+const TimeTab = require('../models/TimeTab'); // Імпортуємо нову модель
 const DayOfWeek = require('../models/DayOfWeek');
 
 // ОТРИМАТИ ЧАСОВІ СЛОТИ ЗІ ФІЛЬТРАЦІЄЮ ЗА ДНЕМ ТИЖНЯ
@@ -10,39 +10,22 @@ router.get('/', async (req, res) => {
         const { dayOfWeekId } = req.query;
         let query = {};
 
-        console.log("=== ЗАПИТ TIME-SLOTS ===");
-        console.log("Отримано dayOfWeekId:", dayOfWeekId);
-        console.log("Тип dayOfWeekId:", typeof dayOfWeekId);
-
         if (dayOfWeekId) {
-            // Перевіряємо всі дні тижня в базі
-            const allDays = await DayOfWeek.find();
-            console.log("Всі дні в базі:", allDays.map(d => ({ id: d.id, name: d.name, _id: d._id, isActive: d.isActive })));
-
-            // Шукаємо день тижня за числовим id
             const dayOfWeek = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
-            console.log("Знайдений день:", dayOfWeek);
 
             if (!dayOfWeek) {
                 return res.status(404).json({
-                    message: `День тижня не знайдено. ID: ${dayOfWeekId}. Доступні ID: ${allDays.map(d => d.id).join(', ')}`
-                });
-            }
-
-            if (!dayOfWeek.isActive) {
-                return res.status(400).json({
-                    message: `День тижня "${dayOfWeek.name}" не активний`
+                    message: 'День тижня не знайдено'
                 });
             }
 
             query.dayOfWeek = dayOfWeek._id;
         }
 
-        const timeSlots = await TimeSlot.find(query)
+        const timeSlots = await TimeTab.find(query)
             .populate('dayOfWeek')
             .sort({ 'dayOfWeek.order': 1, order: 1 });
 
-        console.log("Знайдено timeSlots:", timeSlots.length);
         res.json(timeSlots);
     } catch (error) {
         console.error('Error fetching time slots:', error);
@@ -86,16 +69,16 @@ router.post('/', async (req, res) => {
             }
         }
 
-        await TimeSlot.deleteMany({ dayOfWeek: dayExists._id });
+        await TimeTab.deleteMany({ dayOfWeek: dayExists._id });
 
         const slotsWithDay = timeSlots.map(slot => ({
             ...slot,
             dayOfWeek: dayExists._id
         }));
 
-        const savedTimeSlots = await TimeSlot.insertMany(slotsWithDay);
+        const savedTimeSlots = await TimeTab.insertMany(slotsWithDay);
 
-        const populatedSlots = await TimeSlot.find({ _id: { $in: savedTimeSlots.map(s => s._id) } })
+        const populatedSlots = await TimeTab.find({ _id: { $in: savedTimeSlots.map(s => s._id) } })
             .populate('dayOfWeek');
 
         res.status(201).json(populatedSlots);
@@ -118,7 +101,7 @@ router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const deletedSlot = await TimeSlot.findByIdAndDelete(id);
+        const deletedSlot = await TimeTab.findByIdAndDelete(id);
 
         if (!deletedSlot) {
             return res.status(404).json({
@@ -139,35 +122,10 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// ПЕРЕМИКАННЯ СТАТУСУ АКТИВНОСТІ ЧАСОВОГО СЛОТУ
-// router.patch('/:id/toggle', async (req, res) => {
-//     try {
-//         const { id } = req.params;
-
-//         const timeSlot = await TimeSlot.findById(id);
-//         if (!timeSlot) {
-//             return res.status(404).json({
-//                 message: 'Часовий слот не знайдено'
-//             });
-//         }
-
-//         timeSlot.isActive = !timeSlot.isActive;
-//         const updatedTimeSlot = await timeSlot.save();
-
-//         res.json(updatedTimeSlot);
-//     } catch (error) {
-//         console.error('Error toggling time slot:', error);
-//         res.status(500).json({
-//             message: 'Помилка при зміні статусу часового слоту',
-//             error: error.message
-//         });
-//     }
-// });
-
 // ОТРИМАТИ РЕЗЮМЕ ПО ДНЯХ
 router.get('/days/summary', async (req, res) => {
     try {
-        const summary = await TimeSlot.aggregate([
+        const summary = await TimeTab.aggregate([
             {
                 $group: {
                     _id: '$dayOfWeek',

@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaSave, FaUsers, FaCalendar, FaClock, FaChalkboardTeacher, FaDoorOpen } from "react-icons/fa";
+import {
+    FaTimes,
+    FaSave,
+    FaUsers,
+    FaCalendar,
+    FaClock,
+    FaChalkboardTeacher,
+    FaDoorOpen,
+    FaBook // ДОДАЙТЕ ЦЕЙ ІМПОРТ
+} from "react-icons/fa";
 import axios from "axios";
 
 const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classrooms }) => {
     const [formData, setFormData] = useState({
+        subject: "",
         group: "",
         dayOfWeek: "",
         timeSlot: "",
@@ -13,11 +23,28 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
     const [error, setError] = useState("");
     const [timeSlots, setTimeSlots] = useState([]);
     const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
+    const [daysOfWeek, setDaysOfWeek] = useState([]);
 
-    // Скидання форми при відкритті
+    // ЗАВАНТАЖИТИ ДНІ ТИЖНЯ ПРИ ВІДКРИТТІ МОДАЛЬНОГО ВІКНА
+    useEffect(() => {
+        const loadDaysOfWeek = async () => {
+            try {
+                const response = await axios.get("http://localhost:3001/api/days/active");
+                setDaysOfWeek(response.data);
+            } catch (err) {
+                console.error("Error loading days of week:", err);
+            }
+        };
+
+        if (show) {
+            loadDaysOfWeek();
+        }
+    }, [show]);
+
     useEffect(() => {
         if (show) {
             setFormData({
+                subject: "",
                 group: "",
                 dayOfWeek: "",
                 timeSlot: "",
@@ -58,12 +85,11 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
         const { name, value } = e.target;
 
         setFormData(prev => {
-            // Якщо змінюється день тижня, скидаємо вибраний часовий слот
             if (name === "dayOfWeek") {
                 return {
                     ...prev,
                     [name]: value,
-                    timeSlot: "" // Скидаємо вибраний час
+                    timeSlot: ""
                 };
             }
             return {
@@ -74,13 +100,28 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
     };
 
     const handleSave = () => {
-        // Валідація
-        if (!formData.group || !formData.dayOfWeek || !formData.timeSlot || !formData.teacher || !formData.classroom) {
+        // ДОДАЙТЕ ПЕРЕВІРКУ ДЛЯ ПРЕДМЕТА
+        if (!formData.subject || !formData.group || !formData.dayOfWeek || !formData.timeSlot || !formData.teacher || !formData.classroom) {
             setError("Усі поля повинні бути заповнені");
             return;
         }
 
-        onSave(formData);
+        const selectedDay = daysOfWeek.find(day => day.id === parseInt(formData.dayOfWeek));
+        if (!selectedDay) {
+            setError("Обраний день тижня не знайдений");
+            return;
+        }
+
+        const scheduleData = {
+            subject: formData.subject,
+            group: formData.group,
+            dayOfWeek: selectedDay._id,
+            timeSlot: formData.timeSlot,
+            teacher: formData.teacher,
+            classroom: formData.classroom
+        };
+
+        onSave(scheduleData);
     };
 
     if (!show) return null;
@@ -107,7 +148,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -146,7 +186,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     </button>
                 </div>
 
-                {/* Повідомлення про помилку */}
                 {error && (
                     <div style={{
                         backgroundColor: '#fee2e2',
@@ -163,9 +202,47 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     </div>
                 )}
 
-                {/* Форма */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Група */}
+                    <div>
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '8px',
+                            fontWeight: '600',
+                            color: '#374151'
+                        }}>
+                            <FaBook style={{
+                                marginRight: '8px',
+                                color: 'rgba(105, 180, 185, 1)',
+                                fontSize: '14px'
+                            }} />
+                            Предмет *
+                        </label>
+                        <input
+                            type="text"
+                            name="subject"
+                            value={formData.subject}
+                            onChange={handleChange}
+                            placeholder="Введіть назву предмета"
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                                transition: 'border-color 0.2s'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderColor = '#e5e7eb';
+                            }}
+                        />
+                    </div>
+
                     <div>
                         <label style={{
                             display: 'flex',
@@ -211,7 +288,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                         </select>
                     </div>
 
-                    {/* День тижня */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -251,7 +327,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                         </select>
                     </div>
 
-                    {/* Час уроку */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -307,7 +382,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                         )}
                     </div>
 
-                    {/* Викладач */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -347,7 +421,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                         </select>
                     </div>
 
-                    {/* Аудиторія */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -390,7 +463,6 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     </div>
                 </div>
 
-                {/* Кнопки дій */}
                 <div style={{
                     display: 'flex',
                     gap: '10px',

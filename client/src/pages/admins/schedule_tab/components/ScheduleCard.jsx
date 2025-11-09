@@ -1,15 +1,14 @@
 import React from "react";
 import { Card, Button } from "react-bootstrap";
-import { FaEdit, FaTrash, FaChalkboardTeacher, FaUsers, FaDoorOpen, FaCalendarAlt } from "react-icons/fa";
-import { getSubjectName, getDayOfWeek, getLessonType, getCardColorClass } from "./scheduleHelpers";
+import { FaTrash, FaChalkboardTeacher, FaUsers, FaDoorOpen, FaCalendarAlt, FaClock, FaBook } from "react-icons/fa";
 
-const ScheduleCard = ({ schedule, onEdit, onDelete }) => {
+const ScheduleCard = ({ schedule, onDelete }) => {
     if (!schedule || typeof schedule !== "object") {
         return null;
     }
 
     return (
-        <Card className={`h-100 ${getCardColorClass(schedule.lessonType)}`}
+        <Card className="h-100"
             style={{
                 border: "1px solid #e5e7eb",
                 borderRadius: "8px",
@@ -29,25 +28,46 @@ const ScheduleCard = ({ schedule, onEdit, onDelete }) => {
             }}>
                 <small style={{ color: "#6b7280", display: "flex", alignItems: "center", gap: "6px" }}>
                     <FaCalendarAlt style={{ fontSize: "12px" }} />
-                    {getDayOfWeek(schedule.dayOfWeek)} • {schedule.startTime} - {schedule.endTime}
+                    {schedule.dayOfWeek?.name || 'День не вказано'}
                 </small>
             </Card.Header>
             <Card.Body style={{ padding: "16px" }}>
-                <h6 style={{
-                    color: "rgba(105, 180, 185, 1)",
-                    marginBottom: "12px",
-                    fontWeight: "600"
-                }}>
-                    {getSubjectName(schedule.teacher)}
-                </h6>
                 <div style={{ marginBottom: "12px" }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginBottom: "8px"
+                    }}>
+                        <FaBook style={{ fontSize: "12px", color: "rgba(105, 180, 185, 1)" }} />
+                        <span style={{
+                            fontWeight: "600",
+                            color: "rgba(105, 180, 185, 1)",
+                            fontSize: "14px"
+                        }}>
+                            {schedule.subject || 'Предмет не вказано'}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                        <FaClock style={{ fontSize: "12px", color: "rgba(105, 180, 185, 1)" }} />
+                        <span style={{ fontWeight: "600", color: "rgba(105, 180, 185, 1)" }}>
+                            {schedule.timeSlot ?
+                                `${schedule.timeSlot.order}. ${schedule.timeSlot.startTime} - ${schedule.timeSlot.endTime}`
+                                : 'Час не вказано'
+                            }
+                        </span>
+                    </div>
+
                     <small style={{ color: "#6b7280", display: "block", marginBottom: "4px" }}>
                         <strong style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <FaChalkboardTeacher style={{ fontSize: "12px" }} />
                             Викладач:
                         </strong>
                         {schedule.teacher?.fullName || "Не вказано"}
+                        {schedule.teacher?.position && ` (${schedule.teacher.position})`}
                     </small>
+
                     <small style={{ color: "#6b7280", display: "block", marginBottom: "4px" }}>
                         <strong style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <FaUsers style={{ fontSize: "12px" }} />
@@ -55,6 +75,7 @@ const ScheduleCard = ({ schedule, onEdit, onDelete }) => {
                         </strong>
                         {schedule.group?.name || "Не вказано"}
                     </small>
+
                     <small style={{ color: "#6b7280", display: "block", marginBottom: "4px" }}>
                         <strong style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <FaDoorOpen style={{ fontSize: "12px" }} />
@@ -63,54 +84,26 @@ const ScheduleCard = ({ schedule, onEdit, onDelete }) => {
                         {schedule.classroom?.name || "Не вказано"}
                     </small>
                 </div>
+
                 <div style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center"
+                    justifyContent: "flex-end"
                 }}>
-                    <span style={{
-                        backgroundColor: "#6b7280",
-                        color: "white",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        fontWeight: "500"
-                    }}>
-                        {getLessonType(schedule.lessonType)}
-                    </span>
-                    <div>
-                        <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => onEdit(schedule)}
-                            style={{
-                                marginRight: "8px",
-                                padding: "4px 8px",
-                                fontSize: "12px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px"
-                            }}
-                        >
-                            <FaEdit style={{ fontSize: "10px" }} />
-                            Редагувати
-                        </Button>
-                        <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => onDelete(schedule._id)}
-                            style={{
-                                padding: "4px 8px",
-                                fontSize: "12px",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px"
-                            }}
-                        >
-                            <FaTrash style={{ fontSize: "10px" }} />
-                            Видалити
-                        </Button>
-                    </div>
+                    <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={() => onDelete(schedule._id)}
+                        style={{
+                            padding: "4px 8px",
+                            fontSize: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
+                        }}
+                    >
+                        <FaTrash style={{ fontSize: "10px" }} />
+                        Видалити
+                    </Button>
                 </div>
             </Card.Body>
         </Card>
