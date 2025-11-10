@@ -4,6 +4,7 @@ import axios from "axios";
 
 import ScheduleHeader from "./components/ScheduleHeader";
 import ScheduleTable from "./components/ScheduleTable";
+import GroupScheduleTable from "./components/group_schedule/GroupScheduleTable";
 import CreateScheduleModal from "./components/CreateScheduleModal";
 
 const ScheduleDashboard = () => {
@@ -11,7 +12,8 @@ const ScheduleDashboard = () => {
     const [groups, setGroups] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [classrooms, setClassrooms] = useState([]);
-    const [timeSlots, setTimeSlots] = useState([]); // Додаємо стан для timeSlots
+    const [timeSlots, setTimeSlots] = useState([]);
+    const [daysOfWeek, setDaysOfWeek] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
@@ -41,7 +43,18 @@ const ScheduleDashboard = () => {
             setTimeSlots(response.data);
         } catch (err) {
             console.error("❌ Помилка завантаження часових слотів:", err);
-            setTimeSlots([]); // Встановлюємо пустий масив у разі помилки
+            setTimeSlots([]);
+        }
+    };
+
+    // Завантажити дні тижня
+    const loadDaysOfWeek = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/days/active");
+            setDaysOfWeek(response.data);
+        } catch (err) {
+            console.error("❌ Помилка завантаження днів тижня:", err);
+            setDaysOfWeek([]);
         }
     };
 
@@ -53,8 +66,8 @@ const ScheduleDashboard = () => {
 
             console.log("🔄 Початок завантаження даних...");
 
-            // Завантажуємо часові слоти окремо
-            await loadTimeSlots();
+            // Завантажуємо часові слоти та дні тижня паралельно
+            await Promise.all([loadTimeSlots(), loadDaysOfWeek()]);
 
             // Решта запитів
             let schedulesRes, groupsRes, teachersRes, classroomsRes;
@@ -166,13 +179,27 @@ const ScheduleDashboard = () => {
                 </Alert>
             )}
 
-            <ScheduleTable
-                schedules={filteredSchedules}
-                groups={groups}
-                timeSlots={timeSlots} // Тепер передаємо timeSlots
-                loading={loading}
-                onDeleteSchedule={handleDeleteSchedule}
-            />
+            {/* Відображаємо різні таблиці залежно від вибору */}
+            {selectedGroup ? (
+                <GroupScheduleTable
+                    schedules={filteredSchedules}
+                    groups={groups}
+                    timeSlots={timeSlots}
+                    daysOfWeek={daysOfWeek}
+                    selectedGroup={selectedGroup}
+                    loading={loading}
+                    onDeleteSchedule={handleDeleteSchedule}
+                />
+            ) : (
+                <ScheduleTable
+                    schedules={schedules}
+                    groups={groups}
+                    timeSlots={timeSlots}
+                    daysOfWeek={daysOfWeek}
+                    loading={loading}
+                    onDeleteSchedule={handleDeleteSchedule}
+                />
+            )}
 
             <CreateScheduleModal
                 show={showModal}

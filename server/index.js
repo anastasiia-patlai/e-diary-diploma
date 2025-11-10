@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ЛЛОГУВАННЯ ВСІХ ЗАПИТІВ
+// ЛОГУВАННЯ ВСІХ ЗАПИТІВ
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
@@ -26,8 +26,11 @@ const scheduleRouter = require('./routes/schedule');
 const timeSlotsRouter = require('./routes/timetab');
 const classroomsRoutes = require('./routes/classrooms');
 const daysOfWeekRoutes = require('./routes/daysOfWeek');
+const availableResourcesRoutes = require('./routes/availableResources');
 
-console.log('Реєстрація роутів...');
+console.log('🔍 Перевірка завантаження маршрутів...');
+
+// РЕЄСТРАЦІЯ МАРШРУТІВ
 app.use('/api', signupRouter);
 app.use('/api/stats', statsRoutes);
 app.use('/api', loginRouter);
@@ -37,43 +40,53 @@ app.use('/api/schedule', scheduleRouter);
 app.use('/api/time-slots', timeSlotsRouter);
 app.use('/api/classrooms', classroomsRoutes);
 app.use('/api/days', daysOfWeekRoutes);
+app.use('/api/available', availableResourcesRoutes);
 
-console.log('Роути зареєстровано!');
+console.log('✅ Всі маршрути зареєстровано!');
+
+// Статичні файли
+app.use(express.static('public'));
 
 // СТАРТ
 app.get('/', (req, res) => {
     res.send('Сервер працює!');
 });
 
-// ТЕСТ
-app.get('/api/test', (req, res) => {
-    res.json({ message: 'API працює!' });
+// ТЕСТОВІ РОУТИ
+app.get('/api/debug', (req, res) => {
+    res.json({
+        message: 'API працює!',
+        timestamp: new Date().toISOString()
+    });
 });
 
-// 404
-app.use((req, res) => {
-    console.log('❌ 404 Not Found:', req.method, req.url);
+// УНІВЕРСАЛЬНИЙ 404 - ПРОСТИЙ ВАРІАНТ
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api/')) {
+        console.log('❌ API маршрут не знайдено:', req.url);
+        return res.status(404).json({
+            error: 'API маршрут не знайдено',
+            url: req.url,
+            method: req.method
+        });
+    }
+
+    // Для не-API запитів
     res.status(404).json({
         error: 'Маршрут не знайдено',
-        requestedUrl: req.url,
+        url: req.url,
         method: req.method
     });
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('\nДоступні роути:');
-    console.log('  POST   /api/signup');
-    console.log('  POST   /api/login');
-    console.log('  GET    /api/groups');
-    console.log('  POST   /api/groups');
-    console.log('  GET    /api/users/teachers');
-    console.log('  GET    /api/users/:id');
-    console.log('  PUT    /api/users/:id');
-    console.log('  DELETE /api/users/:id');
-    console.log('  GET    /api/test (тестовий роут)');
-    console.log('\nСервер готовий до роботи!\n');
+    console.log(`\n🚀 Server is running on http://localhost:${PORT}`);
+    console.log('\n📋 Доступні API маршрути:');
+    console.log('  GET    /api/debug');
+    console.log('  GET    /api/available/test');
+    console.log('  GET    /api/available/classrooms');
+    console.log('  GET    /api/available/teachers');
+    console.log('  GET    /api/available/check-availability');
+    console.log('\n✅ Сервер готовий до роботи!\n');
 });
-
-module.exports = app;
