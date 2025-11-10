@@ -8,12 +8,12 @@ const GroupScheduleTable = ({ schedules, groups, timeSlots, daysOfWeek, selected
     const [selectedSchedule, setSelectedSchedule] = useState(null);
     const [saveLoading, setSaveLoading] = useState(false);
 
-    // Отримати обрану групу
+    // ОТРИМАТИ ВИБРАНУ ГРУПУ
     const getSelectedGroup = () => {
         return groups.find(group => group._id === selectedGroup);
     };
 
-    // Отримати всі унікальні часові слоти
+    // ОТРИМАТИ ВСІ УНІКАЛЬНІ ЧАСОВІ СЛОТИ
     const getAllUniqueTimeSlots = () => {
         const safeTimeSlots = Array.isArray(timeSlots) ? timeSlots : [];
 
@@ -31,16 +31,14 @@ const GroupScheduleTable = ({ schedules, groups, timeSlots, daysOfWeek, selected
         return uniqueSlots.sort((a, b) => a.order - b.order);
     };
 
-    // Отримати часові слоти для конкретного дня тижня
+    // ОТРИМАТИ ЧАСОВІ СЛОТИ ДЛЯ КОНКРЕТНОГО ДНЯ ТИЖНЯ
     const getTimeSlotsForDay = (dayId) => {
-        // Спочатку отримуємо всі часові слоти, пов'язані з цим днем з бази даних
         const dayTimeSlotsFromDB = Array.isArray(timeSlots)
             ? timeSlots.filter(slot =>
                 slot.dayOfWeek?._id === dayId || slot.dayOfWeek?.id === dayId
             )
             : [];
 
-        // Якщо є часові слоти з БД для цього дня, використовуємо їх
         if (dayTimeSlotsFromDB.length > 0) {
             const uniqueSlots = [];
             const seen = new Set();
@@ -56,11 +54,10 @@ const GroupScheduleTable = ({ schedules, groups, timeSlots, daysOfWeek, selected
             return uniqueSlots.sort((a, b) => a.order - b.order);
         }
 
-        // Якщо немає часових слотів з БД для цього дня, використовуємо всі унікальні часові слоти
         return getAllUniqueTimeSlots();
     };
 
-    // Отримати заняття для конкретного дня та часового слота
+    // ОТРИМАТИ ЗАНЯТТЯ ДЛЯ КОНКРЕТНОГО ДНЯ ТА ЧАСОВОГО СЛОТА
     const getScheduleForSlot = (dayId, timeSlotId) => {
         return schedules.find(schedule => {
             const scheduleDayId = schedule.dayOfWeek?._id || schedule.dayOfWeek?.id;
@@ -69,13 +66,11 @@ const GroupScheduleTable = ({ schedules, groups, timeSlots, daysOfWeek, selected
         });
     };
 
-    // Функція для відкриття модального вікна редагування
     const handleEditSchedule = (schedule) => {
         setSelectedSchedule(schedule);
         setShowEditModal(true);
     };
 
-    // Функція для збереження змін
     const handleSaveSchedule = async (updatedSchedule) => {
         setSaveLoading(true);
         try {

@@ -28,7 +28,7 @@ const EditScheduleModal = ({
     const [availability, setAvailability] = useState({ available: true, conflicts: {} });
     const [apiAvailable, setApiAvailable] = useState(true);
 
-    // Фільтрація часових слотів для обраного дня
+    // ФІЛЬТРАЦІЯ ЧАСОВИХ СЛОТІВ ЗА ОБРАНИМ ДНЕМ ТИЖНЯ
     useEffect(() => {
         if (schedule && timeSlots.length > 0) {
             const dayId = schedule.dayOfWeek?._id || schedule.dayOfWeek?.id;
@@ -42,7 +42,6 @@ const EditScheduleModal = ({
         }
     }, [timeSlots, schedule]);
 
-    // Ініціалізація форми
     useEffect(() => {
         if (schedule && show) {
             setFormData({
@@ -51,20 +50,17 @@ const EditScheduleModal = ({
                 teacher: schedule.teacher?._id || ''
             });
 
-            // Скинути стан API при відкритті
             setApiAvailable(true);
             setError('');
         }
     }, [schedule, show]);
 
-    // Завантаження доступних ресурсів при зміні часу
     useEffect(() => {
         if (formData.timeSlot && schedule) {
             loadAvailableResources();
         }
     }, [formData.timeSlot]);
 
-    // Перевірка доступності при зміні аудиторії або викладача
     useEffect(() => {
         if (formData.timeSlot && (formData.classroom || formData.teacher)) {
             checkAvailability();
@@ -87,13 +83,13 @@ const EditScheduleModal = ({
                 subject: schedule.subject
             });
 
-            // Завантажити вільні аудиторії
+            // ЗАВАНТАЖИТИ ВІЛЬНІ АУДИТОРІЇ
             try {
                 const url = `/api/available/classrooms?dayOfWeekId=${dayOfWeekId}&timeSlotId=${formData.timeSlot}&excludeScheduleId=${schedule._id}`;
-                console.log('📡 Запит до API аудиторій:', url);
+                console.log('Запит до API аудиторій:', url);
 
                 const classroomsResponse = await fetch(url);
-                console.log('📨 Відповідь від API аудиторій:', {
+                console.log('Відповідь від API аудиторій:', {
                     status: classroomsResponse.status,
                     statusText: classroomsResponse.statusText,
                     ok: classroomsResponse.ok
@@ -101,45 +97,44 @@ const EditScheduleModal = ({
 
                 if (classroomsResponse.ok) {
                     const contentType = classroomsResponse.headers.get('content-type');
-                    console.log('📋 Content-Type:', contentType);
+                    console.log('Content-Type:', contentType);
 
                     if (contentType && contentType.includes('application/json')) {
                         const responseText = await classroomsResponse.text();
-                        console.log('📝 Відповідь текст:', responseText);
+                        console.log('Відповідь текст:', responseText);
 
                         try {
                             const classroomsData = JSON.parse(responseText);
-                            console.log('✅ Аудиторії успішно отримано:', classroomsData.length);
+                            console.log('Аудиторії успішно отримано:', classroomsData.length);
                             setAvailableClassrooms(classroomsData);
                         } catch (parseError) {
-                            console.error('❌ Помилка парсингу JSON:', parseError);
+                            console.error('Помилка парсингу JSON:', parseError);
                             throw new Error('Не вдалося розпізнати відповідь сервера');
                         }
                     } else {
                         const responseText = await classroomsResponse.text();
-                        console.error('❌ Сервер повернув не JSON:', responseText.substring(0, 200));
+                        console.error('Сервер повернув не JSON:', responseText.substring(0, 200));
                         throw new Error('Сервер повернув не JSON відповідь: ' + responseText.substring(0, 100));
                     }
                 } else {
                     const errorText = await classroomsResponse.text();
-                    console.error('❌ HTTP помилка:', classroomsResponse.status, errorText);
+                    console.error('HTTP помилка:', classroomsResponse.status, errorText);
                     throw new Error(`HTTP error! status: ${classroomsResponse.status}`);
                 }
             } catch (classroomError) {
-                console.warn('⚠️ API для аудиторій недоступне, використовую fallback:', classroomError.message);
+                console.warn('API для аудиторій недоступне, використовую fallback:', classroomError.message);
                 setApiAvailable(false);
-                // Fallback: використовуємо всі активні аудиторії
                 const activeClassrooms = classrooms.filter(classroom => classroom.isActive !== false);
                 setAvailableClassrooms(activeClassrooms);
             }
 
-            // Завантажити вільних викладачів
+            // ЗАВАНТАЖИТИ ВІЛЬНИХ ВИКЛАДАЧІВ
             try {
                 const url = `/api/available/teachers?dayOfWeekId=${dayOfWeekId}&timeSlotId=${formData.timeSlot}&subject=${encodeURIComponent(schedule.subject)}&excludeScheduleId=${schedule._id}`;
-                console.log('📡 Запит до API викладачів:', url);
+                console.log('Запит до API викладачів:', url);
 
                 const teachersResponse = await fetch(url);
-                console.log('📨 Відповідь від API викладачів:', {
+                console.log('Відповідь від API викладачів:', {
                     status: teachersResponse.status,
                     statusText: teachersResponse.statusText,
                     ok: teachersResponse.ok
@@ -147,34 +142,33 @@ const EditScheduleModal = ({
 
                 if (teachersResponse.ok) {
                     const contentType = teachersResponse.headers.get('content-type');
-                    console.log('📋 Content-Type:', contentType);
+                    console.log('Content-Type:', contentType);
 
                     if (contentType && contentType.includes('application/json')) {
                         const responseText = await teachersResponse.text();
-                        console.log('📝 Відповідь текст:', responseText);
+                        console.log('Відповідь текст:', responseText);
 
                         try {
                             const teachersData = JSON.parse(responseText);
-                            console.log('✅ Викладачі успішно отримано:', teachersData.length);
+                            console.log('Викладачі успішно отримано:', teachersData.length);
                             setAvailableTeachers(teachersData);
                         } catch (parseError) {
-                            console.error('❌ Помилка парсингу JSON:', parseError);
+                            console.error('Помилка парсингу JSON:', parseError);
                             throw new Error('Не вдалося розпізнати відповідь сервера');
                         }
                     } else {
                         const responseText = await teachersResponse.text();
-                        console.error('❌ Сервер повернув не JSON:', responseText.substring(0, 200));
+                        console.error('Сервер повернув не JSON:', responseText.substring(0, 200));
                         throw new Error('Сервер повернув не JSON відповідь: ' + responseText.substring(0, 100));
                     }
                 } else {
                     const errorText = await teachersResponse.text();
-                    console.error('❌ HTTP помилка:', teachersResponse.status, errorText);
+                    console.error('HTTP помилка:', teachersResponse.status, errorText);
                     throw new Error(`HTTP error! status: ${teachersResponse.status}`);
                 }
             } catch (teacherError) {
-                console.warn('⚠️ API для викладачів недоступне, використовую fallback:', teacherError.message);
+                console.warn('API для викладачів недоступне, використовую fallback:', teacherError.message);
                 setApiAvailable(false);
-                // Fallback: фільтрація викладачів за предметом
                 const teachersForSubject = teachers.filter(teacher =>
                     teacher.positions?.includes(schedule.subject) ||
                     teacher.position?.includes(schedule.subject) ||
@@ -185,11 +179,10 @@ const EditScheduleModal = ({
             }
 
         } catch (err) {
-            console.error('💥 Загальна помилка завантаження доступних ресурсів:', err);
+            console.error('Загальна помилка завантаження доступних ресурсів:', err);
             setError('Не вдалося завантажити доступні ресурси. Використовуються всі доступні варіанти.');
             setApiAvailable(false);
 
-            // Fallback до всіх доступних ресурсів
             setAvailableClassrooms(classrooms.filter(classroom => classroom.isActive !== false));
             const teachersForSubject = teachers.filter(teacher =>
                 teacher.positions?.includes(schedule.subject) ||
@@ -223,7 +216,6 @@ const EditScheduleModal = ({
                     const availabilityData = await response.json();
                     setAvailability(availabilityData);
                 } else {
-                    // Якщо API недоступне, вважаємо що все доступно
                     setAvailability({ available: true, conflicts: {} });
                 }
             } else {

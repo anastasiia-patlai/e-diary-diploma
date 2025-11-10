@@ -43,7 +43,6 @@ const EditScheduleBody = ({
                         </Alert>
                     )}
 
-                    {/* Сповіщення про конфлікти */}
                     {hasConflicts && (
                         <Alert variant="danger" className="mb-3">
                             <FaExclamationTriangle className="me-2" />
@@ -59,7 +58,6 @@ const EditScheduleBody = ({
                         </Alert>
                     )}
 
-                    {/* Форма редагування */}
                     <Form>
                         <Row>
                             <Col md={6}>
