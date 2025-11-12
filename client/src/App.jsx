@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate as Redirect } from "re
 import Signup from "./pages/admins/Signup";
 import Login from "./Login";
 import Navigate from "./pages/Navigate";
+import WelcomePage from "./WelcomePage";
 import StudentPage from "./pages/students/StudentPage";
 import TeacherPage from "./pages/teachers/TeacherPage";
 import ParentPage from "./pages/parents/ParentPage";
@@ -29,9 +30,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={
-            user ? <Redirect to={`/${user.role}`} /> : <Redirect to="/login" />
-          }
+          element={<WelcomePage />}
         />
         <Route
           path="/login"

@@ -7,16 +7,37 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ЛОГУВАННЯ ВСІХ ЗАПИТІВ
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
 });
 
-mongoose.connect('mongodb://localhost:27017/db-e-diary')
-    .then(() => console.log('MongoDB підключено'))
+// ПІДКЛЮЧЕННЯ ДО ГОЛОВНОЇ БАЗИ ДАНИХ
+mongoose.connect('mongodb://localhost:27017/school_system_main')
+    .then(() => console.log('MongoDB підключено до головної бази даних'))
     .catch(err => console.error('Помилка підключення MongoDB:', err));
 
+const { mainConnection } = require('./config/databaseManager');
+
+app.use(async (req, res, next) => {
+    try {
+        if (req.path === '/api/school/check-school' || req.path === '/api/school/register') {
+            return next();
+        }
+
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            console.log('Authenticated request');
+        }
+
+        next();
+    } catch (error) {
+        console.error('Middleware error:', error);
+        next();
+    }
+});
+
+const schoolRegistrationRouter = require('./routes/schoolRegistration');
 const signupRouter = require('./routes/signup');
 const statsRoutes = require('./routes/stats');
 const loginRouter = require('./routes/login');
@@ -28,9 +49,9 @@ const classroomsRoutes = require('./routes/classrooms');
 const daysOfWeekRoutes = require('./routes/daysOfWeek');
 const availableResourcesRoutes = require('./routes/availableResources');
 
-console.log('🔍 Перевірка завантаження маршрутів...');
+console.log('Перевірка завантаження маршрутів...');
 
-// РЕЄСТРАЦІЯ МАРШРУТІВ
+app.use('/api/school', schoolRegistrationRouter);
 app.use('/api', signupRouter);
 app.use('/api/stats', statsRoutes);
 app.use('/api', loginRouter);
@@ -42,36 +63,51 @@ app.use('/api/classrooms', classroomsRoutes);
 app.use('/api/days', daysOfWeekRoutes);
 app.use('/api/available', availableResourcesRoutes);
 
-console.log('✅ Всі маршрути зареєстровано!');
+console.log('Всі маршрути зареєстровано!');
 
-// Статичні файли
 app.use(express.static('public'));
 
-// СТАРТ
 app.get('/', (req, res) => {
-    res.send('Сервер працює!');
-});
-
-// ТЕСТОВІ РОУТИ
-app.get('/api/debug', (req, res) => {
     res.json({
-        message: 'API працює!',
+        message: 'Сервер системи електронного щоденника працює!',
+        version: '1.0.0',
         timestamp: new Date().toISOString()
     });
 });
 
-// УНІВЕРСАЛЬНИЙ 404 - ПРОСТИЙ ВАРІАНТ
+app.get('/api/debug', (req, res) => {
+    res.json({
+        message: 'API працює!',
+        database: 'school_system_main',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/api/system/info', (req, res) => {
+    res.json({
+        system: 'School Management System',
+        multiTenant: true,
+        mainDatabase: 'school_system_main',
+        features: [
+            'Multi-database architecture',
+            'School registration',
+            'User management',
+            'Schedule management',
+            'Classroom management'
+        ]
+    });
+});
+
 app.use((req, res, next) => {
     if (req.url.startsWith('/api/')) {
-        console.log('❌ API маршрут не знайдено:', req.url);
+        console.log('API маршрут не знайдено:', req.url);
         return res.status(404).json({
             error: 'API маршрут не знайдено',
             url: req.url,
-            method: req.method
+            method: req.method,
+            timestamp: new Date().toISOString()
         });
     }
-
-    // Для не-API запитів
     res.status(404).json({
         error: 'Маршрут не знайдено',
         url: req.url,
@@ -79,14 +115,31 @@ app.use((req, res, next) => {
     });
 });
 
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({
+        error: 'Внутрішня помилка сервера',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`\n🚀 Server is running on http://localhost:${PORT}`);
-    console.log('\n📋 Доступні API маршрути:');
+    console.log(`\nServer is running on http://localhost:${PORT}`);
+    console.log('\nДоступні API маршрути:');
     console.log('  GET    /api/debug');
+    console.log('  GET    /api/system/info');
+    console.log('  GET    /api/school/check-school');
+    console.log('  POST   /api/school/register');
+    console.log('  POST   /api/login');
     console.log('  GET    /api/available/test');
     console.log('  GET    /api/available/classrooms');
     console.log('  GET    /api/available/teachers');
     console.log('  GET    /api/available/check-availability');
-    console.log('\n✅ Сервер готовий до роботи!\n');
+    console.log('\nОсобливості системи:');
+    console.log('  Мульти-тенантна архітектура');
+    console.log('  Окремі бази даних для кожної школи');
+    console.log('  Автоматична ініціалізація моделей');
+    console.log('  Динамічне підключення до БД');
+    console.log('\nСервер готовий до роботи!\n');
 });

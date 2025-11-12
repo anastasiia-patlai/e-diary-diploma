@@ -146,4 +146,32 @@ router.patch('/:id/toggle', async (req, res) => {
     }
 });
 
+// ОНОВИТИ СТАТУС ДОСТУПНОСТІ АУДИТОРІЇ
+router.patch('/:id/availability', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isAvailable } = req.body;
+
+        const updatedClassroom = await Classroom.findByIdAndUpdate(
+            id,
+            { isAvailable: isAvailable },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedClassroom) {
+            return res.status(404).json({
+                message: 'Аудиторія не знайдена'
+            });
+        }
+
+        res.json(updatedClassroom);
+    } catch (error) {
+        console.error('Error updating classroom availability:', error);
+        res.status(500).json({
+            message: 'Помилка при оновленні статусу доступності аудиторії',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
