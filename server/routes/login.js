@@ -34,6 +34,20 @@ router.post('/login', async (req, res) => {
 
         const hasData = await checkSchoolHasData(school.databaseName);
 
+        // Формуємо об'єкт для збереження в localStorage
+        const userInfoForStorage = {
+            userId: user._id.toString(),
+            databaseName: school.databaseName,
+            fullName: user.fullName,
+            role: user.role,
+            email: user.email,
+            phone: user.phone,
+            position: user.position,
+            positions: user.positions || []
+        };
+
+        console.log('💾 Дані для збереження в localStorage:', userInfoForStorage);
+
         res.json({
             message: 'Успішний вхід',
             user: {
@@ -49,7 +63,9 @@ router.post('/login', async (req, res) => {
                 databaseName: school.databaseName,
                 schoolName: getSchoolFullName(school),
                 hasData: hasData
-            }
+            },
+            // Додаємо дані для localStorage у відповідь
+            localStorageData: userInfoForStorage
         });
 
     } catch (err) {

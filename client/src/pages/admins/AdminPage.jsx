@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     FaHome,
     FaUserCog,
@@ -7,7 +7,8 @@ import {
     FaUserTie,
     FaCalendarAlt,
     FaClock,
-    FaDoorOpen
+    FaDoorOpen,
+    FaUserCircle
 } from "react-icons/fa";
 import AdminUserSystem from "./user_tab/AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
@@ -15,12 +16,72 @@ import AdminMainPage from "./main_tab/AdminMainPage";
 import ScheduleDashboard from "./schedule_tab/ScheduleDashboard";
 import TimeSlot from "./time_tab/TimeTab";
 import ClassroomsTab from "./classroom_tab/ClassroomsTab";
+import AdminInfo from "./AdminInfo";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
+    const [userData, setUserData] = useState(null);
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    const fetchUserData = async () => {
+        try {
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            const { databaseName, userId } = userInfo;
+
+            console.log('Дані з localStorage:', userInfo);
+
+            if (databaseName && userId) {
+                console.log('Запит до API...');
+                const response = await fetch(`/api/user/me?databaseName=${encodeURIComponent(databaseName)}&userId=${encodeURIComponent(userId)}`);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Отримані дані з API:', data);
+
+                    if (data.success) {
+                        setUserData(data.user);
+                        return;
+                    }
+                }
+            }
+
+            console.log('Використання даних з localStorage');
+            setUserData({
+                fullName: userInfo.fullName || userFullName,
+                role: userInfo.role || 'admin',
+                position: userInfo.position || 'Директор',
+                positions: userInfo.positions || ['Директор'],
+                email: userInfo.email || 'admin@school.edu.ua',
+                phone: userInfo.phone || '+380990000001',
+                birthDate: null,
+                children: [],
+                createdAt: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('Помилка отримання даних:', error);
+
+            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+            setUserData({
+                fullName: userInfo.fullName || userFullName,
+                role: userInfo.role || 'admin',
+                position: userInfo.position || 'Директор',
+                positions: userInfo.positions || ['Директор'],
+                email: userInfo.email || 'admin@school.edu.ua',
+                phone: userInfo.phone || '+380990000001',
+                birthDate: null,
+                children: [],
+                createdAt: new Date().toISOString()
+            });
+        }
+    };
 
     const adminSections = [
         { name: "Головна", icon: <FaHome /> },
+        { name: "Мій профіль", icon: <FaUserCircle /> },
         { name: "Користувачі", icon: <FaUserCog /> },
         { name: "Класні керівники", icon: <FaUserTie /> },
         { name: "Розклад занять", icon: <FaCalendarAlt /> },
@@ -34,6 +95,9 @@ const AdminPage = ({ onLogout, userFullName }) => {
         switch (activeSection) {
             case "Головна":
                 return <AdminMainPage />;
+
+            case "Мій профіль":
+                return userData ? <AdminInfo userData={userData} /> : <div>Завантаження...</div>;
 
             case "Користувачі":
                 return <AdminUserSystem />;

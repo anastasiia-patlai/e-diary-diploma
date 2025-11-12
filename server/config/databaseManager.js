@@ -144,32 +144,6 @@ function getSchoolScheduleModel(databaseName) {
     return connection.model('Schedule');
 }
 
-// ФУНКЦІЯ ДЛЯ ПЕРЕВІРКИ НАЯВНОСТІ ДАНИХ У ШКОЛІ
-async function checkSchoolHasData(databaseName) {
-    try {
-        const connection = getSchoolDBConnection(databaseName);
-
-        const UserModel = connection.model('User');
-        const GroupModel = connection.model('Group');
-        const ClassroomModel = connection.model('Classroom');
-
-        const usersCount = await UserModel.countDocuments();
-        const hasOtherUsers = usersCount > 1;
-
-        const groupsCount = await GroupModel.countDocuments();
-        const hasGroups = groupsCount > 0;
-
-        const classroomsCount = await ClassroomModel.countDocuments();
-        const hasClassrooms = classroomsCount > 0;
-
-        return hasOtherUsers || hasGroups || hasClassrooms;
-
-    } catch (error) {
-        console.error('Error checking school data:', error);
-        return false;
-    }
-}
-
 module.exports = {
     mainConnection,
     createDatabase,
@@ -180,6 +154,5 @@ module.exports = {
     getSchoolDayOfWeekModel,
     getSchoolTimeTabModel,
     getSchoolScheduleModel,
-    checkSchoolHasData,
     schoolConnections
 };

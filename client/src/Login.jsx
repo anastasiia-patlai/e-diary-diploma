@@ -58,8 +58,25 @@ function Login() {
             }
 
             if (data.user && data.user.role) {
+                // ЗБЕРІГАЄМО ДАНІ В localStorage
                 localStorage.setItem("user", JSON.stringify(data.user));
 
+                // ДОДАЄМО ЗБЕРЕЖЕННЯ ДАНИХ ДЛЯ ПРОФІЛЮ
+                const userInfo = {
+                    userId: data.user.id,
+                    databaseName: data.user.databaseName,
+                    fullName: data.user.fullName,
+                    role: data.user.role,
+                    email: data.user.email,
+                    phone: data.user.phone,
+                    position: data.user.position || 'Директор',
+                    positions: data.user.positions || ['Директор']
+                };
+
+                localStorage.setItem("userInfo", JSON.stringify(userInfo));
+                console.log("✅ Дані для профілю збережено:", userInfo);
+
+                // Перенаправлення на відповідну сторінку
                 window.location.href = `/${data.user.role}`;
             } else {
                 alert("Некоректна відповідь від сервера");
