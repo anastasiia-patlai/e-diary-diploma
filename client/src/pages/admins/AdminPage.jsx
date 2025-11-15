@@ -16,7 +16,7 @@ import AdminMainPage from "./main_tab/AdminMainPage";
 import ScheduleDashboard from "./schedule_tab/ScheduleDashboard";
 import TimeSlot from "./time_tab/TimeTab";
 import ClassroomsTab from "./classroom_tab/ClassroomsTab";
-import AdminInfo from "./AdminInfo";
+import AdminInfo from "./adminInfo/AdminInfo";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
