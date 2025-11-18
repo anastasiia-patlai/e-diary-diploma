@@ -6,6 +6,7 @@ import ParentSearch from "./ParentSearch";
 import ParentSort from "./ParentSort";
 import ParentPagination from "./ParentPagination";
 import ParentCard from "./ParentCard";
+import CombinedParentCard from "./CombinedParentCard"; // Новий компонент
 import AddChildPopup from "./AddChildPopup";
 import AdminParentEdit from "./AdminParentEdit";
 import AdminParentDelete from "./AdminParentDelete";
@@ -43,7 +44,7 @@ const AdminShowParent = () => {
         try {
             const response = await axios.get(`${API_URL}/parents`);
             setParents(response.data);
-            setFilteredParents(response.data);
+            applyFilters(response.data, parentSearchQuery);
             setLoading(false);
         } catch (err) {
             setError("Помилка завантаження батьків");
@@ -66,32 +67,100 @@ const AdminShowParent = () => {
         fetchStudents();
     }, []);
 
+    // ФУНКЦІЯ ДЛЯ ГРУПУВАННЯ БАТЬКІВ ЗІ СПІЛЬНИМИ ДІТЬМИ
+    const groupParentsBySharedChildren = (parentsList) => {
+        const parentGroups = [];
+        const processedParents = new Set();
+
+        console.log('Всього батьків для обробки:', parentsList.length);
+
+        parentsList.forEach(parent => {
+            if (processedParents.has(parent._id)) {
+                console.log(`Батька ${parent.fullName} вже оброблено, пропускаємо`);
+                return;
+            }
+
+            if (!parent.children || parent.children.length === 0) {
+                parentGroups.push([parent]);
+                processedParents.add(parent._id);
+                console.log(`Батько без дітей: ${parent.fullName} - додано окремо`);
+                return;
+            }
+
+            const sharedParents = [parent];
+            processedParents.add(parent._id);
+
+            console.log(`Обробляємо батька: ${parent.fullName}`);
+            console.log(`Кількість дітей: ${parent.children ? parent.children.length : 0}`);
+
+            const currentParentChildrenIds = new Set(
+                parent.children.map(child => child._id)
+            );
+
+            parentsList.forEach(otherParent => {
+                if (otherParent._id === parent._id || processedParents.has(otherParent._id)) {
+                    return;
+                }
+
+                if (!otherParent.children || otherParent.children.length === 0) {
+                    return;
+                }
+
+                const hasSharedChild = otherParent.children.some(child =>
+                    currentParentChildrenIds.has(child._id)
+                );
+
+                if (hasSharedChild) {
+                    console.log(`Знайдено спільного батька: ${otherParent.fullName}`);
+                    sharedParents.push(otherParent);
+                    processedParents.add(otherParent._id);
+                }
+            });
+
+            console.log(`Створено групу з ${sharedParents.length} батьків:`,
+                sharedParents.map(p => p.fullName));
+            parentGroups.push(sharedParents);
+        });
+
+        console.log(`Створено ${parentGroups.length} груп:`);
+        parentGroups.forEach((group, index) => {
+            console.log(`Група ${index + 1}: ${group.length} батьків -`,
+                group.map(p => p.fullName));
+        });
+
+        return parentGroups;
+    };
+
+    // ФУНКЦІЯ ДЛЯ ФІЛЬТРАЦІЇ ТА ПОШУКУ
+    const applyFilters = (parentsList, searchQuery = '') => {
+        let filtered = parentsList;
+
+        if (searchQuery.trim() !== '') {
+            const searchLower = searchQuery.toLowerCase();
+            filtered = filtered.filter(parent => {
+                return (
+                    parent.fullName?.toLowerCase().includes(searchLower) ||
+                    parent.email?.toLowerCase().includes(searchLower) ||
+                    parent.phone?.toLowerCase().includes(searchLower) ||
+                    (parent.children && parent.children.some(child =>
+                        child.fullName?.toLowerCase().includes(searchLower)
+                    ))
+                );
+            });
+        }
+
+        console.log('Filtered parents:', filtered.length);
+        setFilteredParents(filtered);
+    };
+
     // ДЛЯ ПОШУКУ БАТЬКІВ
     const handleParentSearch = (query) => {
         setParentSearchQuery(query);
         setCurrentPage(1);
-
-        if (query.trim() === '') {
-            setFilteredParents(parents);
-            return;
-        }
-
-        const searchLower = query.toLowerCase();
-        const filtered = parents.filter(parent => {
-            return (
-                parent.fullName?.toLowerCase().includes(searchLower) ||
-                parent.email?.toLowerCase().includes(searchLower) ||
-                parent.phone?.toLowerCase().includes(searchLower) ||
-                (parent.children && parent.children.some(child =>
-                    child.fullName?.toLowerCase().includes(searchLower)
-                ))
-            );
-        });
-
-        setFilteredParents(filtered);
+        applyFilters(parents, query);
     };
 
-    // ДЯЛ СОРТУВАННЯ БАТЬКІВ
+    // ДЛЯ СОРТУВАННЯ БАТЬКІВ
     const sortParents = (parentsArray, order) => {
         return [...parentsArray].sort((a, b) => {
             const nameA = a.fullName?.toLowerCase() || '';
@@ -106,30 +175,34 @@ const AdminShowParent = () => {
     };
 
     const sortedParents = sortParents(filteredParents, sortOrder);
+    const parentGroups = groupParentsBySharedChildren(sortedParents);
 
     // РОЗРАХУНКИ ДЛЯ ПАГІНАЦІЇ
     const totalItems = sortedParents.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentParents = sortedParents.slice(startIndex, endIndex);
 
-    // ДДЯ ПАГІНАЦІЇ
+    // Пагінація для груп батьків
+    const currentParentGroups = parentGroups.slice(startIndex, endIndex);
+
+    // ДЛЯ ПАГІНАЦІЇ
     const goToPage = (page) => setCurrentPage(Math.max(1, Math.min(page, totalPages)));
     const goToFirstPage = () => setCurrentPage(1);
     const goToLastPage = () => setCurrentPage(totalPages);
     const goToPreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
     const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
-    // УПРАВЛННЯ БАТЬКАМИ
+    // УПРАВЛІННЯ БАТЬКАМИ
     const handleEdit = (parent) => {
         setSelectedParent(parent);
         setShowEditPopup(true);
     };
 
     const handleUpdateParent = (updatedParent) => {
-        setParents(prev => prev.map(p => p._id === updatedParent._id ? updatedParent : p));
-        setFilteredParents(prev => prev.map(p => p._id === updatedParent._id ? updatedParent : p));
+        const updatedParents = parents.map(p => p._id === updatedParent._id ? updatedParent : p);
+        setParents(updatedParents);
+        applyFilters(updatedParents, parentSearchQuery);
     };
 
     const handleDelete = (parent) => {
@@ -138,9 +211,10 @@ const AdminShowParent = () => {
     };
 
     const handleDeleteParent = (parentId) => {
-        setParents(prev => prev.filter(p => p._id !== parentId));
-        setFilteredParents(prev => prev.filter(p => p._id !== parentId));
-        if (currentParents.length === 1 && currentPage > 1) {
+        const updatedParents = parents.filter(p => p._id !== parentId);
+        setParents(updatedParents);
+        applyFilters(updatedParents, parentSearchQuery);
+        if (currentParentGroups.length === 1 && currentPage > 1) {
             setCurrentPage(prev => prev - 1);
         }
     };
@@ -188,11 +262,17 @@ const AdminShowParent = () => {
             await axios.put(`${API_URL}/${selectedParent._id}/add-child`, {
                 childId: studentId
             });
+
+            await axios.put(`${API_URL}/${studentId}/add-parent`, {
+                parentId: selectedParent._id
+            });
+
             setShowAddChildPopup(false);
             setSelectedParent(null);
             setSearchQuery("");
             setSearchResults([]);
-            fetchParents();
+
+            await fetchParents();
         } catch (err) {
             console.error("Помилка додавання дитини:", err);
             alert(err.response?.data?.error || "Помилка додавання дитини");
@@ -204,10 +284,51 @@ const AdminShowParent = () => {
             await axios.put(`${API_URL}/${parentId}/remove-child`, {
                 childId: childId
             });
-            fetchParents();
+
+            await axios.put(`${API_URL}/${childId}/remove-parent`, {
+                parentId: parentId
+            });
+
+            await fetchParents();
         } catch (err) {
             console.error("Помилка видалення дитини:", err);
             alert("Помилка видалення дитини");
+        }
+    };
+
+    const handleAddParentToChild = async (childId, parentId) => {
+        try {
+            console.log('Додаємо батька:', parentId, 'до дитини:', childId);
+
+            const response = await axios.put(`${API_URL}/${childId}/add-parent`, {
+                parentId: parentId
+            });
+
+            console.log('Відповідь від сервера:', response.data);
+
+            if (response.data.parent) {
+                console.log('Оновлений батько:', response.data.parent);
+            }
+
+            await fetchParents();
+
+        } catch (err) {
+            console.error("Помилка додавання батька:", err);
+            console.error("Деталі помилки:", err.response?.data);
+            alert(err.response?.data?.error || "Помилка додавання батька");
+        }
+    };
+
+    const handleRemoveParentFromChild = async (childId, parentId) => {
+        try {
+            await axios.put(`${API_URL}/${childId}/remove-parent`, {
+                parentId: parentId
+            });
+
+            await fetchParents();
+        } catch (err) {
+            console.error("Помилка видалення батька з дитини:", err);
+            alert("Помилка видалення батька з дитини");
         }
     };
 
@@ -227,8 +348,10 @@ const AdminShowParent = () => {
                 alignItems: 'center',
                 marginBottom: '20px'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <h3 style={{ margin: 0 }}>Батьки</h3>
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px'
+                }}>
+                    <h3 style={{ margin: 0 }}>Батьки ({filteredParents.length})</h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
             </div>
@@ -239,7 +362,7 @@ const AdminShowParent = () => {
                 filteredParentsCount={filteredParents.length}
             />
 
-            {currentParents.length === 0 ? (
+            {currentParentGroups.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                     <p>
                         {parentSearchQuery
@@ -250,16 +373,37 @@ const AdminShowParent = () => {
                 </div>
             ) : (
                 <>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
-                        {currentParents.map(parent => (
-                            <ParentCard
-                                key={parent._id}
-                                parent={parent}
-                                onAddChild={handleAddChild}
-                                onEdit={handleEdit}
-                                onDelete={handleDelete}
-                                onRemoveChild={handleRemoveChild}
-                            />
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px',
+                        marginBottom: '20px'
+                    }}>
+                        {currentParentGroups.map((parentGroup, index) => (
+                            parentGroup.length === 1 ? (
+                                <ParentCard
+                                    key={parentGroup[0]._id}
+                                    parent={parentGroup[0]}
+                                    onAddChild={handleAddChild}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                    onRemoveChild={handleRemoveChild}
+                                    onAddParentToChild={handleAddParentToChild}
+                                    onRemoveParentFromChild={handleRemoveParentFromChild}
+                                />
+                            ) : (
+                                <CombinedParentCard
+                                    key={`group-${index}`}
+                                    parents={parentGroup}
+                                    onAddChild={handleAddChild}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                    onRemoveChild={handleRemoveChild}
+                                    onAddParentToChild={handleAddParentToChild}
+                                    onRemoveParentFromChild={handleRemoveParentFromChild}
+
+                                />
+                            )
                         ))}
                     </div>
 

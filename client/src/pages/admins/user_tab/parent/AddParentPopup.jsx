@@ -1,16 +1,66 @@
-import React from 'react';
-import { FaTimes, FaSearch, FaChild } from "react-icons/fa";
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaSearch, FaUserFriends } from "react-icons/fa";
+import axios from "axios";
 
-const AddChildPopup = ({
-    selectedParent,
-    searchQuery,
-    searchResults,
-    isSearching,
+const AddParentPopup = ({
+    child,
+    currentParent,
     onClose,
-    onSearchChange,
-    onAddChild
+    onAddParent
 }) => {
-    if (!selectedParent) return null;
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [allParents, setAllParents] = useState([]);
+
+    const API_URL = "http://localhost:3001/api/users";
+
+    useEffect(() => {
+        fetchAllParents();
+    }, []);
+
+    const fetchAllParents = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/parents`);
+            setAllParents(response.data);
+        } catch (err) {
+            console.error("Помилка завантаження батьків:", err);
+        }
+    };
+
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+
+        if (query.length < 3) {
+            setSearchResults([]);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+
+        const filteredParents = allParents.filter(parent => {
+            const searchLower = query.toLowerCase();
+            return (
+                parent.fullName?.toLowerCase().includes(searchLower) ||
+                parent.email?.toLowerCase().includes(searchLower) ||
+                parent.phone?.toLowerCase().includes(searchLower)
+            );
+        });
+
+        const currentParentIds = child.parents ? child.parents.map(p => p._id) : [];
+        const availableParents = filteredParents.filter(parent =>
+            parent._id !== currentParent._id && !currentParentIds.includes(parent._id)
+        );
+
+        setSearchResults(availableParents);
+    };
+
+    const handleAddParent = (parentId) => {
+        onAddParent(child._id, parentId);
+    };
+
+    if (!child) return null;
 
     return (
         <div style={{
@@ -40,7 +90,12 @@ const AddChildPopup = ({
                     alignItems: 'center',
                     marginBottom: '20px'
                 }}>
-                    <h3 style={{ margin: 0 }}>Знайти дитину для {selectedParent.fullName}</h3>
+                    <div>
+                        <h3 style={{ margin: 0, marginBottom: '5px' }}>Додати батька для {child.fullName}</h3>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                            Поточний батько: {currentParent.fullName}
+                        </p>
+                    </div>
                     <button
                         onClick={onClose}
                         style={{
@@ -59,9 +114,9 @@ const AddChildPopup = ({
                     <div style={{ position: 'relative' }}>
                         <input
                             type="text"
-                            placeholder="Введіть ім'я, email або назву групи (мінімум 3 символи)..."
+                            placeholder="Введіть ім'я, email або телефон батька (мінімум 3 символи)..."
                             value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
+                            onChange={(e) => handleSearch(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 45px 12px 15px',
@@ -95,19 +150,13 @@ const AddChildPopup = ({
                 </div>
 
                 <div>
-                    {isSearching && searchQuery.length >= 3 && (
-                        <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
-                            Знайдено: {searchResults.length} студентів
-                        </div>
-                    )}
-
                     {searchQuery.length >= 3 ? (
                         searchResults.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {searchResults.map(student => (
+                                {searchResults.map(parent => (
                                     <div
-                                        key={student._id}
-                                        onClick={() => onAddChild(student._id)}
+                                        key={parent._id}
+                                        onClick={() => handleAddParent(parent._id)}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -130,34 +179,25 @@ const AddChildPopup = ({
                                             justifyContent: 'center',
                                             color: 'rgba(105, 180, 185, 1)'
                                         }}>
-                                            <FaChild />
+                                            <FaUserFriends />
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                                                {student.fullName}
+                                                {parent.fullName}
                                             </div>
                                             <div style={{
                                                 fontSize: '14px',
                                                 color: '#6b7280',
                                                 marginBottom: '2px'
                                             }}>
-                                                {student.email}
+                                                {parent.email}
                                             </div>
-                                            {student.group && (
+                                            {parent.phone && (
                                                 <div style={{
                                                     fontSize: '13px',
                                                     color: '#6b7280'
                                                 }}>
-                                                    Група: {student.group.name}
-                                                </div>
-                                            )}
-                                            {student.parents && student.parents.length > 0 && (
-                                                <div style={{
-                                                    fontSize: '12px',
-                                                    color: student.parents.length >= 2 ? '#ef4444' : '#f59e0b'
-                                                }}>
-                                                    Батьків: {student.parents.length}/2
-                                                    {student.parents.length >= 2 && ' (максимум)'}
+                                                    Телефон: {parent.phone}
                                                 </div>
                                             )}
                                         </div>
@@ -166,12 +206,12 @@ const AddChildPopup = ({
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                                <p>Студентів за запитом "{searchQuery}" не знайдено</p>
+                                <p>Батьків за запитом "{searchQuery}" не знайдено</p>
                             </div>
                         )
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                            <p>Введіть запит для пошуку студентів</p>
+                            <p>Введіть запит для пошуку батьків</p>
                         </div>
                     )}
                 </div>
@@ -180,4 +220,4 @@ const AddChildPopup = ({
     );
 };
 
-export default AddChildPopup;
+export default AddParentPopup;

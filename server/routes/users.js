@@ -10,11 +10,17 @@ router.get('/parents', async (req, res) => {
             .select('fullName email phone children')
             .populate({
                 path: 'children',
-                select: 'fullName email group',
-                populate: {
-                    path: 'group',
-                    select: 'name'
-                }
+                select: 'fullName email group parents',
+                populate: [
+                    {
+                        path: 'group',
+                        select: 'name'
+                    },
+                    {
+                        path: 'parents',
+                        select: 'fullName email phone'
+                    }
+                ]
             })
             .sort({ fullName: 1 });
         res.json(parents);
@@ -28,8 +34,9 @@ router.get('/parents', async (req, res) => {
 router.get('/students', async (req, res) => {
     try {
         const students = await User.find({ role: 'student' })
-            .select('fullName email phone dateOfBirth group')
+            .select('fullName email phone dateOfBirth group parents')
             .populate('group', 'name')
+            .populate('parents', 'fullName email phone')
             .sort({ fullName: 1 });
         res.json(students);
     } catch (err) {
@@ -120,10 +127,31 @@ router.delete('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Користувача не знайдено' });
         }
 
-        if (user.role === 'student' && user.group) {
+        if (user.role === 'student') {
+            if (user.group) {
+                await Group.findByIdAndUpdate(
+                    user.group,
+                    { $pull: { students: user._id } }
+                );
+            }
+
+            if (user.parents && user.parents.length > 0) {
+                await User.updateMany(
+                    { _id: { $in: user.parents } },
+                    { $pull: { children: user._id } }
+                );
+            }
+        } else if (user.role === 'parent') {
+            if (user.children && user.children.length > 0) {
+                await User.updateMany(
+                    { _id: { $in: user.children } },
+                    { $pull: { parents: user._id } }
+                );
+            }
+        } else if (user.role === 'teacher' && user.group) {
             await Group.findByIdAndUpdate(
                 user.group,
-                { $pull: { students: user._id } }
+                { $pull: { teachers: user._id } }
             );
         }
 
@@ -199,11 +227,17 @@ router.put('/:id/add-child', async (req, res) => {
         const updatedParent = await User.findById(id)
             .populate({
                 path: 'children',
-                select: 'fullName email group',
-                populate: {
-                    path: 'group',
-                    select: 'name'
-                }
+                select: 'fullName email group parents',
+                populate: [
+                    {
+                        path: 'group',
+                        select: 'name'
+                    },
+                    {
+                        path: 'parents',
+                        select: 'fullName email phone'
+                    }
+                ]
             });
 
         res.json({
@@ -232,14 +266,25 @@ router.put('/:id/remove-child', async (req, res) => {
             { $pull: { children: childId } }
         );
 
+        await User.findByIdAndUpdate(
+            childId,
+            { $pull: { parents: id } }
+        );
+
         const updatedParent = await User.findById(id)
             .populate({
                 path: 'children',
-                select: 'fullName email group',
-                populate: {
-                    path: 'group',
-                    select: 'name'
-                }
+                select: 'fullName email group parents',
+                populate: [
+                    {
+                        path: 'group',
+                        select: 'name'
+                    },
+                    {
+                        path: 'parents',
+                        select: 'fullName email phone'
+                    }
+                ]
             });
 
         res.json({
@@ -248,6 +293,106 @@ router.put('/:id/remove-child', async (req, res) => {
         });
     } catch (err) {
         console.error('Помилка видалення дитини:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// ДОДАТИ БАТЬКА ДО ДИТИНИ
+router.put('/:id/add-parent', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { parentId } = req.body;
+
+        const child = await User.findById(id);
+        if (!child || child.role !== 'student') {
+            return res.status(404).json({ error: 'Студента не знайдено' });
+        }
+
+        const parent = await User.findById(parentId);
+        if (!parent || parent.role !== 'parent') {
+            return res.status(400).json({ error: 'Батько має бути з роллю parent' });
+        }
+
+        if (child.parents && child.parents.includes(parentId)) {
+            return res.status(400).json({ error: 'Цей батько вже доданий до дитини' });
+        }
+
+        if (child.parents && child.parents.length >= 2) {
+            return res.status(400).json({ error: 'Дитина може мати не більше 2 батьків' });
+        }
+
+        await User.findByIdAndUpdate(
+            id,
+            { $addToSet: { parents: parentId } }
+        );
+
+        await User.findByIdAndUpdate(
+            parentId,
+            { $addToSet: { children: id } }
+        );
+
+        const updatedChild = await User.findById(id)
+            .populate('parents', 'fullName email phone')
+            .populate('group', 'name');
+
+        const updatedParent = await User.findById(parentId)
+            .populate({
+                path: 'children',
+                select: 'fullName email group parents',
+                populate: [
+                    {
+                        path: 'group',
+                        select: 'name'
+                    },
+                    {
+                        path: 'parents',
+                        select: 'fullName email phone'
+                    }
+                ]
+            });
+
+        res.json({
+            message: 'Батька успішно додано',
+            child: updatedChild,
+            parent: updatedParent
+        });
+    } catch (err) {
+        console.error('Помилка додавання батька:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// ВИДАЛИТИ БАТЬКА З ДИТИНИ
+router.put('/:id/remove-parent', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { parentId } = req.body;
+
+        const child = await User.findById(id);
+        if (!child || child.role !== 'student') {
+            return res.status(404).json({ error: 'Студента не знайдено' });
+        }
+
+        await User.findByIdAndUpdate(
+            id,
+            { $pull: { parents: parentId } }
+        );
+
+        await User.findByIdAndUpdate(
+            parentId,
+            { $pull: { children: id } }
+        );
+
+        const updatedChild = await User.findById(id)
+            .populate('parents', 'fullName email phone')
+            .populate('group', 'name');
+
+        res.json({
+            message: 'Батька успішно видалено',
+            child: updatedChild
+        });
+    } catch (err) {
+        console.error('Помилка видалення батька:', err);
         res.status(400).json({ error: err.message });
     }
 });
