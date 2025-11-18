@@ -6,7 +6,7 @@ import ParentSearch from "./ParentSearch";
 import ParentSort from "./ParentSort";
 import ParentPagination from "./ParentPagination";
 import ParentCard from "./ParentCard";
-import CombinedParentCard from "./CombinedParentCard"; // Новий компонент
+import CombinedParentCard from "./CombinedParentCard";
 import AddChildPopup from "./AddChildPopup";
 import AdminParentEdit from "./AdminParentEdit";
 import AdminParentDelete from "./AdminParentDelete";
@@ -17,29 +17,24 @@ const AdminShowParent = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // СТАНИ ДЛЯ МОДАЛЬНИХ ВІКОН
     const [showAddChildPopup, setShowAddChildPopup] = useState(false);
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [selectedParent, setSelectedParent] = useState(null);
 
-    // СТАНИ ДЛЯ ПОШУКУ ДІТЕЙ
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    // СТАНИ ДЛЯ СОРТУВАННЯ ТА ФІЛЬТРАЦІЇ
     const [sortOrder, setSortOrder] = useState('asc');
     const [parentSearchQuery, setParentSearchQuery] = useState("");
     const [filteredParents, setFilteredParents] = useState([]);
 
-    // СТАНИ ДЛЯ ПАГІНАЦІЇ
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
 
     const API_URL = "http://localhost:3001/api/users";
 
-    // ФУНКЦІЇ ДЛЯ ОТРИМАННЯ ДАНИХ
     const fetchParents = async () => {
         try {
             const response = await axios.get(`${API_URL}/parents`);
@@ -67,7 +62,32 @@ const AdminShowParent = () => {
         fetchStudents();
     }, []);
 
-    // ФУНКЦІЯ ДЛЯ ГРУПУВАННЯ БАТЬКІВ ЗІ СПІЛЬНИМИ ДІТЬМИ
+    // Функція для знаходження згрупованого батька
+    const findGroupedParent = (parentId) => {
+        const parent = parents.find(p => p._id === parentId);
+        if (!parent || !parent.children || parent.children.length === 0) {
+            return null;
+        }
+
+        // Шукаємо іншого батька, який має спільну дитину з поточним батьком
+        for (const otherParent of parents) {
+            if (otherParent._id === parentId || !otherParent.children || otherParent.children.length === 0) {
+                continue;
+            }
+
+            // Перевіряємо, чи є спільна дитина
+            const hasSharedChild = otherParent.children.some(child =>
+                parent.children.some(c => c._id === child._id)
+            );
+
+            if (hasSharedChild) {
+                return otherParent;
+            }
+        }
+
+        return null;
+    };
+
     const groupParentsBySharedChildren = (parentsList) => {
         const parentGroups = [];
         const processedParents = new Set();
@@ -131,7 +151,6 @@ const AdminShowParent = () => {
         return parentGroups;
     };
 
-    // ФУНКЦІЯ ДЛЯ ФІЛЬТРАЦІЇ ТА ПОШУКУ
     const applyFilters = (parentsList, searchQuery = '') => {
         let filtered = parentsList;
 
@@ -153,14 +172,12 @@ const AdminShowParent = () => {
         setFilteredParents(filtered);
     };
 
-    // ДЛЯ ПОШУКУ БАТЬКІВ
     const handleParentSearch = (query) => {
         setParentSearchQuery(query);
         setCurrentPage(1);
         applyFilters(parents, query);
     };
 
-    // ДЛЯ СОРТУВАННЯ БАТЬКІВ
     const sortParents = (parentsArray, order) => {
         return [...parentsArray].sort((a, b) => {
             const nameA = a.fullName?.toLowerCase() || '';
@@ -177,23 +194,19 @@ const AdminShowParent = () => {
     const sortedParents = sortParents(filteredParents, sortOrder);
     const parentGroups = groupParentsBySharedChildren(sortedParents);
 
-    // РОЗРАХУНКИ ДЛЯ ПАГІНАЦІЇ
     const totalItems = sortedParents.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
 
-    // Пагінація для груп батьків
     const currentParentGroups = parentGroups.slice(startIndex, endIndex);
 
-    // ДЛЯ ПАГІНАЦІЇ
     const goToPage = (page) => setCurrentPage(Math.max(1, Math.min(page, totalPages)));
     const goToFirstPage = () => setCurrentPage(1);
     const goToLastPage = () => setCurrentPage(totalPages);
     const goToPreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
     const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
-    // УПРАВЛІННЯ БАТЬКАМИ
     const handleEdit = (parent) => {
         setSelectedParent(parent);
         setShowEditPopup(true);
@@ -219,7 +232,6 @@ const AdminShowParent = () => {
         }
     };
 
-    // ПОШУК ТА ДОДАВАННЯ ДИТИНИ
     const handleSearch = (query) => {
         setSearchQuery(query);
 
@@ -259,6 +271,7 @@ const AdminShowParent = () => {
 
     const handleAddChildToParent = async (studentId) => {
         try {
+            // Додаємо дитину до поточного батька
             await axios.put(`${API_URL}/${selectedParent._id}/add-child`, {
                 childId: studentId
             });
@@ -266,6 +279,35 @@ const AdminShowParent = () => {
             await axios.put(`${API_URL}/${studentId}/add-parent`, {
                 parentId: selectedParent._id
             });
+
+            // Шукаємо згрупованого батька
+            const groupedParent = findGroupedParent(selectedParent._id);
+
+            if (groupedParent) {
+                console.log(`Знайдено згрупованого батька: ${groupedParent.fullName}`);
+
+                // Перевіряємо, скільки батьків вже має дитина
+                const studentResponse = await axios.get(`${API_URL}/${studentId}`);
+                const currentStudent = studentResponse.data;
+
+                if (currentStudent.parents && currentStudent.parents.length < 2) {
+                    console.log('Додаємо другого батька автоматично...');
+
+                    // Додаємо дитину до другого батька
+                    await axios.put(`${API_URL}/${groupedParent._id}/add-child`, {
+                        childId: studentId
+                    });
+
+                    // Додаємо другого батька до дитини
+                    await axios.put(`${API_URL}/${studentId}/add-parent`, {
+                        parentId: groupedParent._id
+                    });
+
+                    console.log('Другого батька успішно додано');
+                } else {
+                    console.log('Дитина вже має 2 батьків, пропускаємо автоматичне додавання');
+                }
+            }
 
             setShowAddChildPopup(false);
             setSelectedParent(null);
