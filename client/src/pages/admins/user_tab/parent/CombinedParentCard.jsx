@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     FaUserFriends, FaEnvelope, FaPhone, FaChild,
-    FaSearch, FaEdit, FaTrash, FaTimes, FaUserPlus, FaUserMinus
+    FaSearch, FaEdit, FaTrash, FaUserPlus, FaUserMinus
 } from "react-icons/fa";
 import DeleteChildPopup from './DeleteChildPopup';
 import AddParentPopup from './AddParentPopup';
@@ -355,7 +355,7 @@ const CombinedParentCard = ({
                                                 e.currentTarget.style.borderColor = '#e5e7eb';
                                             }}
                                         >
-                                            <FaUserMinus size={12} />
+                                            <FaUserMinus size={13} />
                                             Відв'язати батька
                                         </button>
                                     )}
@@ -370,7 +370,7 @@ const CombinedParentCard = ({
                                             border: 'none',
                                             borderRadius: '4px',
                                             cursor: 'pointer',
-                                            fontSize: '11px',
+                                            fontSize: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '4px',
@@ -383,7 +383,7 @@ const CombinedParentCard = ({
                                             e.currentTarget.style.backgroundColor = '#ef4444';
                                         }}
                                     >
-                                        <FaTimes size={10} />
+                                        <FaTrash size={12} />
                                         Видалити
                                     </button>
                                 </div>
