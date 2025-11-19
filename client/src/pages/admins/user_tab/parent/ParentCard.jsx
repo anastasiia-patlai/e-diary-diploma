@@ -20,7 +20,6 @@ const ParentCard = ({
     const [showAddParentPopup, setShowAddParentPopup] = useState(false);
     const [childToDelete, setChildToDelete] = useState(null);
     const [selectedChild, setSelectedChild] = useState(null);
-    const [showRemoveParentChoicePopup, setShowRemoveParentChoicePopup] = useState(false);
 
     const openDeleteChildConfirmation = (child) => {
         setChildToDelete(child);
