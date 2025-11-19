@@ -138,10 +138,5 @@ app.listen(PORT, () => {
     console.log('  GET    /api/available/classrooms');
     console.log('  GET    /api/available/teachers');
     console.log('  GET    /api/available/check-availability');
-    console.log('\nОсобливості системи:');
-    console.log('  Мульти-тенантна архітектура');
-    console.log('  Окремі бази даних для кожної школи');
-    console.log('  Автоматична ініціалізація моделей');
-    console.log('  Динамічне підключення до БД');
     console.log('\nСервер готовий до роботи!\n');
 });

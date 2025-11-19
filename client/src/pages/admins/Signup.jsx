@@ -14,6 +14,7 @@ function Signup({ onClose }) {
         confirmPassword: "",
         group: "",
         positions: [""],
+        jobPosition: "", // ДОДАТИ: посада для адміністраторів
     });
 
     const [errors, setErrors] = useState({});
@@ -80,6 +81,9 @@ function Signup({ onClose }) {
                     error = "Вкажіть хоча б один предмет";
                 }
                 break;
+            case "jobPosition":
+                if (formData.role === "admin" && !value.trim()) error = "Вкажіть посаду";
+                break;
             default:
                 break;
         }
@@ -118,6 +122,10 @@ function Signup({ onClose }) {
                 position: filteredPositions.join(", ")
             };
 
+            if (formData.role !== "admin") {
+                delete submitData.jobPosition;
+            }
+
             axios.post("http://localhost:3001/api/signup", submitData)
                 .then((res) => {
                     setSuccessMessage(`Користувач ${formData.fullName} доданий!`);
@@ -131,6 +139,7 @@ function Signup({ onClose }) {
                         confirmPassword: "",
                         group: "",
                         positions: [""],
+                        jobPosition: "",
                     });
                     setTouched({});
                     setErrors({});
@@ -318,6 +327,23 @@ function Signup({ onClose }) {
                             </div>
                         )}
 
+                        {/* АДМІНІСТРАТОР - ПОСАДА */}
+                        {formData.role === "admin" && (
+                            <div className="mb-3 fade-in">
+                                <label className="form-label">Посада</label>
+                                <input
+                                    type="text"
+                                    name="jobPosition"
+                                    className={getInputClass("jobPosition")}
+                                    value={formData.jobPosition}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    placeholder="Напр. Заступник директора з навчальної роботи, тощо"
+                                />
+                                <div className="invalid-feedback">{errors.jobPosition}</div>
+                            </div>
+                        )}
+
                         {/* ТЕЛЕФОН */}
                         <div className="mb-3">
                             <label className="form-label">Телефон</label>
@@ -403,4 +429,5 @@ function Signup({ onClose }) {
         );
     }
 }
+
 export default Signup;

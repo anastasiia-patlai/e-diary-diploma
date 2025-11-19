@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },      // тільки для студентів
     positions: [{ type: String }],
     position: { type: String },                                         // тільки для викладачів
+    jobPosition: { type: String },                                      // тільки для адміністраторів
     children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],   // тільки для батьків
     parents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]     // тільки для студентів
 }, { timestamps: true });

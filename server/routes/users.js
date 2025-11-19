@@ -61,7 +61,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, phone, dateOfBirth, group, positions, position } = req.body;
+        const { fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
 
         const user = await User.findById(id);
         if (!user) {
@@ -99,6 +99,8 @@ router.put('/:id', async (req, res) => {
                 updateData.position = position;
                 updateData.positions = position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
             }
+        } else if (user.role === 'admin') {
+            updateData.jobPosition = jobPosition;
         }
 
         const updatedUser = await User.findByIdAndUpdate(
