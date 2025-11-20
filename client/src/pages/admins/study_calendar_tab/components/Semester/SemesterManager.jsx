@@ -1,0 +1,240 @@
+import React, { useState, useEffect } from 'react';
+import { FaPlus, FaSync } from 'react-icons/fa';
+import studyCalendarService from '../studyCalendarService';
+import SemesterForm from './SemesterForm';
+import SemesterList from './SemesterList';
+
+const SemesterManager = () => {
+    const [semesters, setSemesters] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showForm, setShowForm] = useState(false);
+    const [editingSemester, setEditingSemester] = useState(null);
+
+    const loadSemesters = async () => {
+        try {
+            setLoading(true);
+            setError('');
+            const response = await studyCalendarService.getSemesters();
+
+            // Сортуємо семестри: спочатку Осінньо-зимовий, потім Зимово-весняний
+            const sortedSemesters = response.data.sort((a, b) => {
+                // Спочатку сортуємо за роком (спадання)
+                const yearComparison = b.year.localeCompare(a.year);
+                if (yearComparison !== 0) return yearComparison;
+
+                // Потім сортуємо за типом семестру
+                const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
+                return order[a.name] - order[b.name];
+            });
+
+            setSemesters(sortedSemesters);
+        } catch (err) {
+            console.error('Error loading semesters:', err);
+            setError(err.response?.data?.error || 'Помилка завантаження семестрів');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadSemesters();
+    }, []);
+
+    const handleCreate = () => {
+        setEditingSemester(null);
+        setShowForm(true);
+    };
+
+    const handleEdit = (semester) => {
+        setEditingSemester(semester);
+        setShowForm(true);
+    };
+
+    const handleFormClose = () => {
+        setShowForm(false);
+        setEditingSemester(null);
+        setError('');
+    };
+
+    const handleFormSubmit = async (semesterData) => {
+        try {
+            setError('');
+            if (editingSemester) {
+                await studyCalendarService.updateSemester(editingSemester._id, semesterData);
+            } else {
+                await studyCalendarService.createSemester(semesterData);
+            }
+            await loadSemesters();
+            handleFormClose();
+        } catch (err) {
+            console.error('Error saving semester:', err);
+            const errorMessage = err.response?.data?.error || 'Помилка збереження семестру';
+            setError(errorMessage);
+            throw err;
+        }
+    };
+
+    const handleDelete = async (semesterId) => {
+        if (window.confirm('Ви впевнені, що хочете видалити цей семестр?')) {
+            try {
+                setError('');
+                await studyCalendarService.deleteSemester(semesterId);
+                await loadSemesters();
+            } catch (err) {
+                console.error('Error deleting semester:', err);
+                setError(err.response?.data?.error || 'Помилка видалення семестру');
+            }
+        }
+    };
+
+    const handleToggleActive = async (semester) => {
+        try {
+            setError('');
+
+            if (semester.isActive) {
+                // Деактивуємо семестр та всі його чверті
+                const updatedSemester = await studyCalendarService.updateSemester(semester._id, {
+                    ...semester,
+                    isActive: false
+                });
+
+                // Деактивуємо всі чверті цього семестру
+                await studyCalendarService.syncSemesterQuarters(semester._id);
+
+                setSemesters(prev => prev.map(s =>
+                    s._id === semester._id ? updatedSemester.data : s
+                ));
+            } else {
+                // Активуємо семестр - деактивуємо всі інші семестри та їх чверті
+                const updatePromises = semesters.map(s => {
+                    if (s._id === semester._id) {
+                        return studyCalendarService.updateSemester(s._id, { ...s, isActive: true });
+                    } else if (s.isActive) {
+                        return studyCalendarService.updateSemester(s._id, { ...s, isActive: false });
+                    }
+                    return Promise.resolve(null);
+                });
+
+                await Promise.all(updatePromises);
+
+                // Синхронізуємо чверті активного семестру
+                await studyCalendarService.syncSemesterQuarters(semester._id);
+
+                await loadSemesters();
+            }
+        } catch (err) {
+            console.error('Error toggling semester active status:', err);
+            setError(err.response?.data?.error || 'Помилка зміни статусу семестру');
+        }
+    };
+
+    const activeSemester = semesters.find(s => s.isActive);
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', padding: '40px' }}>Завантаження семестрів...</div>;
+    }
+
+    return (
+        <div>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px'
+            }}>
+                <div>
+                    <h3 style={{ margin: 0 }}>Управління семестрами</h3>
+                    {activeSemester && (
+                        <p style={{
+                            margin: '4px 0 0 0',
+                            color: 'rgba(105, 180, 185, 1)',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                        }}>
+                            Активний семестр: {activeSemester.name} {activeSemester.year}
+                        </p>
+                    )}
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={loadSemesters}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: 'transparent',
+                            color: 'rgba(105, 180, 185, 1)',
+                            border: '1px solid rgba(105, 180, 185, 1)',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                    >
+                        <FaSync />
+                        Оновити
+                    </button>
+                    <button
+                        onClick={handleCreate}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: 'rgba(105, 180, 185, 1)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                    >
+                        <FaPlus />
+                        Додати семестр
+                    </button>
+                </div>
+            </div>
+
+            {error && (
+                <div style={{
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    marginBottom: '20px'
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {/* ІНОФРМАЦІЯ ПРО АКТИВНИЙ СЕМЕСТР*/}
+            {!activeSemester && (
+                <div style={{
+                    backgroundColor: '#fef3c7',
+                    color: '#d97706',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    marginBottom: '20px'
+                }}>
+                    Жоден семестр не активний. Будь ласка, активуйте семестр для використання в системі.
+                </div>
+            )}
+
+            <SemesterList
+                semesters={semesters}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onToggleActive={handleToggleActive}
+            />
+
+            {showForm && (
+                <SemesterForm
+                    semester={editingSemester}
+                    onClose={handleFormClose}
+                    onSubmit={handleFormSubmit}
+                />
+            )}
+        </div>
+    );
+};
+
+export default SemesterManager;
