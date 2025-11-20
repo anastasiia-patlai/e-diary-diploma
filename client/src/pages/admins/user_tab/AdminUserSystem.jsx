@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUserFriends } from "react-icons/fa";
+import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUserFriends, FaUserShield } from "react-icons/fa";
 import Signup from "../Signup";
 import AdminShowStudent from "./student/AdminShowStudent";
 import AdminShowTeacher from "./teacher/AdminShowTeacher";
 import AdminShowParent from "./parent/AdminShowParent";
+import AdminShowAdmin from "./admin/AdminShowAdmin";
 
 const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
@@ -151,6 +152,36 @@ const AdminUserSystem = () => {
                     <FaUserFriends />
                     Батьки
                 </button>
+                <button
+                    onClick={() => setActiveTab("admins")}
+                    style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        backgroundColor: activeTab === "admins" ? 'rgba(105, 180, 185, 1)' : 'transparent',
+                        color: activeTab === "admins" ? 'white' : '#374151',
+                        borderBottom: activeTab === "admins" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        if (activeTab !== "admins") {
+                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
+                            e.target.style.color = 'white';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (activeTab !== "admins") {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#374151';
+                        }
+                    }}
+                >
+                    <FaUserShield />
+                    Адміністратори
+                </button>
             </div>
 
             {/* КОНТЕНТ */}
@@ -164,6 +195,10 @@ const AdminUserSystem = () => {
 
             {activeTab === "parents" && (
                 <AdminShowParent />
+            )}
+
+            {activeTab === "admins" && (
+                <AdminShowAdmin />
             )}
 
             {/* Попап для реєстрації */}
