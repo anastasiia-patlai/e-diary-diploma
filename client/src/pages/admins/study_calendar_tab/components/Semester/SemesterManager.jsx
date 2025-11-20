@@ -3,6 +3,7 @@ import { FaPlus, FaSync } from 'react-icons/fa';
 import studyCalendarService from '../studyCalendarService';
 import SemesterForm from './SemesterForm';
 import SemesterList from './SemesterList';
+import ConfirmationModal from '../ConfirmationModal';
 
 const SemesterManager = () => {
     const [semesters, setSemesters] = useState([]);
@@ -10,6 +11,8 @@ const SemesterManager = () => {
     const [error, setError] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingSemester, setEditingSemester] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [semesterToDelete, setSemesterToDelete] = useState(null);
 
     const loadSemesters = async () => {
         try {
@@ -75,17 +78,31 @@ const SemesterManager = () => {
         }
     };
 
-    const handleDelete = async (semesterId) => {
-        if (window.confirm('Ви впевнені, що хочете видалити цей семестр?')) {
-            try {
-                setError('');
-                await studyCalendarService.deleteSemester(semesterId);
-                await loadSemesters();
-            } catch (err) {
-                console.error('Error deleting semester:', err);
-                setError(err.response?.data?.error || 'Помилка видалення семестру');
-            }
+    const handleDeleteClick = (semester) => {
+        setSemesterToDelete(semester);
+        setShowDeleteConfirm(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!semesterToDelete) return;
+
+        try {
+            setError('');
+            await studyCalendarService.deleteSemester(semesterToDelete._id);
+            await loadSemesters();
+            setShowDeleteConfirm(false);
+            setSemesterToDelete(null);
+        } catch (err) {
+            console.error('Error deleting semester:', err);
+            setError(err.response?.data?.error || 'Помилка видалення семестру');
+            setShowDeleteConfirm(false);
+            setSemesterToDelete(null);
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setSemesterToDelete(null);
     };
 
     const handleToggleActive = async (semester) => {
@@ -222,7 +239,7 @@ const SemesterManager = () => {
             <SemesterList
                 semesters={semesters}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={handleDeleteClick}
                 onToggleActive={handleToggleActive}
             />
 
@@ -231,6 +248,18 @@ const SemesterManager = () => {
                     semester={editingSemester}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                />
+            )}
+
+            {showDeleteConfirm && semesterToDelete && (
+                <ConfirmationModal
+                    title="Підтвердження видалення"
+                    message={`Ви впевнені, що хочете видалити семестр "${semesterToDelete.name} ${semesterToDelete.year}"? Ця дія також видалить всі пов'язані чверті та канікули.`}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={handleDeleteCancel}
+                    confirmText="Видалити"
+                    cancelText="Скасувати"
+                    type="danger"
                 />
             )}
         </div>

@@ -116,7 +116,7 @@ const SemesterList = ({ semesters, onEdit, onDelete, onToggleActive }) => {
                                     Редагувати
                                 </button>
                                 <button
-                                    onClick={() => onDelete(semester._id)}
+                                    onClick={() => onDelete(semester)}
                                     style={{
                                         padding: '6px 12px',
                                         backgroundColor: '#ef4444',

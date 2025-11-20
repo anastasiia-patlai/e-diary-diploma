@@ -3,6 +3,7 @@ import { FaPlus, FaSync } from 'react-icons/fa';
 import studyCalendarService from '../studyCalendarService';
 import QuarterForm from './QuarterForm';
 import QuarterList from './QuarterList';
+import ConfirmationModal from '../ConfirmationModal';
 
 const QuarterManager = () => {
     const [quarters, setQuarters] = useState([]);
@@ -12,6 +13,8 @@ const QuarterManager = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingQuarter, setEditingQuarter] = useState(null);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [quarterToDelete, setQuarterToDelete] = useState(null);
 
     const loadData = async () => {
         try {
@@ -130,16 +133,33 @@ const QuarterManager = () => {
         }
     };
 
-    const handleDelete = async (quarterId) => {
-        if (window.confirm('Ви впевнені, що хочете видалити цю чверть?')) {
-            try {
-                await studyCalendarService.deleteQuarter(quarterId);
-                await loadData();
-            } catch (err) {
-                setError('Помилка видалення чверті');
-                console.error('Error deleting quarter:', err);
-            }
+    const handleDeleteClick = (quarterId) => {
+        const quarter = quarters.find(q => q._id === quarterId);
+        if (quarter) {
+            setQuarterToDelete(quarter);
+            setShowDeleteConfirm(true);
         }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!quarterToDelete) return;
+
+        try {
+            await studyCalendarService.deleteQuarter(quarterToDelete._id);
+            await loadData();
+            setShowDeleteConfirm(false);
+            setQuarterToDelete(null);
+        } catch (err) {
+            setError('Помилка видалення чверті');
+            console.error('Error deleting quarter:', err);
+            setShowDeleteConfirm(false);
+            setQuarterToDelete(null);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setQuarterToDelete(null);
     };
 
     const handleToggleActive = async (quarter) => {
@@ -409,7 +429,7 @@ const QuarterManager = () => {
                                                 <QuarterList
                                                     quarters={semester.quarters}
                                                     onEdit={handleEdit}
-                                                    onDelete={handleDelete}
+                                                    onDelete={handleDeleteClick}
                                                     onToggleActive={handleToggleActive}
                                                     compact={false}
                                                     currentDate={currentDate}
@@ -432,6 +452,18 @@ const QuarterManager = () => {
                     semesters={semesters}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                />
+            )}
+
+            {showDeleteConfirm && quarterToDelete && (
+                <ConfirmationModal
+                    title="Підтвердження видалення"
+                    message={`Ви впевнені, що хочете видалити чверть "${quarterToDelete.name}"? Ця дія також видалить всі пов'язані канікули.`}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={handleDeleteCancel}
+                    confirmText="Видалити"
+                    cancelText="Скасувати"
+                    type="danger"
                 />
             )}
         </div>

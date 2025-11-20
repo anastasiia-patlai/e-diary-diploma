@@ -3,6 +3,7 @@ import { FaPlus, FaSync } from 'react-icons/fa';
 import studyCalendarService from '../studyCalendarService';
 import HolidayForm from './HolidayForm';
 import HolidayList from './HolidayList';
+import ConfirmationModal from '../ConfirmationModal';
 
 const HolidayManager = () => {
     const [holidays, setHolidays] = useState([]);
@@ -11,6 +12,8 @@ const HolidayManager = () => {
     const [error, setError] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [editingHoliday, setEditingHoliday] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [holidayToDelete, setHolidayToDelete] = useState(null);
 
     const loadData = async () => {
         try {
@@ -66,17 +69,34 @@ const HolidayManager = () => {
         }
     };
 
-    const handleDelete = async (holidayId) => {
-        if (window.confirm('Ви впевнені, що хочете видалити ці канікули?')) {
-            try {
-                setError('');
-                await studyCalendarService.deleteHoliday(holidayId);
-                await loadData();
-            } catch (err) {
-                setError('Помилка видалення канікул');
-                console.error('Error deleting holiday:', err);
-            }
+    const handleDeleteClick = (holidayId) => {
+        const holiday = holidays.find(h => h._id === holidayId);
+        if (holiday) {
+            setHolidayToDelete(holiday);
+            setShowDeleteConfirm(true);
         }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!holidayToDelete) return;
+
+        try {
+            setError('');
+            await studyCalendarService.deleteHoliday(holidayToDelete._id);
+            await loadData();
+            setShowDeleteConfirm(false);
+            setHolidayToDelete(null);
+        } catch (err) {
+            setError('Помилка видалення канікул');
+            console.error('Error deleting holiday:', err);
+            setShowDeleteConfirm(false);
+            setHolidayToDelete(null);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setShowDeleteConfirm(false);
+        setHolidayToDelete(null);
     };
 
     if (loading) {
@@ -158,7 +178,7 @@ const HolidayManager = () => {
             <HolidayList
                 holidays={holidays}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={handleDeleteClick}
             />
 
             {showForm && (
@@ -167,6 +187,18 @@ const HolidayManager = () => {
                     quarters={quarters}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                />
+            )}
+
+            {showDeleteConfirm && holidayToDelete && (
+                <ConfirmationModal
+                    title="Підтвердження видалення"
+                    message={`Ви впевнені, що хочете видалити канікули "${holidayToDelete.name}"?`}
+                    onConfirm={handleDeleteConfirm}
+                    onCancel={handleDeleteCancel}
+                    confirmText="Видалити"
+                    cancelText="Скасувати"
+                    type="danger"
                 />
             )}
         </div>
