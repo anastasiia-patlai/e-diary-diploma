@@ -5,7 +5,7 @@ const User = require('../models/User');
 const Group = require('../models/Group');
 
 router.post('/signup', async (req, res) => {
-    const { fullName, role, phone, dateOfBirth, email, password, group, positions } = req.body;
+    const { fullName, role, phone, dateOfBirth, email, password, group, positions, jobPosition } = req.body;
 
     try {
         const existingUser = await User.findOne({ email });
@@ -30,18 +30,27 @@ router.post('/signup', async (req, res) => {
         // ФІЛЬТРУЄМО ПОРОЖНІ ПРЕДМЕТИ
         const filteredPositions = positions ? positions.filter(pos => pos.trim() !== "") : [];
 
-        const newUser = new User({
+        // СТВОРЮЄМО ОБ'ЄКТ КОРИСТУВАЧА ЗАЛЕЖНО ВІД РОЛІ
+        const userData = {
             fullName,
             role,
             phone,
             dateOfBirth,
             email,
-            password: hashedPassword,
-            group: groupId,
-            positions: filteredPositions,
-            position: filteredPositions.join(", ")
-        });
+            password: hashedPassword
+        };
 
+        // ДОДАЄМО ПОЛЯ ЗАЛЕЖНО ВІД РОЛІ
+        if (role === 'student') {
+            userData.group = groupId;
+        } else if (role === 'teacher') {
+            userData.positions = filteredPositions;
+            userData.position = filteredPositions.join(", ");
+        } else if (role === 'admin') {
+            userData.jobPosition = jobPosition;
+        }
+
+        const newUser = new User(userData);
         await newUser.save();
 
         if (role === 'student' && groupId) {
@@ -58,7 +67,8 @@ router.post('/signup', async (req, res) => {
                 fullName: newUser.fullName,
                 role: newUser.role,
                 email: newUser.email,
-                positions: newUser.positions
+                positions: newUser.positions,
+                jobPosition: newUser.jobPosition
             }
         });
 

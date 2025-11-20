@@ -14,7 +14,7 @@ function Signup({ onClose }) {
         confirmPassword: "",
         group: "",
         positions: [""],
-        jobPosition: "", // ДОДАТИ: посада для адміністраторів
+        jobPosition: "",
     });
 
     const [errors, setErrors] = useState({});
@@ -121,6 +121,15 @@ function Signup({ onClose }) {
                 positions: filteredPositions,
                 position: filteredPositions.join(", ")
             };
+
+            if (formData.role !== "teacher") {
+                delete submitData.positions;
+                delete submitData.position;
+            }
+
+            if (formData.role !== "student") {
+                delete submitData.group;
+            }
 
             if (formData.role !== "admin") {
                 delete submitData.jobPosition;
