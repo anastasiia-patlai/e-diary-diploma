@@ -5,6 +5,8 @@ import AdminList from './AdminList';
 import AdminPagination from './AdminPagination';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
+import EditAdminPopup from './EditAdminPopup';
+import DeleteAdminPopup from './DeleteAdminPopup';
 
 const AdminShowAdmin = () => {
     const [admins, setAdmins] = useState([]);
@@ -15,6 +17,10 @@ const AdminShowAdmin = () => {
     const [sortOrder, setSortOrder] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
+
+    // Стани для попапів
+    const [editingAdmin, setEditingAdmin] = useState(null);
+    const [deletingAdmin, setDeletingAdmin] = useState(null);
 
     const API_URL = "http://localhost:3001/api/users";
 
@@ -83,23 +89,33 @@ const AdminShowAdmin = () => {
     const goToPreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
     const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
-    // ВИДАЛЕННЯ
-    const handleDelete = async (adminId) => {
-        if (window.confirm("Ви впевнені, що хочете видалити цього адміністратора?")) {
-            try {
-                await axios.delete(`${API_URL}/${adminId}`);
-                fetchAdmins();
-            } catch (err) {
-                console.error("Помилка видалення адміністратора:", err);
-                alert(err.response?.data?.error || "Помилка видалення адміністратора");
-            }
-        }
+    // ОБРОБНИКИ ПОПАПІВ
+    const handleEdit = (admin) => {
+        setEditingAdmin(admin);
     };
 
-    // РЕДАГУВАННЯ
-    const handleEdit = (admin) => {
-        console.log("Редагувати адміністратора:", admin);
-        alert("Функція редагування буде реалізована пізніше");
+    const handleDelete = (admin) => {
+        setDeletingAdmin(admin);
+    };
+
+    const handleUpdateAdmin = (updatedAdmin) => {
+        setAdmins(prev => prev.map(admin =>
+            admin._id === updatedAdmin._id ? updatedAdmin : admin
+        ));
+        setEditingAdmin(null);
+    };
+
+    const handleDeleteAdmin = (adminId) => {
+        setAdmins(prev => prev.filter(admin => admin._id !== adminId));
+        setDeletingAdmin(null);
+    };
+
+    const closeEditPopup = () => {
+        setEditingAdmin(null);
+    };
+
+    const closeDeletePopup = () => {
+        setDeletingAdmin(null);
     };
 
     if (loading) {
@@ -138,6 +154,24 @@ const AdminShowAdmin = () => {
                     onPreviousPage={goToPreviousPage}
                     onNextPage={goToNextPage}
                     onLastPage={goToLastPage}
+                />
+            )}
+
+            {/* Попап редагування */}
+            {editingAdmin && (
+                <EditAdminPopup
+                    admin={editingAdmin}
+                    onClose={closeEditPopup}
+                    onUpdate={handleUpdateAdmin}
+                />
+            )}
+
+            {/* Попап видалення */}
+            {deletingAdmin && (
+                <DeleteAdminPopup
+                    admin={deletingAdmin}
+                    onClose={closeDeletePopup}
+                    onDelete={handleDeleteAdmin}
                 />
             )}
         </div>

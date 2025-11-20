@@ -201,6 +201,46 @@ router.get('/', async (req, res) => {
     }
 });
 
+// ОНОВИТИ АДМІНІСТРАТОРА
+router.put('/admin/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fullName, phone, email, jobPosition, dateOfBirth } = req.body;
+
+        const admin = await User.findById(id);
+        if (!admin || admin.role !== 'admin') {
+            return res.status(404).json({ error: 'Адміністратора не знайдено' });
+        }
+
+        if (email && email !== admin.email) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(400).json({ error: 'Користувач з таким email вже існує' });
+            }
+        }
+
+        const updatedAdmin = await User.findByIdAndUpdate(
+            id,
+            {
+                fullName,
+                phone,
+                email,
+                jobPosition,
+                dateOfBirth
+            },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json({
+            message: 'Адміністратора успішно оновлено',
+            admin: updatedAdmin
+        });
+    } catch (err) {
+        console.error('Помилка оновлення адміністратора:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // ДОДАТИ ДИТИНУ
 router.put('/:id/add-child', async (req, res) => {
     try {
@@ -442,7 +482,6 @@ router.get('/by-role/:role', async (req, res) => {
     try {
         const { role } = req.params;
 
-        // Валідація ролі
         const validRoles = ['student', 'teacher', 'parent', 'admin'];
         if (!validRoles.includes(role)) {
             return res.status(400).json({

@@ -123,7 +123,7 @@ const AdminActions = ({ admin, onEdit, onDelete }) => (
             Редагувати
         </button>
         <button
-            onClick={() => onDelete(admin._id)}
+            onClick={() => onDelete(admin)}
             style={{
                 padding: '6px 12px',
                 backgroundColor: '#ef4444',
@@ -143,32 +143,71 @@ const AdminActions = ({ admin, onEdit, onDelete }) => (
     </div>
 );
 
-const AdminAdditionalInfo = ({ admin }) => (
-    <div style={{
-        display: 'flex',
-        gap: '20px',
-        paddingTop: '15px',
-        borderTop: '1px solid #f3f4f6'
-    }}>
-        {admin.dateOfBirth && (
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                color: '#6b7280'
-            }}>
-                <FaCalendarAlt size={12} />
-                Дата народження: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
-            </div>
-        )}
+// ФУНКЦІЯ ДЛЯ РОЗРАХУНКУ ВІКУ
+const AdminAdditionalInfo = ({ admin }) => {
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+
+        return age;
+    };
+
+    const age = admin.dateOfBirth ? calculateAge(admin.dateOfBirth) : null;
+
+    return (
         <div style={{
-            fontSize: '13px',
-            color: '#6b7280'
+            display: 'flex',
+            gap: '20px',
+            paddingTop: '15px',
+            borderTop: '1px solid #f3f4f6',
+            flexWrap: 'wrap'
         }}>
-            Зареєстровано: {new Date(admin.createdAt).toLocaleDateString('uk-UA')}
+            {admin.dateOfBirth && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    color: '#6b7280'
+                }}>
+                    <FaCalendarAlt size={12} />
+                    Дата народження: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
+                    {age && (
+                        <span style={{ marginLeft: '8px', fontWeight: '500' }}>
+                            ({age} {getAgeSuffix(age)})
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
+
+// ДЛЯ ВІДМІНЮВАННЯ СЛОВА "РІК"
+const getAgeSuffix = (age) => {
+    const lastDigit = age % 10;
+    const lastTwoDigits = age % 100;
+
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+        return 'років';
+    }
+
+    if (lastDigit === 1) {
+        return 'рік';
+    }
+
+    if (lastDigit >= 2 && lastDigit <= 4) {
+        return 'роки';
+    }
+
+    return 'років';
+};
 
 export default AdminCard;
