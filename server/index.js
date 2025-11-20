@@ -48,6 +48,7 @@ const scheduleRouter = require('./routes/schedule');
 const timeSlotsRouter = require('./routes/timetab');
 const classroomsRoutes = require('./routes/classrooms');
 const daysOfWeekRoutes = require('./routes/daysOfWeek');
+const studyCalendar = require('./routes/studyCalendar');
 const availableResourcesRoutes = require('./routes/availableResources');
 
 console.log('Перевірка завантаження маршрутів...');
@@ -63,6 +64,7 @@ app.use('/api/schedule', scheduleRouter);
 app.use('/api/time-slots', timeSlotsRouter);
 app.use('/api/classrooms', classroomsRoutes);
 app.use('/api/days', daysOfWeekRoutes);
+app.use('/api/study-calendar', studyCalendar);
 app.use('/api/available', availableResourcesRoutes);
 
 console.log('Всі маршрути зареєстровано!');

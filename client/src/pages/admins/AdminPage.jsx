@@ -5,10 +5,11 @@ import {
     FaCog,
     FaChartLine,
     FaUserTie,
-    FaCalendarAlt,
+    FaBook,
     FaClock,
     FaDoorOpen,
-    FaUserCircle
+    FaUserCircle,
+    FaCalendar
 } from "react-icons/fa";
 import AdminUserSystem from "./user_tab/AdminUserSystem";
 import AdminShowCurators from "./curator_tab/AdminShowCurators";
@@ -17,6 +18,7 @@ import ScheduleDashboard from "./schedule_tab/ScheduleDashboard";
 import TimeSlot from "./time_tab/TimeTab";
 import ClassroomsTab from "./classroom_tab/ClassroomsTab";
 import AdminInfo from "./adminInfo/AdminInfo";
+import StudyCalendar from "./study_calendar_tab/StudyCalendar";
 
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -84,7 +86,8 @@ const AdminPage = ({ onLogout, userFullName }) => {
         { name: "Мій профіль", icon: <FaUserCircle /> },
         { name: "Користувачі", icon: <FaUserCog /> },
         { name: "Класні керівники", icon: <FaUserTie /> },
-        { name: "Розклад занять", icon: <FaCalendarAlt /> },
+        { name: "Навчальний календар", icon: <FaCalendar /> },
+        { name: "Розклад занять", icon: <FaBook /> },
         { name: "Розклад часу", icon: <FaClock /> },
         { name: "Кабінети", icon: <FaDoorOpen /> },
         { name: "Налаштування", icon: <FaCog /> },
@@ -104,6 +107,9 @@ const AdminPage = ({ onLogout, userFullName }) => {
 
             case "Класні керівники":
                 return <AdminShowCurators />;
+
+            case "Навчальний календар":
+                return <StudyCalendar />;
 
             case "Розклад занять":
                 return <ScheduleDashboard />;
