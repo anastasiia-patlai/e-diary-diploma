@@ -1,129 +1,102 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaCalendar } from 'react-icons/fa';
+import { FaTimes, FaSchool } from 'react-icons/fa';
 
 const SemesterForm = ({ semester, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         name: '',
         year: '',
         startDate: '',
-        endDate: '',
-        isActive: false
+        endDate: ''
     });
     const [errors, setErrors] = useState({});
-    const [loading, setLoading] = useState(false);
-
-    // Отримуємо поточний рік
-    const getCurrentYear = () => {
-        return new Date().getFullYear();
-    };
+    const [touched, setTouched] = useState({});
 
     useEffect(() => {
-        const currentYear = getCurrentYear();
-        const defaultYear = `${currentYear}-${currentYear + 1}`;
-
         if (semester) {
-            const formatDate = (dateString) => {
-                if (!dateString) return '';
-                const date = new Date(dateString);
-                return date.toISOString().split('T')[0];
-            };
-
             setFormData({
                 name: semester.name || '',
-                year: semester.year || defaultYear,
-                startDate: formatDate(semester.startDate),
-                endDate: formatDate(semester.endDate),
-                isActive: semester.isActive || false
+                year: semester.year || '',
+                startDate: semester.startDate ? semester.startDate.split('T')[0] : '',
+                endDate: semester.endDate ? semester.endDate.split('T')[0] : ''
             });
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                year: defaultYear
-            }));
         }
     }, [semester]);
 
-    const validate = () => {
-        const newErrors = {};
+    const validateField = (name, value) => {
+        let error = '';
+        const now = new Date();
 
-        if (!formData.name.trim()) newErrors.name = 'Назва обов\'язкова';
-
-        if (!formData.year.trim()) {
-            newErrors.year = 'Рік обов\'язковий';
-        } else if (!/^\d{4}-\d{4}$/.test(formData.year)) {
-            newErrors.year = 'Формат року: XXXX-XXXX (наприклад, 2024-2025)';
+        switch (name) {
+            case 'name':
+                if (!value) error = 'Назва семестру обов\'язкова';
+                break;
+            case 'year':
+                if (!value) error = 'Навчальний рік обов\'язковий';
+                else if (!/^\d{4}-\d{4}$/.test(value)) error = 'Формат року: XXXX-XXXX (напр. 2024-2025)';
+                break;
+            case 'startDate':
+                if (!value) error = 'Дата початку обов\'язкова';
+                else {
+                    const startDate = new Date(value);
+                    if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
+                        error = 'Дата початку не може бути давніше 5 років';
+                    }
+                }
+                break;
+            case 'endDate':
+                if (!value) error = 'Дата завершення обов\'язкова';
+                else if (formData.startDate) {
+                    const startDate = new Date(formData.startDate);
+                    const endDate = new Date(value);
+                    if (endDate <= startDate) {
+                        error = 'Дата завершення має бути після дати початку';
+                    }
+                }
+                break;
+            default:
+                break;
         }
-
-        if (!formData.startDate) newErrors.startDate = 'Дата початку обов\'язкова';
-        if (!formData.endDate) newErrors.endDate = 'Дата завершення обов\'язкова';
-
-        if (formData.startDate && formData.endDate) {
-            const start = new Date(formData.startDate);
-            const end = new Date(formData.endDate);
-            if (end <= start) {
-                newErrors.endDate = 'Дата завершення має бути після дати початку';
-            }
-        }
-
-        return newErrors;
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const newErrors = validate();
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const submitData = {
-                name: formData.name,
-                year: formData.year,
-                startDate: formData.startDate,
-                endDate: formData.endDate,
-                isActive: formData.isActive
-            };
-
-            console.log('Відправляємо дані:', submitData);
-
-            await onSubmit(submitData);
-        } catch (err) {
-            console.error('Помилка в формі:', err);
-        } finally {
-            setLoading(false);
-        }
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (touched[name]) validateField(name, value);
+    };
 
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        validateField(name, value);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Валідуємо всі поля
+        Object.keys(formData).forEach(field => {
+            validateField(field, formData[field]);
+            setTouched(prev => ({ ...prev, [field]: true }));
+        });
+
+        // Перевіряємо, чи немає помилок
+        if (Object.values(errors).every(err => !err)) {
+            onSubmit(formData);
         }
     };
 
-    const generateYearOptions = () => {
-        const currentYear = getCurrentYear();
-        const options = [];
-
-        for (let i = -1; i <= 1; i++) {
-            const startYear = currentYear + i;
-            const endYear = startYear + 1;
-            const yearValue = `${startYear}-${endYear}`;
-            options.push(yearValue);
-        }
-
-        return options;
+    const getInputClass = (name) => {
+        if (!touched[name]) return 'form-control';
+        if (errors[name]) return 'form-control is-invalid';
+        return 'form-control is-valid';
     };
 
-    const yearOptions = generateYearOptions();
+    const getSelectClass = (name) => {
+        if (!touched[name]) return 'form-select';
+        if (errors[name]) return 'form-select is-invalid';
+        return 'form-select is-valid';
+    };
 
     return (
         <div style={{
@@ -154,16 +127,15 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FaCalendar />
+                        <FaSchool />
                         {semester ? 'Редагувати семестр' : 'Додати семестр'}
                     </h3>
                     <button
                         onClick={onClose}
-                        disabled={loading}
                         style={{
                             background: 'none',
                             border: 'none',
-                            cursor: loading ? 'not-allowed' : 'pointer',
+                            cursor: 'pointer',
                             fontSize: '20px',
                             color: '#6b7280'
                         }}
@@ -182,58 +154,35 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.name ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                backgroundColor: loading ? '#f9fafb' : 'white'
-                            }}
+                            onBlur={handleBlur}
+                            className={getSelectClass('name')}
                         >
                             <option value="">Оберіть семестр</option>
-                            <option value="I. Осінньо-зимовий">I. Осінньо-зимовий семестр</option>
-                            <option value="II. Зимово-весняний">II. Зимово-весняний семестр</option>
+                            <option value="I. Осінньо-зимовий">I. Осінньо-зимовий</option>
+                            <option value="II. Зимово-весняний">II. Зимово-весняний</option>
                         </select>
-                        {errors.name && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.name}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.name}
+                        </div>
                     </div>
 
-                    {/* Рік */}
+                    {/* Навчальний рік */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Навчальний рік *
                         </label>
-                        <select
+                        <input
+                            type="text"
                             name="year"
                             value={formData.year}
                             onChange={handleChange}
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.year ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                backgroundColor: loading ? '#f9fafb' : 'white'
-                            }}
-                        >
-                            <option value="">Оберіть навчальний рік</option>
-                            {yearOptions.map(year => (
-                                <option key={year} value={year}>
-                                    {year}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.year && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.year}
-                            </div>
-                        )}
+                            onBlur={handleBlur}
+                            className={getInputClass('year')}
+                            placeholder="Напр. 2024-2025"
+                        />
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.year}
+                        </div>
                     </div>
 
                     {/* Дата початку */}
@@ -246,25 +195,16 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             name="startDate"
                             value={formData.startDate}
                             onChange={handleChange}
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.startDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                backgroundColor: loading ? '#f9fafb' : 'white'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('startDate')}
                         />
-                        {errors.startDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.startDate}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.startDate}
+                        </div>
                     </div>
 
                     {/* Дата завершення */}
-                    <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '24px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Дата завершення *
                         </label>
@@ -273,41 +213,12 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             name="endDate"
                             value={formData.endDate}
                             onChange={handleChange}
-                            disabled={loading}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.endDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                backgroundColor: loading ? '#f9fafb' : 'white'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('endDate')}
                         />
-                        {errors.endDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.endDate}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Активний семестр */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            cursor: loading ? 'not-allowed' : 'pointer'
-                        }}>
-                            <input
-                                type="checkbox"
-                                name="isActive"
-                                checked={formData.isActive}
-                                onChange={handleChange}
-                                disabled={loading}
-                                style={{ width: '16px', height: '16px' }}
-                            />
-                            <span style={{ fontWeight: '500' }}>Активний семестр</span>
-                        </label>
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.endDate}
+                        </div>
                     </div>
 
                     {/* Кнопки */}
@@ -315,37 +226,33 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            disabled={loading}
                             style={{
                                 flex: 1,
                                 padding: '12px',
-                                backgroundColor: loading ? '#d1d5db' : '#6b7280',
+                                backgroundColor: '#6b7280',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                fontWeight: '600',
-                                opacity: loading ? 0.6 : 1
+                                cursor: 'pointer',
+                                fontWeight: '600'
                             }}
                         >
                             Скасувати
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
                             style={{
                                 flex: 1,
                                 padding: '12px',
-                                backgroundColor: loading ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                fontWeight: '600',
-                                opacity: loading ? 0.6 : 1
+                                cursor: 'pointer',
+                                fontWeight: '600'
                             }}
                         >
-                            {loading ? 'Збереження...' : (semester ? 'Оновити' : 'Додати')}
+                            {semester ? 'Оновити' : 'Додати'}
                         </button>
                     </div>
                 </form>

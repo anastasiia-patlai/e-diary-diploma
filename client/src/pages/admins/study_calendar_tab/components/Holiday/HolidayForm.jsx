@@ -10,6 +10,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         endDate: ''
     });
     const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
 
     useEffect(() => {
         if (holiday) {
@@ -23,48 +24,55 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         }
     }, [holiday]);
 
-    const validate = () => {
-        const newErrors = {};
+    const validateField = (name, value) => {
+        let error = '';
+        const now = new Date();
 
-        if (!formData.quarter) newErrors.quarter = 'Чверть обов\'язкова';
-        if (!formData.name) newErrors.name = 'Назва обов\'язкова';
-        if (!formData.type) newErrors.type = 'Тип канікул обов\'язковий';
-        if (!formData.startDate) newErrors.startDate = 'Дата початку обов\'язкова';
-        if (!formData.endDate) newErrors.endDate = 'Дата завершення обов\'язкова';
-
-        if (formData.startDate && formData.endDate) {
-            const start = new Date(formData.startDate);
-            const end = new Date(formData.endDate);
-            if (end <= start) {
-                newErrors.endDate = 'Дата завершення має бути після дати початку';
-            }
+        switch (name) {
+            case 'quarter':
+                if (!value) error = 'Чверть обов\'язкова';
+                break;
+            case 'name':
+                if (!value) error = 'Назва канікул обов\'язкова';
+                break;
+            case 'type':
+                if (!value) error = 'Тип канікул обов\'язковий';
+                break;
+            case 'startDate':
+                if (!value) error = 'Дата початку обов\'язкова';
+                else {
+                    const startDate = new Date(value);
+                    if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
+                        error = 'Дата початку не може бути давніше 5 років';
+                    }
+                }
+                break;
+            case 'endDate':
+                if (!value) error = 'Дата завершення обов\'язкова';
+                else if (formData.startDate) {
+                    const startDate = new Date(formData.startDate);
+                    const endDate = new Date(value);
+                    if (endDate <= startDate) {
+                        error = 'Дата завершення має бути після дати початку';
+                    }
+                }
+                break;
+            default:
+                break;
         }
-
-        return newErrors;
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const newErrors = validate();
-
-        if (Object.keys(newErrors).length === 0) {
-            onSubmit(formData);
-        } else {
-            setErrors(newErrors);
-        }
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (touched[name]) validateField(name, value);
+    };
 
-        // Clear error when user starts typing
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
-        }
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        validateField(name, value);
     };
 
     // Автоматично встановлюємо назву при зміні типу
@@ -82,6 +90,33 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
             }));
         }
     }, [formData.type, holiday]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Валідуємо всі поля
+        Object.keys(formData).forEach(field => {
+            validateField(field, formData[field]);
+            setTouched(prev => ({ ...prev, [field]: true }));
+        });
+
+        // Перевіряємо, чи немає помилок
+        if (Object.values(errors).every(err => !err)) {
+            onSubmit(formData);
+        }
+    };
+
+    const getInputClass = (name) => {
+        if (!touched[name]) return 'form-control';
+        if (errors[name]) return 'form-control is-invalid';
+        return 'form-control is-valid';
+    };
+
+    const getSelectClass = (name) => {
+        if (!touched[name]) return 'form-select';
+        if (errors[name]) return 'form-select is-invalid';
+        return 'form-select is-valid';
+    };
 
     // Функція для отримання назви чверті з безпечним доступом
     const getQuarterDisplayName = (quarter) => {
@@ -148,13 +183,8 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             name="quarter"
                             value={formData.quarter}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.quarter ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getSelectClass('quarter')}
                         >
                             <option value="">Оберіть чверть</option>
                             {quarters.map(quarter => (
@@ -163,11 +193,9 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                                 </option>
                             ))}
                         </select>
-                        {errors.quarter && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.quarter}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.quarter}
+                        </div>
                     </div>
 
                     {/* Тип канікул */}
@@ -179,13 +207,8 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             name="type"
                             value={formData.type}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.type ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getSelectClass('type')}
                         >
                             <option value="">Оберіть тип</option>
                             <option value="Осінні">Осінні</option>
@@ -193,11 +216,9 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             <option value="Весняні">Весняні</option>
                             <option value="Літні">Літні</option>
                         </select>
-                        {errors.type && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.type}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.type}
+                        </div>
                     </div>
 
                     {/* Назва канікул */}
@@ -210,19 +231,12 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.name ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('name')}
                         />
-                        {errors.name && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.name}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.name}
+                        </div>
                     </div>
 
                     {/* Дата початку */}
@@ -235,19 +249,12 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             name="startDate"
                             value={formData.startDate}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.startDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('startDate')}
                         />
-                        {errors.startDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.startDate}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.startDate}
+                        </div>
                     </div>
 
                     {/* Дата завершення */}
@@ -260,19 +267,12 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             name="endDate"
                             value={formData.endDate}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.endDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('endDate')}
                         />
-                        {errors.endDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.endDate}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.endDate}
+                        </div>
                     </div>
 
                     {/* Кнопки */}

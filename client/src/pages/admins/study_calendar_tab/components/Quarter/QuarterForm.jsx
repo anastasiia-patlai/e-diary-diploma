@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaList } from 'react-icons/fa';
+import { FaTimes, FaCalendar } from 'react-icons/fa';
 
 const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
@@ -7,90 +7,117 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
         number: '',
         name: '',
         startDate: '',
-        endDate: '',
-        isActive: false
+        endDate: ''
     });
     const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
 
     useEffect(() => {
         if (quarter) {
             setFormData({
-                semester: quarter.semester?._id || quarter.semester,
-                number: quarter.number.toString(),
-                name: quarter.name,
-                startDate: quarter.startDate.split('T')[0],
-                endDate: quarter.endDate.split('T')[0],
-                isActive: quarter.isActive
+                semester: quarter.semester?._id || '',
+                number: quarter.number || '',
+                name: quarter.name || '',
+                startDate: quarter.startDate ? quarter.startDate.split('T')[0] : '',
+                endDate: quarter.endDate ? quarter.endDate.split('T')[0] : ''
             });
         }
     }, [quarter]);
 
-    const validate = () => {
-        const newErrors = {};
+    const validateField = (name, value) => {
+        let error = '';
+        const now = new Date();
 
-        if (!formData.semester) newErrors.semester = 'Семестр обов\'язковий';
-        if (!formData.number) newErrors.number = 'Номер чверті обов\'язковий';
-        if (!formData.name) newErrors.name = 'Назва обов\'язкова';
-        if (!formData.startDate) newErrors.startDate = 'Дата початку обов\'язкова';
-        if (!formData.endDate) newErrors.endDate = 'Дата завершення обов\'язкова';
-
-        if (formData.startDate && formData.endDate) {
-            const start = new Date(formData.startDate);
-            const end = new Date(formData.endDate);
-            if (end <= start) {
-                newErrors.endDate = 'Дата завершення має бути після дати початку';
-            }
+        switch (name) {
+            case 'semester':
+                if (!value) error = 'Семестр обов\'язковий';
+                break;
+            case 'number':
+                if (!value) error = 'Номер чверті обов\'язковий';
+                else if (value < 1 || value > 4) error = 'Номер чверті має бути від 1 до 4';
+                break;
+            case 'name':
+                if (!value) error = 'Назва чверті обов\'язкова';
+                break;
+            case 'startDate':
+                if (!value) error = 'Дата початку обов\'язкова';
+                else {
+                    const startDate = new Date(value);
+                    if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
+                        error = 'Дата початку не може бути давніше 5 років';
+                    }
+                }
+                break;
+            case 'endDate':
+                if (!value) error = 'Дата завершення обов\'язкова';
+                else if (formData.startDate) {
+                    const startDate = new Date(formData.startDate);
+                    const endDate = new Date(value);
+                    if (endDate <= startDate) {
+                        error = 'Дата завершення має бути після дати початку';
+                    }
+                }
+                break;
+            default:
+                break;
         }
-
-        return newErrors;
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const newErrors = validate();
-
-        if (Object.keys(newErrors).length === 0) {
-            onSubmit({
-                ...formData,
-                number: parseInt(formData.number)
-            });
-        } else {
-            setErrors(newErrors);
-        }
+        setErrors(prev => ({ ...prev, [name]: error }));
     };
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-
-        // Clear error when user starts typing
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
-        }
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (touched[name]) validateField(name, value);
     };
 
-    const getQuarterName = (number) => {
-        const names = {
-            1: 'I чверть',
-            2: 'II чверть',
-            3: 'III чверть',
-            4: 'IV чверть'
-        };
-        return names[number] || '';
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        validateField(name, value);
     };
 
-    // Автоматично встановлюємо назву при зміні номера
+    // Автоматично генеруємо назву при зміні номера
     useEffect(() => {
         if (formData.number && !quarter) {
+            const quarterNames = {
+                1: 'I чверть',
+                2: 'II чверть',
+                3: 'III чверть',
+                4: 'IV чверть'
+            };
             setFormData(prev => ({
                 ...prev,
-                name: getQuarterName(parseInt(formData.number))
+                name: quarterNames[formData.number] || ''
             }));
         }
     }, [formData.number, quarter]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Валідуємо всі поля
+        Object.keys(formData).forEach(field => {
+            validateField(field, formData[field]);
+            setTouched(prev => ({ ...prev, [field]: true }));
+        });
+
+        // Перевіряємо, чи немає помилок
+        if (Object.values(errors).every(err => !err)) {
+            onSubmit(formData);
+        }
+    };
+
+    const getInputClass = (name) => {
+        if (!touched[name]) return 'form-control';
+        if (errors[name]) return 'form-control is-invalid';
+        return 'form-control is-valid';
+    };
+
+    const getSelectClass = (name) => {
+        if (!touched[name]) return 'form-select';
+        if (errors[name]) return 'form-select is-invalid';
+        return 'form-select is-valid';
+    };
 
     return (
         <div style={{
@@ -121,7 +148,7 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FaList />
+                        <FaCalendar />
                         {quarter ? 'Редагувати чверть' : 'Додати чверть'}
                     </h3>
                     <button
@@ -148,13 +175,8 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             name="semester"
                             value={formData.semester}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.semester ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getSelectClass('semester')}
                         >
                             <option value="">Оберіть семестр</option>
                             {semesters.map(semester => (
@@ -163,11 +185,9 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                                 </option>
                             ))}
                         </select>
-                        {errors.semester && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.semester}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.semester}
+                        </div>
                     </div>
 
                     {/* Номер чверті */}
@@ -179,25 +199,18 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             name="number"
                             value={formData.number}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.number ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getSelectClass('number')}
                         >
                             <option value="">Оберіть номер</option>
-                            <option value="1">I чверть</option>
-                            <option value="2">II чверть</option>
-                            <option value="3">III чверть</option>
-                            <option value="4">IV чверть</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
                         </select>
-                        {errors.number && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.number}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.number}
+                        </div>
                     </div>
 
                     {/* Назва чверті */}
@@ -210,19 +223,13 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.name ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('name')}
+                            readOnly={!quarter} // Тільки для редагування можна змінювати назву
                         />
-                        {errors.name && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.name}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.name}
+                        </div>
                     </div>
 
                     {/* Дата початку */}
@@ -235,23 +242,16 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             name="startDate"
                             value={formData.startDate}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.startDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('startDate')}
                         />
-                        {errors.startDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.startDate}
-                            </div>
-                        )}
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.startDate}
+                        </div>
                     </div>
 
                     {/* Дата завершення */}
-                    <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '24px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Дата завершення *
                         </label>
@@ -260,33 +260,12 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             name="endDate"
                             value={formData.endDate}
                             onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                padding: '10px',
-                                border: `1px solid ${errors.endDate ? '#dc2626' : '#d1d5db'}`,
-                                borderRadius: '6px',
-                                fontSize: '14px'
-                            }}
+                            onBlur={handleBlur}
+                            className={getInputClass('endDate')}
                         />
-                        {errors.endDate && (
-                            <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>
-                                {errors.endDate}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Активна чверть */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                            <input
-                                type="checkbox"
-                                name="isActive"
-                                checked={formData.isActive}
-                                onChange={handleChange}
-                                style={{ width: '16px', height: '16px' }}
-                            />
-                            <span style={{ fontWeight: '500' }}>Активна чверть</span>
-                        </label>
+                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
+                            {errors.endDate}
+                        </div>
                     </div>
 
                     {/* Кнопки */}
@@ -329,4 +308,4 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
     );
 };
 
-export default QuarterForm; 
+export default QuarterForm;
