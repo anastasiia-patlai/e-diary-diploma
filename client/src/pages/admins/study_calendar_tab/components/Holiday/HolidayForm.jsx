@@ -11,6 +11,20 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
     });
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+    const [enrichedQuarters, setEnrichedQuarters] = useState([]);
+
+    // Обогащаем данные о четвертях информацией о семестрах
+    useEffect(() => {
+        if (quarters && quarters.length > 0) {
+            // Фильтруем только четверти с полной информацией о семестре
+            const validQuarters = quarters.filter(quarter =>
+                quarter.semester &&
+                quarter.semester.name &&
+                quarter.semester.year
+            );
+            setEnrichedQuarters(validQuarters);
+        }
+    }, [quarters]);
 
     useEffect(() => {
         if (holiday) {
@@ -118,13 +132,17 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         return 'form-select is-valid';
     };
 
-    // Функція для отримання назви чверті з безпечним доступом
+    // Функція для отримання назви чверті з інформацією про семестр
     const getQuarterDisplayName = (quarter) => {
-        const quarterName = quarter?.name || 'Невідома чверть';
-        const semesterName = quarter?.semester?.name || 'Невідомий семестр';
-        const semesterYear = quarter?.semester?.year || 'Невідомий рік';
+        if (!quarter.semester) {
+            return `${quarter.name} (Невідомий семестр)`;
+        }
 
-        return `${quarterName} (${semesterName} ${semesterYear})`;
+        const semesterName = quarter.semester.name || 'Невідомий семестр';
+        const semesterYear = quarter.semester.year || 'Невідомий рік';
+        const isActive = quarter.isActive ? ' • Активна' : '';
+
+        return `${quarter.name} • ${semesterName} ${semesterYear}${isActive}`;
     };
 
     return (
@@ -173,6 +191,20 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                     </button>
                 </div>
 
+                {/* Попередження про відсутність чвертей з інформацією про семестри */}
+                {enrichedQuarters.length === 0 && quarters.length > 0 && (
+                    <div style={{
+                        backgroundColor: '#fef3c7',
+                        color: '#d97706',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        marginBottom: '16px',
+                        fontSize: '14px'
+                    }}>
+                        Не знайдено чвертей з інформацією про семестри. Спробуйте оновити дані.
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit}>
                     {/* Чверть */}
                     <div style={{ marginBottom: '16px' }}>
@@ -185,9 +217,12 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             className={getSelectClass('quarter')}
+                            disabled={enrichedQuarters.length === 0}
                         >
-                            <option value="">Оберіть чверть</option>
-                            {quarters.map(quarter => (
+                            <option value="">
+                                {enrichedQuarters.length === 0 ? 'Немає доступних чвертей' : 'Оберіть чверть'}
+                            </option>
+                            {enrichedQuarters.map(quarter => (
                                 <option key={quarter._id} value={quarter._id}>
                                     {getQuarterDisplayName(quarter)}
                                 </option>
@@ -196,6 +231,11 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
                             {errors.quarter}
                         </div>
+                        {enrichedQuarters.length === 0 && quarters.length > 0 && (
+                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                                Переконайтеся, що чверті мають пов'язані семестри з інформацією про рік
+                            </div>
+                        )}
                     </div>
 
                     {/* Тип канікул */}
@@ -233,6 +273,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             className={getInputClass('name')}
+                            placeholder="Наприклад: Осінні канікули"
                         />
                         <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
                             {errors.name}
@@ -295,14 +336,15 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         </button>
                         <button
                             type="submit"
+                            disabled={enrichedQuarters.length === 0}
                             style={{
                                 flex: 1,
                                 padding: '12px',
-                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                backgroundColor: enrichedQuarters.length === 0 ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
-                                cursor: 'pointer',
+                                cursor: enrichedQuarters.length === 0 ? 'not-allowed' : 'pointer',
                                 fontWeight: '600'
                             }}
                         >

@@ -201,7 +201,13 @@ router.delete('/quarters/:id', async (req, res) => {
 router.get('/holidays', async (req, res) => {
     try {
         const holidays = await Holiday.find()
-            .populate('quarter')
+            .populate({
+                path: 'quarter',
+                populate: {
+                    path: 'semester',
+                    model: 'Semester'
+                }
+            })
             .sort({ startDate: 1 });
         res.json(holidays);
     } catch (err) {
