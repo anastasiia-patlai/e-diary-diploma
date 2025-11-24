@@ -6,6 +6,7 @@ const classroomSchema = new mongoose.Schema({
     type: { type: String, enum: ['lecture', 'practice', 'lab', 'general'], default: 'general' },
     equipment: [{ type: String }],
     isActive: { type: Boolean, default: true },
+    isAvailable: { type: Boolean, default: true },
     description: { type: String, maxlength: 500 }
 }, { timestamps: true });
 

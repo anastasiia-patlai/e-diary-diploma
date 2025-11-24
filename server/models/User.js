@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
     position: { type: String },                                         // тільки для викладачів
     jobPosition: { type: String },                                      // тільки для адміністраторів
     children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],   // тільки для батьків
-    parents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]     // тільки для студентів
+    parents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],     // тільки для студентів
+    isAvailable: { type: Boolean, default: true },                         // тільки для викладачів
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

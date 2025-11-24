@@ -1,17 +1,24 @@
-// routes/schedule.js
 const express = require('express');
 const router = express.Router();
 const Schedule = require('../models/Schedule');
 
-// Отримати весь розклад
 router.get('/', async (req, res) => {
     try {
-        const schedules = await Schedule.find()
+        const { semester } = req.query;
+        let query = {};
+
+        if (semester) {
+            query.semester = semester;
+        }
+
+        const schedules = await Schedule.find(query)
             .populate('teacher', 'fullName email position positions')
             .populate('group', 'name')
             .populate('classroom', 'name')
             .populate('dayOfWeek', 'name')
-            .populate('timeSlot', 'order startTime endTime'); // Популюємо TimeTab
+            .populate('timeSlot', 'order startTime endTime')
+            .populate('semester', 'name year');
+
         res.json(schedules);
     } catch (error) {
         console.error('Error fetching schedules:', error);
@@ -22,7 +29,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Створити новий запис розкладу
 router.post('/', async (req, res) => {
     try {
         const schedule = new Schedule(req.body);
@@ -33,7 +39,8 @@ router.post('/', async (req, res) => {
             { path: 'group', select: 'name' },
             { path: 'classroom', select: 'name' },
             { path: 'dayOfWeek', select: 'name' },
-            { path: 'timeSlot', select: 'order startTime endTime' }
+            { path: 'timeSlot', select: 'order startTime endTime' },
+            { path: 'semester', select: 'name year' }
         ]);
 
         res.status(201).json(schedule);
@@ -46,7 +53,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Видалити запис розкладу
 router.delete('/:id', async (req, res) => {
     try {
         const schedule = await Schedule.findByIdAndDelete(req.params.id);

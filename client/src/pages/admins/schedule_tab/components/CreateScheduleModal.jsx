@@ -7,25 +7,37 @@ import {
     FaClock,
     FaChalkboardTeacher,
     FaDoorOpen,
-    FaBook // ДОДАЙТЕ ЦЕЙ ІМПОРТ
+    FaBook,
+    FaGraduationCap
 } from "react-icons/fa";
 import axios from "axios";
 
-const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classrooms }) => {
+const CreateScheduleModal = ({
+    show,
+    onClose,
+    onSave,
+    groups,
+    teachers,
+    classrooms,
+    semesters,
+    selectedSemester
+}) => {
     const [formData, setFormData] = useState({
         subject: "",
         group: "",
         dayOfWeek: "",
         timeSlot: "",
         teacher: "",
-        classroom: ""
+        classroom: "",
+        semester: selectedSemester || ""
     });
     const [error, setError] = useState("");
     const [timeSlots, setTimeSlots] = useState([]);
     const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
     const [daysOfWeek, setDaysOfWeek] = useState([]);
+    const [availability, setAvailability] = useState({ available: true, conflicts: {} });
+    const [filteredTeachers, setFilteredTeachers] = useState([]);
 
-    // ЗАВАНТАЖИТИ ДНІ ТИЖНЯ ПРИ ВІДКРИТТІ МОДАЛЬНОГО ВІКНА
     useEffect(() => {
         const loadDaysOfWeek = async () => {
             try {
@@ -33,13 +45,18 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                 setDaysOfWeek(response.data);
             } catch (err) {
                 console.error("Error loading days of week:", err);
+                setDaysOfWeek([]);
             }
         };
 
         if (show) {
             loadDaysOfWeek();
+            setFormData(prev => ({
+                ...prev,
+                semester: selectedSemester
+            }));
         }
-    }, [show]);
+    }, [show, selectedSemester]);
 
     useEffect(() => {
         if (show) {
@@ -49,14 +66,35 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                 dayOfWeek: "",
                 timeSlot: "",
                 teacher: "",
-                classroom: ""
+                classroom: "",
+                semester: selectedSemester || ""
             });
             setError("");
             setTimeSlots([]);
+            setAvailability({ available: true, conflicts: {} });
+            setFilteredTeachers([]);
         }
-    }, [show]);
+    }, [show, selectedSemester]);
 
-    // Завантажити часові слоти при зміні дня тижня
+    // Фільтрація викладачів за предметом
+    useEffect(() => {
+        if (formData.subject && teachers.length > 0) {
+            const subject = formData.subject.toLowerCase();
+            const filtered = teachers.filter(teacher => {
+                // Перевіряємо позиції викладача
+                const positions = teacher.positions || [];
+                const position = teacher.position || "";
+
+                return positions.some(pos => pos.toLowerCase().includes(subject)) ||
+                    position.toLowerCase().includes(subject) ||
+                    teacher.fullName.toLowerCase().includes(subject);
+            });
+            setFilteredTeachers(filtered);
+        } else {
+            setFilteredTeachers(teachers);
+        }
+    }, [formData.subject, teachers]);
+
     useEffect(() => {
         const loadTimeSlots = async () => {
             if (!formData.dayOfWeek) {
@@ -66,11 +104,28 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
 
             try {
                 setLoadingTimeSlots(true);
-                const response = await axios.get(`http://localhost:3001/api/time-slots?dayOfWeekId=${formData.dayOfWeek}`);
-                setTimeSlots(response.data);
+                console.log("Завантаження часових слотів для дня:", formData.dayOfWeek);
+
+                // Використовуємо правильний URL для часових слотів
+                const response = await axios.get("http://localhost:3001/api/time-slots");
+                console.log("Усі часові слоти:", response.data);
+
+                // Фільтруємо часові слоти за вибраним днем тижня
+                const dayTimeSlots = response.data.filter(slot => {
+                    const slotDayId = slot.dayOfWeek?._id || slot.dayOfWeek?.id;
+                    const selectedDayId = formData.dayOfWeek;
+                    return slotDayId === selectedDayId;
+                });
+
+                const availableTimeSlots = dayTimeSlots.filter(slot => slot.isAvailable !== false);
+                console.log("Відфільтровані часові слоти:", availableTimeSlots);
+
+                setTimeSlots(availableTimeSlots);
                 setError("");
             } catch (err) {
                 console.error("Error loading time slots:", err);
+                console.error("URL запиту:", "http://localhost:3001/api/time-slots");
+                console.error("Статус помилки:", err.response?.status);
                 setTimeSlots([]);
                 setError("Помилка при завантаженні часу уроків");
             } finally {
@@ -80,6 +135,31 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
 
         loadTimeSlots();
     }, [formData.dayOfWeek]);
+
+    useEffect(() => {
+        const checkAvailability = async () => {
+            if (!formData.dayOfWeek || !formData.timeSlot || !formData.classroom || !formData.teacher) {
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    dayOfWeekId: formData.dayOfWeek,
+                    timeSlotId: formData.timeSlot,
+                    classroomId: formData.classroom,
+                    teacherId: formData.teacher
+                });
+
+                const response = await axios.get(`http://localhost:3001/api/available/check-availability?${params}`);
+                setAvailability(response.data);
+            } catch (err) {
+                console.error("Error checking availability:", err);
+                setAvailability({ available: true, conflicts: {} });
+            }
+        };
+
+        checkAvailability();
+    }, [formData.classroom, formData.teacher, formData.dayOfWeek, formData.timeSlot]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -92,6 +172,13 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     timeSlot: ""
                 };
             }
+            if (name === "subject") {
+                return {
+                    ...prev,
+                    [name]: value,
+                    teacher: "" // Скидаємо вибір викладача при зміні предмета
+                };
+            }
             return {
                 ...prev,
                 [name]: value
@@ -100,13 +187,18 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
     };
 
     const handleSave = () => {
-        // ДОДАЙТЕ ПЕРЕВІРКУ ДЛЯ ПРЕДМЕТА
-        if (!formData.subject || !formData.group || !formData.dayOfWeek || !formData.timeSlot || !formData.teacher || !formData.classroom) {
+        if (!formData.subject || !formData.group || !formData.dayOfWeek ||
+            !formData.timeSlot || !formData.teacher || !formData.classroom) {
             setError("Усі поля повинні бути заповнені");
             return;
         }
 
-        const selectedDay = daysOfWeek.find(day => day.id === parseInt(formData.dayOfWeek));
+        if (!availability.available) {
+            setError("Знайдено конфлікти розкладу. Виправте їх перед збереженням.");
+            return;
+        }
+
+        const selectedDay = daysOfWeek.find(day => (day._id || day.id) === formData.dayOfWeek);
         if (!selectedDay) {
             setError("Обраний день тижня не знайдений");
             return;
@@ -118,11 +210,15 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
             dayOfWeek: selectedDay._id,
             timeSlot: formData.timeSlot,
             teacher: formData.teacher,
-            classroom: formData.classroom
+            classroom: formData.classroom,
+            semester: selectedSemester
         };
 
         onSave(scheduleData);
     };
+
+    const availableClassrooms = classrooms.filter(classroom => classroom.isAvailable !== false);
+    const availableTeachers = filteredTeachers.filter(teacher => teacher.isAvailable !== false);
 
     if (!show) return null;
 
@@ -202,7 +298,63 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     </div>
                 )}
 
+                {!availability.available && (
+                    <div style={{
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        marginBottom: '16px'
+                    }}>
+                        <strong>Конфлікти розкладу:</strong>
+                        <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                            {availability.conflicts.classroom && (
+                                <li>Аудиторія зайнята</li>
+                            )}
+                            {availability.conflicts.teacher && (
+                                <li>Викладач зайнятий</li>
+                            )}
+                        </ul>
+                    </div>
+                )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: '8px',
+                            fontWeight: '600',
+                            color: '#374151'
+                        }}>
+                            <FaGraduationCap style={{
+                                marginRight: '8px',
+                                color: 'rgba(105, 180, 185, 1)',
+                                fontSize: '14px'
+                            }} />
+                            Семестр *
+                        </label>
+                        <select
+                            value={formData.semester}
+                            disabled
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                boxSizing: 'border-box',
+                                outline: 'none',
+                                backgroundColor: '#f9fafb',
+                                color: '#6b7280'
+                            }}
+                        >
+                            <option value={selectedSemester}>
+                                {semesters.find(s => s._id === selectedSemester)?.name} {semesters.find(s => s._id === selectedSemester)?.year}
+                            </option>
+                        </select>
+                    </div>
+
                     <div>
                         <label style={{
                             display: 'flex',
@@ -319,11 +471,11 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                             }}
                         >
                             <option value="">Оберіть день</option>
-                            <option value="1">Понеділок</option>
-                            <option value="2">Вівторок</option>
-                            <option value="3">Середа</option>
-                            <option value="4">Четвер</option>
-                            <option value="5">П'ятниця</option>
+                            {daysOfWeek.map(day => (
+                                <option key={day._id || day.id} value={day._id || day.id}>
+                                    {day.name}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -362,19 +514,19 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                             <option value="">
                                 {loadingTimeSlots ? 'Завантаження...' :
                                     !formData.dayOfWeek ? 'Спочатку оберіть день' :
-                                        'Оберіть час'}
+                                        timeSlots.length === 0 ? 'Немає доступних часових слотів' :
+                                            'Оберіть час'}
                             </option>
                             {timeSlots.map(slot => (
                                 <option key={slot._id} value={slot._id}>
                                     {slot.order}. {slot.startTime} - {slot.endTime}
-                                    {slot.dayOfWeek && slot.dayOfWeek.name ? ` (${slot.dayOfWeek.name})` : ''}
                                 </option>
                             ))}
                         </select>
                         {formData.dayOfWeek && timeSlots.length === 0 && !loadingTimeSlots && (
                             <div style={{
                                 fontSize: '12px',
-                                color: '#6b7280',
+                                color: '#dc2626',
                                 marginTop: '4px'
                             }}>
                                 Для цього дня не налаштовано розклад дзвінків
@@ -396,11 +548,22 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                                 fontSize: '14px'
                             }} />
                             Викладач *
+                            {formData.subject && (
+                                <span style={{
+                                    fontSize: '12px',
+                                    color: '#6b7280',
+                                    fontWeight: 'normal',
+                                    marginLeft: '8px'
+                                }}>
+                                    ({availableTeachers.length} доступних)
+                                </span>
+                            )}
                         </label>
                         <select
                             name="teacher"
                             value={formData.teacher}
                             onChange={handleChange}
+                            disabled={availableTeachers.length === 0}
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
@@ -409,16 +572,33 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
-                                transition: 'border-color 0.2s'
+                                transition: 'border-color 0.2s',
+                                opacity: availableTeachers.length === 0 ? 0.6 : 1
                             }}
                         >
-                            <option value="">Оберіть викладача</option>
-                            {teachers.map(teacher => (
+                            <option value="">
+                                {availableTeachers.length === 0 ?
+                                    (formData.subject ? 'Немає викладачів для цього предмета' : 'Оберіть викладача')
+                                    : 'Оберіть викладача'
+                                }
+                            </option>
+                            {availableTeachers.map(teacher => (
                                 <option key={teacher._id} value={teacher._id}>
-                                    {teacher.fullName} ({teacher.position || teacher.positions?.[0] || 'Предмет не вказано'})
+                                    {teacher.fullName}
+                                    {teacher.position && ` - ${teacher.position}`}
+                                    {teacher.positions && teacher.positions.length > 0 && ` (${teacher.positions.join(', ')})`}
                                 </option>
                             ))}
                         </select>
+                        {formData.subject && availableTeachers.length === 0 && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                Не знайдено викладачів для предмета "{formData.subject}"
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -452,7 +632,7 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                             }}
                         >
                             <option value="">Оберіть аудиторію</option>
-                            {classrooms.map(classroom => (
+                            {availableClassrooms.map(classroom => (
                                 <option key={classroom._id} value={classroom._id}>
                                     {classroom.name} ({classroom.type === 'lecture' ? 'Лекційна' :
                                         classroom.type === 'practice' ? 'Практична' :
@@ -502,14 +682,21 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                     <button
                         type="button"
                         onClick={handleSave}
+                        disabled={!formData.subject || !formData.group || !formData.dayOfWeek ||
+                            !formData.timeSlot || !formData.teacher || !formData.classroom ||
+                            !availability.available}
                         style={{
                             flex: 1,
                             padding: '12px',
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
+                            backgroundColor: (!formData.subject || !formData.group || !formData.dayOfWeek ||
+                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
+                                !availability.available) ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer',
+                            cursor: (!formData.subject || !formData.group || !formData.dayOfWeek ||
+                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
+                                !availability.available) ? 'not-allowed' : 'pointer',
                             fontWeight: '600',
                             fontSize: '14px',
                             display: 'flex',
@@ -519,9 +706,15 @@ const CreateScheduleModal = ({ show, onClose, onSave, groups, teachers, classroo
                             transition: 'background-color 0.2s'
                         }}
                         onMouseOver={(e) => {
+                            if (!formData.subject || !formData.group || !formData.dayOfWeek ||
+                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
+                                !availability.available) return;
                             e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
                         }}
                         onMouseOut={(e) => {
+                            if (!formData.subject || !formData.group || !formData.dayOfWeek ||
+                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
+                                !availability.available) return;
                             e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                         }}
                     >

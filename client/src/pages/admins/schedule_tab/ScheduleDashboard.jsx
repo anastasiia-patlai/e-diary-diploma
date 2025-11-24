@@ -14,12 +14,13 @@ const ScheduleDashboard = () => {
     const [classrooms, setClassrooms] = useState([]);
     const [timeSlots, setTimeSlots] = useState([]);
     const [daysOfWeek, setDaysOfWeek] = useState([]);
+    const [semesters, setSemesters] = useState([]);
+    const [selectedSemester, setSelectedSemester] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState("");
 
-    // Функція для сортування груп від молодших до старших
     const sortGroupsByGrade = (groupsArray) => {
         return groupsArray.sort((a, b) => {
             const gradeA = parseInt(a.name.match(/\d+/)?.[0] || 0);
@@ -36,83 +37,129 @@ const ScheduleDashboard = () => {
         });
     };
 
-    // Завантажити часові слоти
+    const loadSemesters = async () => {
+        try {
+            console.log("Завантаження семестрів...");
+            const response = await axios.get("http://localhost:3001/api/study-calendar/semesters");
+            console.log("Семестри отримані:", response.data);
+            setSemesters(response.data);
+
+            const activeSemester = response.data.find(sem => sem.isActive);
+            if (activeSemester) {
+                console.log("Активний семестр:", activeSemester);
+                setSelectedSemester(activeSemester._id);
+            } else if (response.data.length > 0) {
+                console.log("Перший семестр:", response.data[0]);
+                setSelectedSemester(response.data[0]._id);
+            } else {
+                console.log("Семестрів не знайдено");
+                setSelectedSemester("");
+            }
+        } catch (err) {
+            console.error("Помилка завантаження семестрів:", err);
+            console.error("URL запиту:", "http://localhost:3001/api/study-calendar/semesters");
+            console.error("Статус помилки:", err.response?.status);
+            console.error("Дані помилки:", err.response?.data);
+            setSemesters([]);
+            setSelectedSemester("");
+        }
+    };
+
     const loadTimeSlots = async () => {
         try {
             const response = await axios.get("http://localhost:3001/api/time-slots");
             setTimeSlots(response.data);
         } catch (err) {
-            console.error("❌ Помилка завантаження часових слотів:", err);
+            console.error("Помилка завантаження часових слотів:", err);
             setTimeSlots([]);
         }
     };
 
-    // Завантажити дні тижня
     const loadDaysOfWeek = async () => {
         try {
             const response = await axios.get("http://localhost:3001/api/days/active");
             setDaysOfWeek(response.data);
         } catch (err) {
-            console.error("❌ Помилка завантаження днів тижня:", err);
+            console.error("Помилка завантаження днів тижня:", err);
             setDaysOfWeek([]);
         }
     };
 
-    // Завантажити всі дані
+    const loadGroups = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/groups");
+            const sortedGroups = sortGroupsByGrade(response.data);
+            setGroups(sortedGroups);
+            console.log("Групи завантажені:", sortedGroups.length);
+        } catch (err) {
+            console.error("Помилка завантаження груп:", err);
+            setGroups([]);
+        }
+    };
+
+    const loadTeachers = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/users/teachers");
+            setTeachers(response.data);
+            console.log("Викладачі завантажені:", response.data.length);
+        } catch (err) {
+            console.error("Помилка завантаження викладачів:", err);
+            setTeachers([]);
+        }
+    };
+
+    const loadClassrooms = async () => {
+        try {
+            const response = await axios.get("http://localhost:3001/api/classrooms");
+            const activeClassrooms = response.data.filter(classroom => classroom.isActive);
+            setClassrooms(activeClassrooms);
+            console.log("Аудиторії завантажені:", activeClassrooms.length);
+        } catch (err) {
+            console.error("Помилка завантаження аудиторій:", err);
+            setClassrooms([]);
+        }
+    };
+
+    const loadSchedules = async () => {
+        if (!selectedSemester) {
+            setSchedules([]);
+            return;
+        }
+
+        try {
+            console.log("Завантаження розкладу для семестру:", selectedSemester);
+            const response = await axios.get(`http://localhost:3001/api/schedule?semester=${selectedSemester}`);
+            setSchedules(response.data);
+            console.log("Розклади завантажені:", response.data.length);
+        } catch (err) {
+            console.error("Помилка завантаження розкладів:", err);
+            setSchedules([]);
+        }
+    };
+
     const loadAllData = async () => {
         try {
             setLoading(true);
             setError("");
 
-            console.log("🔄 Початок завантаження даних...");
+            console.log("Початок завантаження даних...");
 
-            // Завантажуємо часові слоти та дні тижня паралельно
-            await Promise.all([loadTimeSlots(), loadDaysOfWeek()]);
+            // Спочатку завантажуємо семестри
+            await loadSemesters();
 
-            // Решта запитів
-            let schedulesRes, groupsRes, teachersRes, classroomsRes;
+            // Потім інші дані
+            await Promise.all([
+                loadGroups(),
+                loadTeachers(),
+                loadClassrooms(),
+                loadTimeSlots(),
+                loadDaysOfWeek()
+            ]);
 
-            try {
-                schedulesRes = await axios.get("http://localhost:3001/api/schedule");
-                console.log("✅ Розклади завантажені:", schedulesRes.data.length);
-            } catch (err) {
-                console.error("❌ Помилка завантаження розкладів:", err.response?.data || err.message);
-                throw new Error(`Розклади: ${err.response?.data?.message || err.message}`);
-            }
-
-            try {
-                groupsRes = await axios.get("http://localhost:3001/api/groups");
-                console.log("✅ Групи завантажені:", groupsRes.data.length);
-            } catch (err) {
-                console.error("❌ Помилка завантаження груп:", err.response?.data || err.message);
-                throw new Error(`Групи: ${err.response?.data?.message || err.message}`);
-            }
-
-            try {
-                teachersRes = await axios.get("http://localhost:3001/api/users/teachers");
-                console.log("✅ Викладачі завантажені:", teachersRes.data.length);
-            } catch (err) {
-                console.error("❌ Помилка завантаження викладачів:", err.response?.data || err.message);
-                throw new Error(`Викладачі: ${err.response?.data?.message || err.message}`);
-            }
-
-            try {
-                classroomsRes = await axios.get("http://localhost:3001/api/classrooms");
-                console.log("✅ Аудиторії завантажені:", classroomsRes.data.length);
-            } catch (err) {
-                console.error("❌ Помилка завантаження аудиторій:", err.response?.data || err.message);
-                throw new Error(`Аудиторії: ${err.response?.data?.message || err.message}`);
-            }
-
-            setSchedules(schedulesRes.data);
-            setGroups(sortGroupsByGrade(groupsRes.data));
-            setTeachers(teachersRes.data);
-            setClassrooms(classroomsRes.data.filter(classroom => classroom.isActive));
-
-            console.log("✅ Всі дані успішно завантажені");
+            console.log("Всі дані успішно завантажені");
 
         } catch (err) {
-            console.error("❌ Критична помилка завантаження даних:", err);
+            console.error("Критична помилка завантаження даних:", err);
             setError("Помилка при завантаженні даних: " + err.message);
         } finally {
             setLoading(false);
@@ -123,11 +170,22 @@ const ScheduleDashboard = () => {
         loadAllData();
     }, []);
 
+    useEffect(() => {
+        if (selectedSemester) {
+            loadSchedules();
+        } else {
+            setSchedules([]);
+        }
+    }, [selectedSemester]);
+
     const handleCreateSchedule = async (scheduleData) => {
         try {
             setLoading(true);
-            const response = await axios.post("http://localhost:3001/api/schedule", scheduleData);
-            await loadAllData();
+            const response = await axios.post("http://localhost:3001/api/schedule", {
+                ...scheduleData,
+                semester: selectedSemester
+            });
+            await loadSchedules();
             setShowModal(false);
             setError("");
         } catch (err) {
@@ -144,14 +202,13 @@ const ScheduleDashboard = () => {
 
         try {
             await axios.delete(`http://localhost:3001/api/schedule/${id}`);
-            await loadAllData();
+            await loadSchedules();
             setError("");
         } catch (err) {
             setError(err.response?.data?.message || "Помилка при видаленні заняття");
         }
     };
 
-    // Фільтруємо розклад для вибраної групи
     const filteredSchedules = selectedGroup
         ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
         : schedules;
@@ -163,6 +220,9 @@ const ScheduleDashboard = () => {
                 groups={groups}
                 selectedGroup={selectedGroup}
                 onGroupChange={setSelectedGroup}
+                semesters={semesters}
+                selectedSemester={selectedSemester}
+                onSemesterChange={setSelectedSemester}
             />
 
             {error && (
@@ -179,8 +239,19 @@ const ScheduleDashboard = () => {
                 </Alert>
             )}
 
-            {/* Відображаємо різні таблиці залежно від вибору */}
-            {selectedGroup ? (
+            {!selectedSemester && semesters.length > 0 && (
+                <Alert variant="warning" style={{ marginBottom: "16px" }}>
+                    Оберіть семестр для перегляду розкладу
+                </Alert>
+            )}
+
+            {semesters.length === 0 && !loading && (
+                <Alert variant="info" style={{ marginBottom: "16px" }}>
+                    Немає доступних семестрів. Спочатку створіть семестр в розділі "Навчальний календар".
+                </Alert>
+            )}
+
+            {selectedSemester && (selectedGroup ? (
                 <GroupScheduleTable
                     schedules={filteredSchedules}
                     groups={groups}
@@ -199,7 +270,7 @@ const ScheduleDashboard = () => {
                     loading={loading}
                     onDeleteSchedule={handleDeleteSchedule}
                 />
-            )}
+            ))}
 
             <CreateScheduleModal
                 show={showModal}
@@ -208,6 +279,8 @@ const ScheduleDashboard = () => {
                 groups={groups}
                 teachers={teachers}
                 classrooms={classrooms}
+                semesters={semesters}
+                selectedSemester={selectedSemester}
             />
         </Container>
     );

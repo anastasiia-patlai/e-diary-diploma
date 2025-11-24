@@ -4,6 +4,29 @@ const Semester = require('../models/Semester');
 const Quarter = require('../models/Quarter');
 const Holiday = require('../models/Holiday');
 
+// ТЕСТОВИЙ РОУТ ДЛЯ ПЕРЕВІРКИ
+router.get('/test-semesters', async (req, res) => {
+    try {
+        console.log("Тестовий запит на семестри отримано");
+        const semesters = await Semester.find().sort({
+            year: -1,
+            name: 1
+        });
+        console.log("Знайдено семестрів:", semesters.length);
+        res.json({
+            success: true,
+            count: semesters.length,
+            semesters: semesters
+        });
+    } catch (err) {
+        console.error("Помилка тестового запиту:", err);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
+    }
+});
+
 // ДЛЯ СЕМЕСТРУ
 router.get('/semesters', async (req, res) => {
     try {

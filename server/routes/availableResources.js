@@ -5,17 +5,13 @@ const Schedule = require('../models/Schedule');
 const Classroom = require('../models/Classroom');
 const User = require('../models/User');
 
-console.log('✅ AvailableResources routes loaded!');
-
-// MIDDLEWARE для логування
 router.use((req, res, next) => {
-    console.log('🔍 Available Resources:', req.method, req.path, req.query);
+    console.log('Available Resources:', req.method, req.path, req.query);
     next();
 });
 
-// ТЕСТОВИЙ РОУТ
 router.get('/test', (req, res) => {
-    console.log('✅ /api/available/test called successfully!');
+    console.log('/api/available/test called successfully!');
     res.json({
         message: 'Available resources API працює!',
         timestamp: new Date().toISOString(),
@@ -23,12 +19,11 @@ router.get('/test', (req, res) => {
     });
 });
 
-// ОТРИМАТИ ВІЛЬНІ АУДИТОРІЇ
 router.get('/classrooms', async (req, res) => {
     try {
         const { dayOfWeekId, timeSlotId, excludeScheduleId } = req.query;
 
-        console.log('🔍 Запит на вільні аудиторії:', { dayOfWeekId, timeSlotId, excludeScheduleId });
+        console.log('Запит на вільні аудиторії:', { dayOfWeekId, timeSlotId, excludeScheduleId });
 
         if (!dayOfWeekId || !timeSlotId) {
             return res.status(400).json({
@@ -36,7 +31,6 @@ router.get('/classrooms', async (req, res) => {
             });
         }
 
-        // Перевірка валідності ObjectId
         if (!mongoose.Types.ObjectId.isValid(dayOfWeekId) || !mongoose.Types.ObjectId.isValid(timeSlotId)) {
             return res.status(400).json({
                 message: 'Невірний формат ID',
@@ -45,7 +39,6 @@ router.get('/classrooms', async (req, res) => {
             });
         }
 
-        // Знайти зайняті аудиторії
         const occupiedQuery = {
             dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
             timeSlot: new mongoose.Types.ObjectId(timeSlotId)
@@ -63,20 +56,20 @@ router.get('/classrooms', async (req, res) => {
             .map(schedule => schedule.classroom?._id)
             .filter(id => id);
 
-        console.log('🚫 Зайняті аудиторії:', occupiedClassroomIds.length);
+        console.log('Зайняті аудиторії:', occupiedClassroomIds.length);
 
-        // Знайти вільні аудиторії
         const availableClassrooms = await Classroom.find({
             isActive: true,
+            isAvailable: true,
             _id: { $nin: occupiedClassroomIds }
         }).sort({ name: 1 });
 
-        console.log('✅ Вільні аудиторії знайдено:', availableClassrooms.length);
+        console.log('Вільні аудиторії знайдено:', availableClassrooms.length);
 
         res.json(availableClassrooms);
 
     } catch (error) {
-        console.error('❌ Помилка отримання аудиторій:', error);
+        console.error('Помилка отримання аудиторій:', error);
         res.status(500).json({
             message: 'Помилка при отриманні вільних аудиторій',
             error: error.message
@@ -84,12 +77,11 @@ router.get('/classrooms', async (req, res) => {
     }
 });
 
-// ОТРИМАТИ ВІЛЬНИХ ВИКЛАДАЧІВ
 router.get('/teachers', async (req, res) => {
     try {
         const { dayOfWeekId, timeSlotId, subject, excludeScheduleId } = req.query;
 
-        console.log('🔍 Запит на вільних викладачів:', { dayOfWeekId, timeSlotId, subject, excludeScheduleId });
+        console.log('Запит на вільних викладачів:', { dayOfWeekId, timeSlotId, subject, excludeScheduleId });
 
         if (!dayOfWeekId || !timeSlotId || !subject) {
             return res.status(400).json({
@@ -97,14 +89,12 @@ router.get('/teachers', async (req, res) => {
             });
         }
 
-        // Перевірка валідності ObjectId
         if (!mongoose.Types.ObjectId.isValid(dayOfWeekId) || !mongoose.Types.ObjectId.isValid(timeSlotId)) {
             return res.status(400).json({
                 message: 'Невірний формат ID'
             });
         }
 
-        // Знайти зайнятих викладачів
         const occupiedQuery = {
             dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
             timeSlot: new mongoose.Types.ObjectId(timeSlotId)
@@ -122,11 +112,11 @@ router.get('/teachers', async (req, res) => {
             .map(schedule => schedule.teacher?._id)
             .filter(id => id);
 
-        console.log('🚫 Зайняті викладачі:', occupiedTeacherIds.length);
+        console.log('Зайняті викладачі:', occupiedTeacherIds.length);
 
-        // Знайти викладачів для предмету
         const teachersForSubject = await User.find({
             role: 'teacher',
+            isAvailable: true,
             $or: [
                 { positions: subject },
                 { position: { $regex: subject, $options: 'i' } },
@@ -134,19 +124,18 @@ router.get('/teachers', async (req, res) => {
             ]
         }).select('fullName email phone positions position');
 
-        console.log('👨‍🏫 Викладачі для предмету знайдено:', teachersForSubject.length);
+        console.log('Викладачі для предмету знайдено:', teachersForSubject.length);
 
-        // Фільтруємо вільних викладачів
         const availableTeachers = teachersForSubject.filter(teacher =>
             !occupiedTeacherIds.some(id => id.toString() === teacher._id.toString())
         );
 
-        console.log('✅ Вільні викладачі знайдено:', availableTeachers.length);
+        console.log('Вільні викладачі знайдено:', availableTeachers.length);
 
         res.json(availableTeachers);
 
     } catch (error) {
-        console.error('❌ Помилка отримання викладачів:', error);
+        console.error('Помилка отримання викладачів:', error);
         res.status(500).json({
             message: 'Помилка при отриманні вільних викладачів',
             error: error.message
@@ -154,16 +143,14 @@ router.get('/teachers', async (req, res) => {
     }
 });
 
-// ПЕРЕВІРИТИ ДОСТУПНІСТЬ
 router.get('/check-availability', async (req, res) => {
     try {
         const { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId } = req.query;
 
-        console.log('🔍 Перевірка доступності:', { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId });
+        console.log('Перевірка доступності:', { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId });
 
         const conflicts = {};
 
-        // Перевірка аудиторії
         if (classroomId && mongoose.Types.ObjectId.isValid(classroomId)) {
             const classroomConflict = await Schedule.findOne({
                 dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
@@ -185,7 +172,6 @@ router.get('/check-availability', async (req, res) => {
             }
         }
 
-        // Перевірка викладача
         if (teacherId && mongoose.Types.ObjectId.isValid(teacherId)) {
             const teacherConflict = await Schedule.findOne({
                 dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
@@ -207,7 +193,7 @@ router.get('/check-availability', async (req, res) => {
             }
         }
 
-        console.log('📊 Результат перевірки:', { available: Object.keys(conflicts).length === 0, conflicts });
+        console.log('Результат перевірки:', { available: Object.keys(conflicts).length === 0, conflicts });
 
         res.json({
             available: Object.keys(conflicts).length === 0,
@@ -215,7 +201,7 @@ router.get('/check-availability', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Помилка перевірки доступності:', error);
+        console.error('Помилка перевірки доступності:', error);
         res.status(500).json({
             message: 'Помилка при перевірці доступності',
             error: error.message

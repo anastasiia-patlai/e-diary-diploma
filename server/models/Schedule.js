@@ -6,7 +6,8 @@ const scheduleSchema = new mongoose.Schema({
     teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     classroom: { type: mongoose.Schema.Types.ObjectId, ref: 'Classroom', required: true },
     timeSlot: { type: mongoose.Schema.Types.ObjectId, ref: 'TimeTab', required: true },
-    dayOfWeek: { type: mongoose.Schema.Types.ObjectId, ref: 'DayOfWeek', required: true }
+    dayOfWeek: { type: mongoose.Schema.Types.ObjectId, ref: 'DayOfWeek', required: true },
+    semester: { type: mongoose.Schema.Types.ObjectId, ref: 'Semester', required: true }
 }, {
     timestamps: true
 });
