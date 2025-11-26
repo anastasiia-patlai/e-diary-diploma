@@ -20,6 +20,54 @@ const ScheduleDashboard = () => {
     const [error, setError] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState("");
+    const [databaseName, setDatabaseName] = useState("");
+
+    // Отримання databaseName з localStorage
+    useEffect(() => {
+        const getCurrentDatabase = () => {
+            let dbName = localStorage.getItem('databaseName');
+
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.databaseName) {
+                            dbName = user.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        if (userInfo.databaseName) {
+                            dbName = userInfo.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            return dbName;
+        };
+
+        const dbName = getCurrentDatabase();
+        if (dbName) {
+            setDatabaseName(dbName);
+            console.log("Database name встановлено:", dbName);
+        } else {
+            console.error("Database name не знайдено!");
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
 
     const sortGroupsByGrade = (groupsArray) => {
         return groupsArray.sort((a, b) => {
@@ -38,9 +86,16 @@ const ScheduleDashboard = () => {
     };
 
     const loadSemesters = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту семестрів");
+            return;
+        }
+
         try {
             console.log("Завантаження семестрів...");
-            const response = await axios.get("http://localhost:3001/api/study-calendar/semesters");
+            const response = await axios.get("http://localhost:3001/api/study-calendar/semesters", {
+                params: { databaseName }
+            });
             console.log("Семестри отримані:", response.data);
             setSemesters(response.data);
 
@@ -66,9 +121,17 @@ const ScheduleDashboard = () => {
     };
 
     const loadTimeSlots = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту часових слотів");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/time-slots");
+            const response = await axios.get("http://localhost:3001/api/time-slots", {
+                params: { databaseName }
+            });
             setTimeSlots(response.data);
+            console.log("Часові слоти завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження часових слотів:", err);
             setTimeSlots([]);
@@ -76,9 +139,17 @@ const ScheduleDashboard = () => {
     };
 
     const loadDaysOfWeek = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту днів тижня");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/days/active");
+            const response = await axios.get("http://localhost:3001/api/days/active", {
+                params: { databaseName }
+            });
             setDaysOfWeek(response.data);
+            console.log("Дні тижня завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження днів тижня:", err);
             setDaysOfWeek([]);
@@ -86,8 +157,15 @@ const ScheduleDashboard = () => {
     };
 
     const loadGroups = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту груп");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/groups");
+            const response = await axios.get("http://localhost:3001/api/groups", {
+                params: { databaseName }
+            });
             const sortedGroups = sortGroupsByGrade(response.data);
             setGroups(sortedGroups);
             console.log("Групи завантажені:", sortedGroups.length);
@@ -98,8 +176,15 @@ const ScheduleDashboard = () => {
     };
 
     const loadTeachers = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту викладачів");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/users/teachers");
+            const response = await axios.get("http://localhost:3001/api/users/teachers", {
+                params: { databaseName }
+            });
             setTeachers(response.data);
             console.log("Викладачі завантажені:", response.data.length);
         } catch (err) {
@@ -109,8 +194,15 @@ const ScheduleDashboard = () => {
     };
 
     const loadClassrooms = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту аудиторій");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/classrooms");
+            const response = await axios.get("http://localhost:3001/api/classrooms", {
+                params: { databaseName }
+            });
             const activeClassrooms = response.data.filter(classroom => classroom.isActive);
             setClassrooms(activeClassrooms);
             console.log("Аудиторії завантажені:", activeClassrooms.length);
@@ -121,14 +213,19 @@ const ScheduleDashboard = () => {
     };
 
     const loadSchedules = async () => {
-        if (!selectedSemester) {
+        if (!selectedSemester || !databaseName) {
             setSchedules([]);
             return;
         }
 
         try {
             console.log("Завантаження розкладу для семестру:", selectedSemester);
-            const response = await axios.get(`http://localhost:3001/api/schedule?semester=${selectedSemester}`);
+            const response = await axios.get(`http://localhost:3001/api/schedule`, {
+                params: {
+                    semester: selectedSemester,
+                    databaseName
+                }
+            });
             setSchedules(response.data);
             console.log("Розклади завантажені:", response.data.length);
         } catch (err) {
@@ -138,6 +235,13 @@ const ScheduleDashboard = () => {
     };
 
     const loadAllData = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для завантаження даних");
+            setError("Не вказано базу даних");
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             setError("");
@@ -167,23 +271,31 @@ const ScheduleDashboard = () => {
     };
 
     useEffect(() => {
-        loadAllData();
-    }, []);
+        if (databaseName) {
+            loadAllData();
+        }
+    }, [databaseName]);
 
     useEffect(() => {
-        if (selectedSemester) {
+        if (selectedSemester && databaseName) {
             loadSchedules();
         } else {
             setSchedules([]);
         }
-    }, [selectedSemester]);
+    }, [selectedSemester, databaseName]);
 
     const handleCreateSchedule = async (scheduleData) => {
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            return;
+        }
+
         try {
             setLoading(true);
             const response = await axios.post("http://localhost:3001/api/schedule", {
                 ...scheduleData,
-                semester: selectedSemester
+                semester: selectedSemester,
+                databaseName
             });
             await loadSchedules();
             setShowModal(false);
@@ -200,8 +312,15 @@ const ScheduleDashboard = () => {
             return;
         }
 
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            return;
+        }
+
         try {
-            await axios.delete(`http://localhost:3001/api/schedule/${id}`);
+            await axios.delete(`http://localhost:3001/api/schedule/${id}`, {
+                data: { databaseName }
+            });
             await loadSchedules();
             setError("");
         } catch (err) {
@@ -215,6 +334,19 @@ const ScheduleDashboard = () => {
 
     return (
         <Container fluid style={{ padding: "0 0 24px 0" }}>
+            {databaseName && (
+                <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginBottom: '10px',
+                    padding: '5px 10px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px'
+                }}>
+                    База даних: {databaseName}
+                </div>
+            )}
+
             <ScheduleHeader
                 onShowModal={() => setShowModal(true)}
                 groups={groups}

@@ -7,6 +7,49 @@ import TimeSlotItem from "./TimeSlotItem";
 const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDay }) => {
     const [timeSlots, setTimeSlots] = useState([]);
     const [error, setError] = useState("");
+    const [databaseName, setDatabaseName] = useState("");
+
+    // Отримання databaseName з localStorage
+    useEffect(() => {
+        const getCurrentDatabase = () => {
+            let dbName = localStorage.getItem('databaseName');
+
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.databaseName) {
+                            dbName = user.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        if (userInfo.databaseName) {
+                            dbName = userInfo.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            return dbName;
+        };
+
+        const dbName = getCurrentDatabase();
+        if (dbName) {
+            setDatabaseName(dbName);
+        }
+    }, []);
 
     useEffect(() => {
         if (show) {
@@ -57,7 +100,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
     const handleSave = () => {
         console.log("timeSlots перед валідацією:", timeSlots);
 
-        // Валідація
         for (let i = 0; i < timeSlots.length; i++) {
             const slot = timeSlots[i];
             console.log(`Перевірка уроку ${i + 1}:`, slot);
@@ -72,14 +114,16 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
             }
         }
 
-        const dataToSave = timeSlots.map(slot => ({
+        const timeSlotsToSave = timeSlots.map(slot => ({
             order: parseInt(slot.order) || 1,
             startTime: slot.startTime,
-            endTime: slot.endTime
+            endTime: slot.endTime,
+            isActive: slot.isActive !== false
         }));
 
-        console.log("ДАНІ ГОТОВІ ДО ЗБЕРЕЖЕННЯ:", dataToSave);
-        onSave(dataToSave);
+        console.log("ЧАСОВІ СЛОТИ ДЛЯ ЗБЕРЕЖЕННЯ:", timeSlotsToSave);
+
+        onSave(timeSlotsToSave);
     };
 
     if (!show) return null;
@@ -132,6 +176,16 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                         }}>
                             Для дня: <strong>{currentDay.name}</strong>
                         </p>
+                        {databaseName && (
+                            <p style={{
+                                margin: 0,
+                                color: '#9ca3af',
+                                fontSize: '12px',
+                                marginTop: '2px'
+                            }}>
+                                База даних: {databaseName}
+                            </p>
+                        )}
                     </div>
                     <button
                         onClick={onClose}
@@ -258,14 +312,15 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                     <button
                         type="button"
                         onClick={handleSave}
+                        disabled={!databaseName}
                         style={{
                             flex: 1,
                             padding: '12px',
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
+                            backgroundColor: !databaseName ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer',
+                            cursor: !databaseName ? 'not-allowed' : 'pointer',
                             fontWeight: '600',
                             fontSize: '14px',
                             display: 'flex',
@@ -275,10 +330,14 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                             transition: 'background-color 0.2s'
                         }}
                         onMouseOver={(e) => {
-                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                            if (databaseName) {
+                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                            }
                         }}
                         onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                            if (databaseName) {
+                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                            }
                         }}
                     >
                         <FaSave />

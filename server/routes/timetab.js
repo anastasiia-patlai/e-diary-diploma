@@ -1,30 +1,35 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const TimeTab = require('../models/TimeTab'); // Імпортуємо нову модель
-const DayOfWeek = require('../models/DayOfWeek');
+const { getSchoolTimeTabModel, getSchoolDayOfWeekModel } = require('../config/databaseManager');
 
 // ОТРИМАТИ ЧАСОВІ СЛОТИ ЗІ ФІЛЬТРАЦІЄЮ ЗА ДНЕМ ТИЖНЯ
 router.get('/', async (req, res) => {
     try {
-        const { dayOfWeekId } = req.query;
+        const { dayOfWeekId, databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const TimeTab = getSchoolTimeTabModel(databaseName);
+        const DayOfWeek = getSchoolDayOfWeekModel(databaseName);
+
         let query = {};
 
         if (dayOfWeekId) {
             const dayOfWeek = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
-
             if (!dayOfWeek) {
                 return res.status(404).json({
                     message: 'День тижня не знайдено'
                 });
             }
-
             query.dayOfWeek = dayOfWeek._id;
         }
 
         const timeSlots = await TimeTab.find(query)
             .populate('dayOfWeek')
-            .sort({ 'dayOfWeek.order': 1, order: 1 });
+            .sort({ order: 1 });
 
         res.json(timeSlots);
     } catch (error) {
@@ -39,13 +44,20 @@ router.get('/', async (req, res) => {
 // ЗБЕРЕГТИ ЧАСОВІ СЛОТИ ДЛЯ КОНКРЕТНОГО ДНЯ
 router.post('/', async (req, res) => {
     try {
-        const { dayOfWeekId, timeSlots } = req.body;
+        const { dayOfWeekId, timeSlots, databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
 
         if (!dayOfWeekId) {
             return res.status(400).json({
                 message: 'ID дня тижня обов\'язковий'
             });
         }
+
+        const TimeTab = getSchoolTimeTabModel(databaseName);
+        const DayOfWeek = getSchoolDayOfWeekModel(databaseName);
 
         const dayExists = await DayOfWeek.findOne({ id: parseInt(dayOfWeekId) });
         if (!dayExists) {
@@ -100,7 +112,13 @@ router.post('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { databaseName } = req.body;
 
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const TimeTab = getSchoolTimeTabModel(databaseName);
         const deletedSlot = await TimeTab.findByIdAndDelete(id);
 
         if (!deletedSlot) {
@@ -125,6 +143,15 @@ router.delete('/:id', async (req, res) => {
 // ОТРИМАТИ РЕЗЮМЕ ПО ДНЯХ
 router.get('/days/summary', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const TimeTab = getSchoolTimeTabModel(databaseName);
+        const DayOfWeek = getSchoolDayOfWeekModel(databaseName);
+
         const summary = await TimeTab.aggregate([
             {
                 $group: {
@@ -151,7 +178,8 @@ router.get('/days/summary', async (req, res) => {
                     _id: 1,
                     count: 1,
                     dayName: '$dayInfo.name',
-                    dayOrder: '$dayInfo.order'
+                    dayOrder: '$dayInfo.order',
+                    dayId: '$dayInfo.id'
                 }
             }
         ]);
