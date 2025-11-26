@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
-const Group = require('../models/Group');
+const { getSchoolUserModel, getSchoolGroupModel } = require('../config/databaseManager');
 
 // ОТРИМАТИ ВСІХ БАТЬКІВ
 router.get('/parents', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
+
         const parents = await User.find({ role: 'parent' })
             .select('fullName email phone children')
             .populate({
@@ -33,6 +41,15 @@ router.get('/parents', async (req, res) => {
 // ОТРИМАТИ ВСІХ СТУДЕНТІВ
 router.get('/students', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
+
         const students = await User.find({ role: 'student' })
             .select('fullName email phone dateOfBirth group parents')
             .populate('group', 'name')
@@ -48,6 +65,13 @@ router.get('/students', async (req, res) => {
 // ОТРИМАТИ ВСІХ ВИКЛАДАЧІВ
 router.get('/teachers', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
         const teachers = await User.find({ role: 'teacher' })
             .select('fullName email phone positions position dateOfBirth')
             .sort({ fullName: 1 });
@@ -61,7 +85,14 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
+        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
 
         const user = await User.findById(id);
         if (!user) {
@@ -123,6 +154,14 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
 
         const user = await User.findById(id);
         if (!user) {
@@ -172,6 +211,13 @@ router.delete('/:id', async (req, res) => {
 // ОТРИМАТИ КОРИСТУВАЧА ЗА ID
 router.get('/:id', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
         const user = await User.findById(req.params.id)
             .populate('group', 'name')
             .select('-password');
@@ -190,6 +236,15 @@ router.get('/:id', async (req, res) => {
 // ОТРИМАННЯ ВСІХ КОРИСТУВАЧІВ
 router.get('/', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
+
         const users = await User.find()
             .select('fullName role email phone position group children')
             .populate('group', 'name')
@@ -205,7 +260,13 @@ router.get('/', async (req, res) => {
 router.put('/admin/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { fullName, phone, email, jobPosition, dateOfBirth } = req.body;
+        const { databaseName, fullName, phone, email, jobPosition, dateOfBirth } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
 
         const admin = await User.findById(id);
         if (!admin || admin.role !== 'admin') {
@@ -245,7 +306,14 @@ router.put('/admin/:id', async (req, res) => {
 router.put('/:id/add-child', async (req, res) => {
     try {
         const { id } = req.params;
-        const { childId } = req.body;
+        const { databaseName, childId } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
 
         const parent = await User.findById(id);
         if (!parent || parent.role !== 'parent') {
@@ -296,7 +364,13 @@ router.put('/:id/add-child', async (req, res) => {
 router.put('/:id/remove-child', async (req, res) => {
     try {
         const { id } = req.params;
-        const { childId } = req.body;
+        const { databaseName, childId } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
 
         const parent = await User.findById(id);
         if (!parent || parent.role !== 'parent') {
@@ -343,7 +417,14 @@ router.put('/:id/remove-child', async (req, res) => {
 router.put('/:id/add-parent', async (req, res) => {
     try {
         const { id } = req.params;
-        const { parentId } = req.body;
+        const { databaseName, parentId } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
 
         const child = await User.findById(id);
         if (!child || child.role !== 'student') {
@@ -408,7 +489,14 @@ router.put('/:id/add-parent', async (req, res) => {
 router.put('/:id/remove-parent', async (req, res) => {
     try {
         const { id } = req.params;
-        const { parentId } = req.body;
+        const { databaseName, parentId } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+        const Group = getSchoolGroupModel(databaseName);
 
         const child = await User.findById(id);
         if (!child || child.role !== 'student') {
@@ -439,9 +527,17 @@ router.put('/:id/remove-parent', async (req, res) => {
     }
 });
 
-// СТОТИСТИКА КОРИСТУВАЧІВ
+// СТАТИСТИКА КОРИСТУВАЧІВ
 router.get('/stats', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+
         const totalUsers = await User.countDocuments();
         const students = await User.countDocuments({ role: 'student' });
         const teachers = await User.countDocuments({ role: 'teacher' });
@@ -481,6 +577,13 @@ router.get('/stats', async (req, res) => {
 router.get('/by-role/:role', async (req, res) => {
     try {
         const { role } = req.params;
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
 
         const validRoles = ['student', 'teacher', 'parent', 'admin'];
         if (!validRoles.includes(role)) {

@@ -14,15 +14,28 @@ const AdminMainPage = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [databaseName, setDatabaseName] = useState("");
+
+    useEffect(() => {
+        // Отримуємо databaseName з localStorage
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        setDatabaseName(userInfo.databaseName || '');
+    }, []);
 
     const fetchStats = async () => {
         try {
             setLoading(true);
 
+            if (!databaseName) {
+                setError("Не вдалося отримати інформацію про базу даних");
+                setLoading(false);
+                return;
+            }
+
             // Отримуємо всіх користувачів і фільтруємо на фронтенді
             const [usersRes, groupsRes] = await Promise.all([
-                axios.get("http://localhost:3001/api/users"),
-                axios.get("http://localhost:3001/api/groups")
+                axios.get(`http://localhost:3001/api/users?databaseName=${encodeURIComponent(databaseName)}`),
+                axios.get(`http://localhost:3001/api/groups?databaseName=${encodeURIComponent(databaseName)}`)
             ]);
 
             const users = usersRes.data;
@@ -53,15 +66,17 @@ const AdminMainPage = () => {
             setError("");
             setLoading(false);
         } catch (err) {
-            setError("Помилка завантаження статистики: " + (err.response?.data?.message || err.message));
+            console.error("Деталі помилки:", err);
+            setError("Помилка завантаження статистики: " + (err.response?.data?.error || err.response?.data?.message || err.message));
             setLoading(false);
-            console.error("Помилка завантаження статистики:", err);
         }
     };
 
     useEffect(() => {
-        fetchStats();
-    }, []);
+        if (databaseName) {
+            fetchStats();
+        }
+    }, [databaseName]);
 
     if (loading) {
         return (
@@ -90,6 +105,9 @@ const AdminMainPage = () => {
             }}>
                 <h3 style={{ margin: '0 0 10px 0' }}>Помилка завантаження</h3>
                 <p style={{ margin: '0 0 20px 0' }}>{error}</p>
+                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
+                    DatabaseName: {databaseName || 'Не встановлено'}
+                </div>
                 <button
                     onClick={fetchStats}
                     style={{
@@ -120,13 +138,24 @@ const AdminMainPage = () => {
                 }}>
                     Панель управління
                 </h1>
-                <p style={{
+                {/* <p style={{
                     margin: 0,
                     color: '#6b7280',
                     fontSize: '16px'
                 }}>
                     Загальна статистика системи електронного щоденника
                 </p>
+                <div style={{
+                    marginTop: '10px',
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    backgroundColor: '#f3f4f6',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    display: 'inline-block'
+                }}>
+                    База даних: {databaseName}
+                </div> */}
             </div>
 
             <div style={{
@@ -229,6 +258,25 @@ const AdminMainPage = () => {
                             <span style={{ color: '#6b7280' }}>Останнє оновлення</span>
                             <span style={{ fontWeight: '600', color: '#1f2937' }}>
                                 {new Date().toLocaleString('uk-UA')}
+                            </span>
+                        </div>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px 0',
+                            borderBottom: '1px solid #f3f4f6'
+                        }}>
+                            <span style={{ color: '#6b7280' }}>База даних</span>
+                            <span style={{
+                                fontWeight: '600',
+                                color: '#1f2937',
+                                fontSize: '12px',
+                                backgroundColor: '#f3f4f6',
+                                padding: '4px 8px',
+                                borderRadius: '4px'
+                            }}>
+                                {databaseName}
                             </span>
                         </div>
                         <div style={{

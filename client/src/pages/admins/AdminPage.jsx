@@ -23,6 +23,7 @@ import StudyCalendar from "./study_calendar_tab/StudyCalendar";
 const AdminPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
     const [userData, setUserData] = useState(null);
+    const [databaseName, setDatabaseName] = useState('');
 
     useEffect(() => {
         fetchUserData();
@@ -31,13 +32,14 @@ const AdminPage = ({ onLogout, userFullName }) => {
     const fetchUserData = async () => {
         try {
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            const { databaseName, userId } = userInfo;
+            const { databaseName: dbName, userId } = userInfo;
 
             console.log('Дані з localStorage:', userInfo);
+            setDatabaseName(dbName);
 
-            if (databaseName && userId) {
+            if (dbName && userId) {
                 console.log('Запит до API...');
-                const response = await fetch(`/api/user/me?databaseName=${encodeURIComponent(databaseName)}&userId=${encodeURIComponent(userId)}`);
+                const response = await fetch(`/api/user/me?databaseName=${encodeURIComponent(dbName)}&userId=${encodeURIComponent(userId)}`);
 
                 if (response.ok) {
                     const data = await response.json();
@@ -97,28 +99,28 @@ const AdminPage = ({ onLogout, userFullName }) => {
     const renderAdminContent = () => {
         switch (activeSection) {
             case "Головна":
-                return <AdminMainPage />;
+                return <AdminMainPage databaseName={databaseName} />;
 
             case "Мій профіль":
-                return userData ? <AdminInfo userData={userData} /> : <div>Завантаження...</div>;
+                return userData ? <AdminInfo userData={userData} databaseName={databaseName} /> : <div>Завантаження...</div>;
 
             case "Користувачі":
-                return <AdminUserSystem />;
+                return <AdminUserSystem databaseName={databaseName} />;
 
             case "Класні керівники":
-                return <AdminShowCurators />;
+                return <AdminShowCurators databaseName={databaseName} />;
 
             case "Навчальний календар":
-                return <StudyCalendar />;
+                return <StudyCalendar databaseName={databaseName} />;
 
             case "Розклад занять":
-                return <ScheduleDashboard />;
+                return <ScheduleDashboard databaseName={databaseName} />;
 
             case "Розклад часу":
-                return <TimeSlot />;
+                return <TimeSlot databaseName={databaseName} />;
 
             case "Кабінети":
-                return <ClassroomsTab />;
+                return <ClassroomsTab databaseName={databaseName} />;
 
             case "Налаштування":
                 return (

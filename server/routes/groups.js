@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const Group = require('../models/Group');
-const User = require('../models/User');
+const { getSchoolGroupModel, getSchoolUserModel } = require('../config/databaseManager');
 
 router.post('/', async (req, res) => {
     try {
-        const { name, curator } = req.body;
+        const { databaseName, name, curator } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
         const existingGroup = await Group.findOne({ name });
         if (existingGroup) return res.status(400).json({ error: 'Група з такою назвою вже існує' });
 
@@ -19,6 +26,15 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
         const groups = await Group.find()
             .populate('curator', 'fullName email')
             .populate('students', 'fullName email');
@@ -30,6 +46,15 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
         const group = await Group.findById(req.params.id)
             .populate('curator', 'fullName email')
             .populate('students', 'fullName email');
@@ -42,7 +67,15 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { name, curator } = req.body;
+        const { databaseName, name, curator } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
         const group = await Group.findByIdAndUpdate(req.params.id, { name, curator }, { new: true });
         if (!group) return res.status(404).json({ error: 'Група не знайдена' });
         res.json({ message: 'Група оновлена', group });
@@ -53,6 +86,15 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
         const group = await Group.findByIdAndDelete(req.params.id);
         if (!group) return res.status(404).json({ error: 'Група не знайдена' });
         res.json({ message: 'Група видалена' });
@@ -61,12 +103,18 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-
 // ДОДАТИ КУРАТОРА ДО ГРУПИ
 router.put('/:id/curator', async (req, res) => {
     try {
         const { id } = req.params;
-        const { curatorId } = req.body;
+        const { databaseName, curatorId } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
 
         const group = await Group.findById(id);
         if (!group) {
@@ -113,6 +161,13 @@ router.put('/:id/curator', async (req, res) => {
 router.delete('/:id/curator', async (req, res) => {
     try {
         const { id } = req.params;
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
 
         console.log("Видалення куратора з групи ID:", id);
 
