@@ -150,7 +150,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle }) => {
                     <Button
                         variant="outline-danger"
                         size="sm"
-                        onClick={() => onDelete(classroom._id)}
+                        onClick={() => onDelete(classroom)}
                         style={{
                             padding: "4px 8px",
                             fontSize: "12px",

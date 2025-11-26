@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const Classroom = require('../models/Classroom');
+const { getSchoolClassroomModel } = require('../config/databaseManager');
 
 // ОТРИМАТИ ВСІ АУДИТОРІЇ
 router.get('/', async (req, res) => {
     try {
-        const classrooms = await Classroom.find().sort({ name: 1 });
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+        const classrooms = await ClassroomModel.find().sort({ name: 1 });
         res.json(classrooms);
     } catch (error) {
         console.error('Error fetching classrooms:', error);
@@ -16,12 +23,18 @@ router.get('/', async (req, res) => {
     }
 });
 
-// СТВОРИТИ НОВУ АУДИТОРІЮЙ
+// СТВОРИТИ НОВУ АУДИТОРІЮ
 router.post('/', async (req, res) => {
     try {
-        const classroomData = req.body;
+        const { databaseName, ...classroomData } = req.body;
 
-        const existingClassroom = await Classroom.findOne({
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+
+        const existingClassroom = await ClassroomModel.findOne({
             name: classroomData.name
         });
         if (existingClassroom) {
@@ -30,7 +43,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        const classroom = new Classroom(classroomData);
+        const classroom = new ClassroomModel(classroomData);
         const savedClassroom = await classroom.save();
 
         res.status(201).json(savedClassroom);
@@ -53,10 +66,16 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const { databaseName, ...updateData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
 
         if (updateData.name) {
-            const existingClassroom = await Classroom.findOne({
+            const existingClassroom = await ClassroomModel.findOne({
                 name: updateData.name,
                 _id: { $ne: id }
             });
@@ -67,7 +86,7 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        const updatedClassroom = await Classroom.findByIdAndUpdate(
+        const updatedClassroom = await ClassroomModel.findByIdAndUpdate(
             id,
             updateData,
             { new: true, runValidators: true }
@@ -99,8 +118,14 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const { databaseName } = req.body;
 
-        const deletedClassroom = await Classroom.findByIdAndDelete(id);
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+        const deletedClassroom = await ClassroomModel.findByIdAndDelete(id);
 
         if (!deletedClassroom) {
             return res.status(404).json({
@@ -125,8 +150,15 @@ router.delete('/:id', async (req, res) => {
 router.patch('/:id/toggle', async (req, res) => {
     try {
         const { id } = req.params;
+        const { databaseName } = req.body;
 
-        const classroom = await Classroom.findById(id);
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+        const classroom = await ClassroomModel.findById(id);
+
         if (!classroom) {
             return res.status(404).json({
                 message: 'Аудиторія не знайдена'
@@ -150,9 +182,14 @@ router.patch('/:id/toggle', async (req, res) => {
 router.patch('/:id/availability', async (req, res) => {
     try {
         const { id } = req.params;
-        const { isAvailable } = req.body;
+        const { databaseName, isAvailable } = req.body;
 
-        const updatedClassroom = await Classroom.findByIdAndUpdate(
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+        const updatedClassroom = await ClassroomModel.findByIdAndUpdate(
             id,
             { isAvailable: isAvailable },
             { new: true, runValidators: true }
