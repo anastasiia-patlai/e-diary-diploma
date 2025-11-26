@@ -13,6 +13,13 @@ const AdminShowStudent = () => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
+    const [databaseName, setDatabaseName] = useState("");
+
+    useEffect(() => {
+        // Отримуємо databaseName з localStorage
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        setDatabaseName(userInfo.databaseName || '');
+    }, []);
 
     const sortGroups = (groups) => {
         return groups.sort((a, b) => {
@@ -34,20 +41,29 @@ const AdminShowStudent = () => {
 
     const fetchGroups = async () => {
         try {
-            const response = await axios.get("http://localhost:3001/api/groups");
+            if (!databaseName) {
+                setError("Не вдалося отримати інформацію про базу даних");
+                setLoading(false);
+                return;
+            }
+
+            const response = await axios.get(`http://localhost:3001/api/groups?databaseName=${encodeURIComponent(databaseName)}`);
             const sortedGroups = sortGroups(response.data);
             setGroups(sortedGroups);
             setLoading(false);
+            setError("");
         } catch (err) {
-            setError("Помилка завантаження груп");
+            console.error("Деталі помилки завантаження груп:", err);
+            setError(`Помилка завантаження груп: ${err.response?.data?.error || err.message}`);
             setLoading(false);
-            console.error("Помилка завантаження груп:", err);
         }
     };
 
     useEffect(() => {
-        fetchGroups();
-    }, []);
+        if (databaseName) {
+            fetchGroups();
+        }
+    }, [databaseName]);
 
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => ({
@@ -97,14 +113,49 @@ const AdminShowStudent = () => {
 
     if (error) {
         return (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-                <p>{error}</p>
+            <div style={{
+                textAlign: 'center',
+                padding: '20px',
+                color: 'red',
+                backgroundColor: '#fef2f2',
+                borderRadius: '8px',
+                margin: '20px'
+            }}>
+                <p style={{ margin: '0 0 10px 0' }}>{error}</p>
+                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
+                    DatabaseName: {databaseName || 'Не встановлено'}
+                </div>
+                <button
+                    onClick={fetchGroups}
+                    style={{
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        color: 'white',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                    }}
+                >
+                    Спробувати знову
+                </button>
             </div>
         );
     }
 
     return (
         <div>
+            {/* <div style={{
+                marginBottom: '20px',
+                padding: '10px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '6px',
+                fontSize: '14px',
+                color: '#6b7280'
+            }}>
+                База даних: {databaseName}
+            </div> */}
+
             <StudentHeader
                 onToggleAll={toggleAllGroups}
                 allExpanded={Object.values(expandedGroups).every(Boolean)}
@@ -122,6 +173,7 @@ const AdminShowStudent = () => {
             {showEditPopup && selectedStudent && (
                 <EditStudentPopup
                     student={selectedStudent}
+                    databaseName={databaseName}
                     onClose={() => {
                         setShowEditPopup(false);
                         setSelectedStudent(null);
@@ -134,6 +186,7 @@ const AdminShowStudent = () => {
             {showDeletePopup && selectedStudent && (
                 <DeleteStudentPopup
                     student={selectedStudent}
+                    databaseName={databaseName}
                     onClose={() => {
                         setShowDeletePopup(false);
                         setSelectedStudent(null);

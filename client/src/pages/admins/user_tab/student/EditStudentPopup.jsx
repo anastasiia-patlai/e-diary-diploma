@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaUsers } from "react-icons/fa";
 import axios from "axios";
 
-const EditStudentPopup = ({ student, onClose, onUpdate }) => {
+const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -18,10 +18,18 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const groupsResponse = await axios.get("http://localhost:3001/api/groups");
+                if (!databaseName) {
+                    setError("Не вдалося отримати інформацію про базу даних");
+                    setFetchingUser(false);
+                    return;
+                }
+
+                // Запит груп з databaseName
+                const groupsResponse = await axios.get(`http://localhost:3001/api/groups?databaseName=${encodeURIComponent(databaseName)}`);
                 setGroups(groupsResponse.data);
 
-                const userResponse = await axios.get(`http://localhost:3001/api/users/${student._id}`);
+                // Запит даних користувача з databaseName
+                const userResponse = await axios.get(`http://localhost:3001/api/users/${student._id}?databaseName=${encodeURIComponent(databaseName)}`);
                 const userData = userResponse.data;
 
                 setFormData({
@@ -35,13 +43,13 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                 setFetchingUser(false);
             } catch (err) {
                 console.error("Помилка завантаження даних:", err);
-                setError("Помилка завантаження даних користувача");
+                setError(`Помилка завантаження даних користувача: ${err.response?.data?.error || err.message}`);
                 setFetchingUser(false);
             }
         };
 
         fetchData();
-    }, [student._id]);
+    }, [student._id, databaseName]);
 
     const handleChange = (e) => {
         setFormData({
@@ -56,9 +64,18 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
         setError("");
 
         try {
+            if (!databaseName) {
+                setError("Не вдалося отримати інформацію про базу даних");
+                setLoading(false);
+                return;
+            }
+
             const response = await axios.put(
                 `http://localhost:3001/api/users/${student._id}`,
-                formData
+                {
+                    ...formData,
+                    databaseName
+                }
             );
 
             onUpdate(response.data.user);
@@ -134,6 +151,9 @@ const EditStudentPopup = ({ student, onClose, onUpdate }) => {
                 {fetchingUser ? (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                         <p>Завантаження даних...</p>
+                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                            База даних: {databaseName || 'Не встановлено'}
+                        </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>

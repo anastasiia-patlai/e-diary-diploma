@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 
-const DeleteStudentPopup = ({ student, onClose, onDelete }) => {
+const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -11,7 +11,15 @@ const DeleteStudentPopup = ({ student, onClose, onDelete }) => {
         setError("");
 
         try {
-            await axios.delete(`http://localhost:3001/api/users/${student._id}`);
+            if (!databaseName) {
+                setError("Не вдалося отримати інформацію про базу даних");
+                setLoading(false);
+                return;
+            }
+
+            await axios.delete(`http://localhost:3001/api/users/${student._id}`, {
+                data: { databaseName }
+            });
             onDelete(student._id);
             onClose();
         } catch (err) {
