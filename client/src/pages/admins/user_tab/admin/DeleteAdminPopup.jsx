@@ -2,16 +2,23 @@ import React, { useState } from "react";
 import { FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 
-const DeleteAdminPopup = ({ admin, onClose, onDelete }) => {
+const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleDelete = async () => {
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            return;
+        }
+
         setLoading(true);
         setError("");
 
         try {
-            await axios.delete(`http://localhost:3001/api/users/${admin._id}`);
+            await axios.delete(`http://localhost:3001/api/users/${admin._id}`, {
+                data: { databaseName }
+            });
             onDelete(admin._id);
             onClose();
         } catch (err) {

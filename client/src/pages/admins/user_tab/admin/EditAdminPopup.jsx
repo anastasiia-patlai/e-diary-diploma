@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUser, FaPhone, FaEnvelope, FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
 
-const EditAdminPopup = ({ admin, onClose, onUpdate }) => {
+const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -77,6 +77,11 @@ const EditAdminPopup = ({ admin, onClose, onUpdate }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (!databaseName) {
+            setErrors({ submit: 'Не вказано базу даних' });
+            return;
+        }
+
         const newErrors = {};
         Object.keys(formData).forEach(field => {
             const error = validateField(field, formData[field]);
@@ -90,7 +95,12 @@ const EditAdminPopup = ({ admin, onClose, onUpdate }) => {
 
         setLoading(true);
         try {
-            const response = await axios.put(`http://localhost:3001/api/users/admin/${admin._id}`, formData);
+            const response = await axios.put(`http://localhost:3001/api/users/admin/${admin._id}`,
+                formData,
+                {
+                    params: { databaseName }
+                }
+            );
 
             setSuccessMessage('Адміністратора успішно оновлено');
 
@@ -171,6 +181,20 @@ const EditAdminPopup = ({ admin, onClose, onUpdate }) => {
                 </button>
 
                 <h4 className="text-center mb-4">Редагувати адміністратора</h4>
+
+                {/* {databaseName && (
+                    <div style={{
+                        fontSize: '12px',
+                        color: '#666',
+                        marginBottom: '15px',
+                        padding: '5px 10px',
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: '4px',
+                        textAlign: 'center'
+                    }}>
+                        База даних: {databaseName}
+                    </div>
+                )} */}
 
                 {/* ПОВІДОМЛЕННЯ ПРО УСПІХ*/}
                 {successMessage && (
