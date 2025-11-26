@@ -13,59 +13,113 @@ const AdminShowTeacher = () => {
     const [selectedTeacher, setSelectedTeacher] = useState(null);
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [showDeletePopup, setShowDeletePopup] = useState(false);
+    const [databaseName, setDatabaseName] = useState("");
+
+    // Отримуємо databaseName з localStorage
+    useEffect(() => {
+        const getDatabaseName = () => {
+            let dbName = localStorage.getItem('databaseName');
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        dbName = user.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        dbName = userInfo.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+            return dbName;
+        };
+
+        const dbName = getDatabaseName();
+        if (dbName) {
+            setDatabaseName(dbName);
+            console.log("Database name для запиту:", dbName);
+        } else {
+            console.error("Database name не знайдено!");
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
 
     const fetchTeachers = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту");
+            return;
+        }
+
         try {
-            const response = await axios.get("http://localhost:3001/api/users/teachers");
+            console.log("Запит викладачів для бази:", databaseName);
+            const response = await axios.get("http://localhost:3001/api/users/teachers", {
+                params: {
+                    databaseName: databaseName
+                }
+            });
             setTeachers(response.data);
             setLoading(false);
         } catch (err) {
             setError("Помилка завантаження викладачів");
             setLoading(false);
-            console.error("Помилка завантаження викладачів:", err);
+            console.error("Детальна помилка завантаження викладачів:", err);
+
+            // Детальніше про помилку
+            if (err.response) {
+                console.error("Статус помилки:", err.response.status);
+                console.error("Дані помилки:", err.response.data);
+                console.error("Заголовки запиту:", err.config.headers);
+                console.error("URL запиту:", err.config.url);
+            }
         }
     };
 
     useEffect(() => {
-        fetchTeachers();
-    }, []);
+        if (databaseName) {
+            fetchTeachers();
+        }
+    }, [databaseName]);
 
-    // НОВА ФУНКЦІЯ ДЛЯ РОЗДІЛЕННЯ ПРЕДМЕТІВ
+    // Решта коду залишається без змін
     const groupTeachersBySubject = () => {
         const subjects = {};
 
         teachers.forEach(teacher => {
             let teacherSubjects = [];
 
-            // Якщо є поле position з кількома предметами через кому
             if (teacher.position) {
-                // Розділяємо предмети по комах та обрізаємо пробіли
                 teacherSubjects = teacher.position.split(',').map(subj => subj.trim());
             }
 
-            // Якщо є поле positions (масив)
             if (teacher.positions && teacher.positions.length > 0) {
                 teacherSubjects = [...teacherSubjects, ...teacher.positions];
             }
 
-            // Якщо немає предметів
             if (teacherSubjects.length === 0) {
                 teacherSubjects = ["Без предмета"];
             }
 
-            // Додаємо викладача до кожного предмету окремо
             teacherSubjects.forEach(subject => {
                 if (!subjects[subject]) {
                     subjects[subject] = [];
                 }
-                // Перевіряємо, щоб не додавати дублікати
                 if (!subjects[subject].some(t => t._id === teacher._id)) {
                     subjects[subject].push(teacher);
                 }
             });
         });
 
-        // Сортування предметів за алфавітом
         const sortedSubjects = {};
         Object.keys(subjects).sort().forEach(key => {
             sortedSubjects[key] = subjects[key];
@@ -125,6 +179,20 @@ const AdminShowTeacher = () => {
         return (
             <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
                 <p>{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                        marginTop: '10px',
+                        padding: '8px 16px',
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Спробувати знову
+                </button>
             </div>
         );
     }
@@ -155,6 +223,7 @@ const AdminShowTeacher = () => {
                         setSelectedTeacher(null);
                     }}
                     onUpdate={handleUpdateTeacher}
+                    databaseName={databaseName}
                 />
             )}
 
@@ -166,6 +235,7 @@ const AdminShowTeacher = () => {
                         setSelectedTeacher(null);
                     }}
                     onDelete={handleDeleteConfirm}
+                    databaseName={databaseName}
                 />
             )}
         </div>

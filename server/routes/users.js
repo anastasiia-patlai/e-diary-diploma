@@ -85,7 +85,8 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
+        const { databaseName } = req.query;
+        const { fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -154,7 +155,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName } = req.body;
+        const { databaseName } = req.query;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -260,7 +261,8 @@ router.get('/', async (req, res) => {
 router.put('/admin/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, fullName, phone, email, jobPosition, dateOfBirth } = req.body;
+        const { databaseName } = req.query;
+        const { fullName, phone, email, jobPosition, dateOfBirth } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -306,7 +308,8 @@ router.put('/admin/:id', async (req, res) => {
 router.put('/:id/add-child', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, childId } = req.body;
+        const { databaseName } = req.query;
+        const { childId } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -364,7 +367,8 @@ router.put('/:id/add-child', async (req, res) => {
 router.put('/:id/remove-child', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, childId } = req.body;
+        const { databaseName } = req.query;
+        const { childId } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -417,7 +421,8 @@ router.put('/:id/remove-child', async (req, res) => {
 router.put('/:id/add-parent', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, parentId } = req.body;
+        const { databaseName } = req.query;
+        const { parentId } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -489,7 +494,8 @@ router.put('/:id/add-parent', async (req, res) => {
 router.put('/:id/remove-parent', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, parentId } = req.body;
+        const { databaseName } = req.query;
+        const { parentId } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });

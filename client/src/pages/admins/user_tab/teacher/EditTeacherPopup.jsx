@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus } from "react-icons/fa";
 import axios from "axios";
 
-const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
+const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName }) => {
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -16,8 +16,16 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
 
     useEffect(() => {
         const fetchUserData = async () => {
+            if (!databaseName) {
+                setError("Не вказано базу даних");
+                setFetchingUser(false);
+                return;
+            }
+
             try {
-                const response = await axios.get(`http://localhost:3001/api/users/${teacher._id}`);
+                const response = await axios.get(`http://localhost:3001/api/users/${teacher._id}`, {
+                    params: { databaseName }
+                });
                 const userData = response.data;
 
                 let positionsArray = [""];
@@ -44,48 +52,20 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
         };
 
         fetchUserData();
-    }, [teacher._id]);
-
-    // НОВЕ ПОЛЕ ДЛЯ ПРЕДМЕТУ
-    const addPositionField = () => {
-        setFormData(prev => ({
-            ...prev,
-            positions: [...prev.positions, ""]
-        }));
-    };
-
-    // ВИДАЛИТИ ПОЛЕ ПРЕДМЕТУ
-    const removePositionField = (index) => {
-        if (formData.positions.length > 1) {
-            setFormData(prev => ({
-                ...prev,
-                positions: prev.positions.filter((_, i) => i !== index)
-            }));
-        }
-    };
-
-    // Оновити конкретний предмет
-    const updatePosition = (index, value) => {
-        setFormData(prev => ({
-            ...prev,
-            positions: prev.positions.map((pos, i) => i === index ? value : pos)
-        }));
-    };
-
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+    }, [teacher._id, databaseName]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            setLoading(false);
+            return;
+        }
+
         try {
-            // Фільтруємо порожні предмети
             const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
 
             if (filteredPositions.length === 0) {
@@ -100,7 +80,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate }) => {
                 phone: formData.phone,
                 dateOfBirth: formData.dateOfBirth,
                 positions: filteredPositions,
-                position: filteredPositions.join(", ") // Для зворотної сумісності
+                position: filteredPositions.join(", "),
+                databaseName: databaseName
             };
 
             const response = await axios.put(
