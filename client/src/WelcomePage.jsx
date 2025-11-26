@@ -112,18 +112,6 @@ const WelcomePage = () => {
                     else if (!value.trim()) error = 'Номер закладу не може бути пустим';
                 }
                 break;
-            case 'name':
-                if (['gymnasium', 'lyceum', 'college', 'university'].includes(formData.institutionType)) {
-                    if (!value) error = 'Назва закладу обов\'язкова';
-                    else if (!value.trim()) error = 'Назва закладу не може бути пустою';
-                }
-                break;
-            case 'honoraryName':
-                if (['college', 'university'].includes(formData.institutionType)) {
-                    if (!value) error = 'Імені обов\'язкове для коледжу та університету';
-                    else if (!value.trim()) error = 'Імені не може бути пустим';
-                }
-                break;
             case 'city':
                 if (!value) error = 'Місто обов\'язкове';
                 else if (!value.trim()) error = 'Місто не може бути пустим';
@@ -215,13 +203,11 @@ const WelcomePage = () => {
             fullName += ` №${number}`;
         }
 
-        if (name && ['gymnasium', 'lyceum', 'college', 'university'].includes(type)) {
+        if (name) {
             fullName += ` ${name}`;
         }
 
-        if (honoraryName && ['college', 'university'].includes(type)) {
-            fullName += ` імені ${honoraryName}`;
-        } else if (honoraryName && ['gymnasium', 'lyceum'].includes(type)) {
+        if (honoraryName) {
             fullName += ` імені ${honoraryName}`;
         }
 
@@ -313,12 +299,6 @@ const WelcomePage = () => {
             setError('Для обраного типу закладу номер є обов\'язковим');
             return;
         }
-
-        if (['college', 'university'].includes(formData.institutionType) && !formData.honoraryName) {
-            setError('Для коледжу та університету імені є обов\'язковим');
-            return;
-        }
-
         setLoading(true);
 
         try {
@@ -336,6 +316,138 @@ const WelcomePage = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // ФуУНКЦІЇ ДЛЯ ПЕРЕВІРКИ ТИПУ ЗАКЛАДУ
+    const isSchoolType = ['school', 'gymnasium', 'lyceum'].includes(formData.institutionType);
+    const isCollegeType = ['college', 'university'].includes(formData.institutionType);
+
+    // РОЗРАХУНОК КІЛЬКОСТІ ПОЛІВ ДЛЯ ДИНАМІЧНОГО ВІДОБРАЖЕННЯ
+    const getDynamicFields = () => {
+        const fields = [];
+
+        // Завжди додаємо тип закладу
+        fields.push(
+            <Col md={6} key="institutionType">
+                <Form.Group className="mb-3">
+                    <Form.Label>Тип закладу *</Form.Label>
+                    <Form.Select
+                        name="institutionType"
+                        className={getInputClass("institutionType")}
+                        value={formData.institutionType}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        required
+                    >
+                        {institutionTypes.map(type => (
+                            <option key={type.value} value={type.value}>
+                                {type.label}
+                            </option>
+                        ))}
+                    </Form.Select>
+                    <div className="invalid-feedback">{errors.institutionType}</div>
+                </Form.Group>
+            </Col>
+        );
+
+        // Для школи, гімназії, ліцею додаємо номер (обов'язковий)
+        if (['school', 'gymnasium', 'lyceum'].includes(formData.institutionType)) {
+            fields.push(
+                <Col md={6} key="number">
+                    <Form.Group className="mb-3">
+                        <Form.Label>
+                            <FaHashtag className="me-2" />
+                            Номер закладу *
+                        </Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="number"
+                            className={getInputClass("number")}
+                            value={formData.number}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Наприклад: 1"
+                            required
+                        />
+                        <div className="invalid-feedback">{errors.number}</div>
+                    </Form.Group>
+                </Col>
+            );
+        }
+
+        // Для коледжу додаємо номер (необов'язковий)
+        if (formData.institutionType === 'college') {
+            fields.push(
+                <Col md={6} key="number">
+                    <Form.Group className="mb-3">
+                        <Form.Label>
+                            <FaHashtag className="me-2" />
+                            Номер закладу
+                        </Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="number"
+                            className={getInputClass("number")}
+                            value={formData.number}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Наприклад: 1"
+                        />
+                        <Form.Text className="text-muted">
+                            Необов'язкове поле для коледжу
+                        </Form.Text>
+                    </Form.Group>
+                </Col>
+            );
+        }
+
+        // Для гімназії та ліцею додаємо спеціалізацію
+        if (['gymnasium', 'lyceum'].includes(formData.institutionType)) {
+            fields.push(
+                <Col md={6} key="name">
+                    <Form.Group className="mb-3">
+                        <Form.Label>Спеціалізація закладу</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="name"
+                            className={getInputClass("name")}
+                            value={formData.name}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Наприклад: спеціалізована на вивченні англійської мови"
+                        />
+                        <Form.Text className="text-muted">
+                            Необов'язкове поле
+                        </Form.Text>
+                    </Form.Group>
+                </Col>
+            );
+        }
+
+        // "ІМЕНІ" ДЛЯ ГІМНАЗІЇ, ЛІЦЕЮ, КОЛЕДЖУ ТА УНІВЕРСИТЕТУ
+        if (['gymnasium', 'lyceum', 'college', 'university'].includes(formData.institutionType)) {
+            fields.push(
+                <Col md={6} key="honoraryName">
+                    <Form.Group className="mb-3">
+                        <Form.Label>Імені</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="honoraryName"
+                            className={getInputClass("honoraryName")}
+                            value={formData.honoraryName}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Наприклад: Тараса Шевченка"
+                        />
+                        <Form.Text className="text-muted">
+                            Необов'язкове поле
+                        </Form.Text>
+                    </Form.Group>
+                </Col>
+            );
+        }
+
+        return fields;
     };
 
     if (checking) {
@@ -379,92 +491,7 @@ const WelcomePage = () => {
                                 </h5>
 
                                 <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>Тип закладу *</Form.Label>
-                                            <Form.Select
-                                                name="institutionType"
-                                                className={getInputClass("institutionType")}
-                                                value={formData.institutionType}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                required
-                                            >
-                                                {institutionTypes.map(type => (
-                                                    <option key={type.value} value={type.value}>
-                                                        {type.label}
-                                                    </option>
-                                                ))}
-                                            </Form.Select>
-                                            <div className="invalid-feedback">{errors.institutionType}</div>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        {['school', 'gymnasium', 'lyceum'].includes(formData.institutionType) && (
-                                            <Form.Group className="mb-3">
-                                                <Form.Label>
-                                                    <FaHashtag className="me-2" />
-                                                    Номер закладу *
-                                                </Form.Label>
-                                                <Form.Control
-                                                    type="text"
-                                                    name="number"
-                                                    className={getInputClass("number")}
-                                                    value={formData.number}
-                                                    onChange={handleChange}
-                                                    onBlur={handleBlur}
-                                                    placeholder="Наприклад: 1"
-                                                    required
-                                                />
-                                                <div className="invalid-feedback">{errors.number}</div>
-                                            </Form.Group>
-                                        )}
-                                    </Col>
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        {['gymnasium', 'lyceum', 'college', 'university'].includes(formData.institutionType) && (
-                                            <Form.Group className="mb-3">
-                                                <Form.Label>Назва закладу *</Form.Label>
-                                                <Form.Control
-                                                    type="text"
-                                                    name="name"
-                                                    className={getInputClass("name")}
-                                                    value={formData.name}
-                                                    onChange={handleChange}
-                                                    onBlur={handleBlur}
-                                                    placeholder="Наприклад: спеціалізована"
-                                                    required
-                                                />
-                                                <div className="invalid-feedback">{errors.name}</div>
-                                            </Form.Group>
-                                        )}
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                Імені {['college', 'university'].includes(formData.institutionType) && '*'}
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="honoraryName"
-                                                className={getInputClass("honoraryName")}
-                                                value={formData.honoraryName}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: Тараса Шевченка"
-                                                required={['college', 'university'].includes(formData.institutionType)}
-                                            />
-                                            <div className="invalid-feedback">{errors.honoraryName}</div>
-                                            <Form.Text className="text-muted">
-                                                {['college', 'university'].includes(formData.institutionType)
-                                                    ? 'Обов\'язкове поле для коледжу та університету'
-                                                    : 'Необов\'язкове поле для школи, гімназії та ліцею'
-                                                }
-                                            </Form.Text>
-                                        </Form.Group>
-                                    </Col>
+                                    {getDynamicFields()}
                                 </Row>
 
                                 <Row>

@@ -12,12 +12,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// ПІДКЛЮЧЕННЯ ДО ГОЛОВНОЇ БАЗИ ДАНИХ
-mongoose.connect('mongodb://localhost:27017/school_system_main')
-    .then(() => console.log('MongoDB підключено до головної бази даних'))
-    .catch(err => console.error('Помилка підключення MongoDB:', err));
-
-const { mainConnection } = require('./config/databaseManager');
+// БІЛЬШЕ НЕ ПІДКЛЮЧАЄМОСЯ ДО ГОЛОВНОЇ БАЗИ ДАНИХ
+// Замість цього використовуємо окремі бази для кожного навчального закладу
 
 app.use(async (req, res, next) => {
     try {
@@ -75,6 +71,7 @@ app.get('/', (req, res) => {
     res.json({
         message: 'Сервер системи електронного щоденника працює!',
         version: '1.0.0',
+        architecture: 'Multi-tenant without main database',
         timestamp: new Date().toISOString()
     });
 });
@@ -82,7 +79,7 @@ app.get('/', (req, res) => {
 app.get('/api/debug', (req, res) => {
     res.json({
         message: 'API працює!',
-        database: 'school_system_main',
+        architecture: 'Multi-tenant with separate databases',
         timestamp: new Date().toISOString()
     });
 });
@@ -91,13 +88,12 @@ app.get('/api/system/info', (req, res) => {
     res.json({
         system: 'School Management System',
         multiTenant: true,
-        mainDatabase: 'school_system_main',
+        architecture: 'Separate databases per school',
         features: [
-            'Multi-database architecture',
-            'School registration',
-            'User management',
-            'Schedule management',
-            'Classroom management'
+            'No main database',
+            'School registration creates separate DB',
+            'All data stored in school databases',
+            'File-based school registry'
         ]
     });
 });
@@ -136,9 +132,5 @@ app.listen(PORT, () => {
     console.log('  GET    /api/school/check-school');
     console.log('  POST   /api/school/register');
     console.log('  POST   /api/login');
-    console.log('  GET    /api/available/test');
-    console.log('  GET    /api/available/classrooms');
-    console.log('  GET    /api/available/teachers');
-    console.log('  GET    /api/available/check-availability');
-    console.log('\nСервер готовий до роботи!\n');
+    console.log('Сервер готовий до роботи!\n');
 });

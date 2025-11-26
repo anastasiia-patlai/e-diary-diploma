@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const School = require('../models/School');
-const { getSchoolUserModel, getSchoolDBConnection } = require('../config/databaseManager');
+const { getSchoolUserModel, getSchoolDBConnection, getSchools, getSchoolModel } = require('../config/databaseManager');
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -10,18 +9,36 @@ router.post('/login', async (req, res) => {
     try {
         console.log('Login attempt for email:', email);
 
-        const school = await School.findOne({
-            adminEmail: email,
-            isActive: true
-        });
+        const schools = await getSchools();
 
-        if (!school) {
-            return res.status(400).json({ error: 'Користувач не знайдений' });
+        if (schools.length === 0) {
+            return res.status(400).json({ error: 'Жодного навчального закладу не зареєстровано' });
         }
 
-        const SchoolUser = getSchoolUserModel(school.databaseName);
+        let user = null;
+        let schoolInfo = null;
+        let schoolDbName = null;
 
-        const user = await SchoolUser.findOne({ email });
+        for (const school of schools) {
+            try {
+                const SchoolUser = getSchoolUserModel(school.databaseName);
+                const foundUser = await SchoolUser.findOne({ email });
+
+                if (foundUser) {
+                    user = foundUser;
+                    schoolDbName = school.databaseName;
+
+                    const School = getSchoolModel(schoolDbName);
+                    const schoolRecord = await School.findOne({ databaseName: schoolDbName });
+                    schoolInfo = schoolRecord;
+
+                    break;
+                }
+            } catch (error) {
+                console.error(`Error searching in ${school.databaseName}:`, error);
+                continue;
+            }
+        }
 
         if (!user) {
             return res.status(400).json({ error: 'Користувач не знайдений' });
@@ -32,12 +49,11 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Невірний пароль' });
         }
 
-        const hasData = await checkSchoolHasData(school.databaseName);
+        const hasData = await checkSchoolHasData(schoolDbName);
 
-        // Формуємо об'єкт для збереження в localStorage
         const userInfoForStorage = {
             userId: user._id.toString(),
-            databaseName: school.databaseName,
+            databaseName: schoolDbName,
             fullName: user.fullName,
             role: user.role,
             email: user.email,
@@ -46,7 +62,7 @@ router.post('/login', async (req, res) => {
             positions: user.positions || []
         };
 
-        console.log('💾 Дані для збереження в localStorage:', userInfoForStorage);
+        console.log('Дані для збереження в localStorage:', userInfoForStorage);
 
         res.json({
             message: 'Успішний вхід',
@@ -59,12 +75,10 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 group: user.group || null,
                 position: user.position || null,
-                schoolId: school._id,
-                databaseName: school.databaseName,
-                schoolName: getSchoolFullName(school),
+                databaseName: schoolDbName,
+                schoolName: getSchoolFullName(schoolInfo),
                 hasData: hasData
             },
-            // Додаємо дані для localStorage у відповідь
             localStorageData: userInfoForStorage
         });
 
@@ -97,7 +111,25 @@ async function checkSchoolHasData(databaseName) {
             console.log('Subject model not found');
         }
 
-        return hasOtherUsers || hasGroups || hasSubjects;
+        let hasClassrooms = false;
+        try {
+            const ClassroomModel = connection.model('Classroom');
+            const classroomsCount = await ClassroomModel.countDocuments();
+            hasClassrooms = classroomsCount > 0;
+        } catch (e) {
+            console.log('Classroom model not found');
+        }
+
+        let hasSchedule = false;
+        try {
+            const ScheduleModel = connection.model('Schedule');
+            const scheduleCount = await ScheduleModel.countDocuments();
+            hasSchedule = scheduleCount > 0;
+        } catch (e) {
+            console.log('Schedule model not found');
+        }
+
+        return hasOtherUsers || hasGroups || hasSubjects || hasClassrooms || hasSchedule;
 
     } catch (error) {
         console.error('Error checking school data:', error);
@@ -105,8 +137,10 @@ async function checkSchoolHasData(databaseName) {
     }
 }
 
-// ФУНКЦІЯ ДЛЯ ФОРМУВАННЯ ПОВНОЇ НАЗВИ НАЧАЛЬНОГО ЗАКЛАДУ
+// ФУНКЦІЯ ДЛЯ ФОРМУВАННЯ ПОВНОЇ НАЗВИ НАВЧАЛЬНОГО ЗАКЛАДУ
 function getSchoolFullName(school) {
+    if (!school) return 'Навчальний заклад';
+
     const typeNames = {
         school: 'Школа',
         gymnasium: 'Гімназія',
@@ -115,11 +149,73 @@ function getSchoolFullName(school) {
         university: 'Університет'
     };
 
-    let fullName = typeNames[school.institutionType];
-    if (school.number) fullName += ` №${school.number}`;
-    if (school.name) fullName += ` ${school.name}`;
-    if (school.honoraryName) fullName += ` імені ${school.honoraryName}`;
+    let fullName = typeNames[school.institutionType] || 'Навчальний заклад';
+
+    if (school.number && ['school', 'gymnasium', 'lyceum'].includes(school.institutionType)) {
+        fullName += ` №${school.number}`;
+    }
+
+    if (school.name && ['gymnasium', 'lyceum', 'college', 'university'].includes(school.institutionType)) {
+        fullName += ` ${school.name}`;
+    }
+
+    if (school.honoraryName) {
+        fullName += ` імені ${school.honoraryName}`;
+    }
+
     return fullName;
 }
+
+// ДОДАЄМО МАРШРУТ ДЛЯ ПЕРЕВІРКИ ДОСТУПНОСТІ БАЗИ ДАНИХ
+router.get('/check-db/:databaseName', async (req, res) => {
+    try {
+        const { databaseName } = req.params;
+
+        const SchoolUser = getSchoolUserModel(databaseName);
+        const usersCount = await SchoolUser.countDocuments();
+
+        res.json({
+            status: 'OK',
+            databaseName: databaseName,
+            usersCount: usersCount
+        });
+    } catch (error) {
+        console.error('Database check failed:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            databaseName: req.params.databaseName,
+            error: error.message
+        });
+    }
+});
+
+// МАРШРУТ ДЛЯ ОТРИМАННЯ ІНФОРМАЦІЇ ПРО ШКОЛУ
+router.get('/school-info/:databaseName', async (req, res) => {
+    try {
+        const { databaseName } = req.params;
+
+        const School = getSchoolModel(databaseName);
+        const schoolInfo = await School.findOne({ databaseName: databaseName });
+
+        if (!schoolInfo) {
+            return res.status(404).json({ error: 'Інформацію про школу не знайдено' });
+        }
+
+        res.json({
+            school: {
+                institutionType: schoolInfo.institutionType,
+                number: schoolInfo.number,
+                name: schoolInfo.name,
+                honoraryName: schoolInfo.honoraryName,
+                city: schoolInfo.city,
+                address: schoolInfo.address,
+                fullName: getSchoolFullName(schoolInfo)
+            }
+        });
+    } catch (error) {
+        console.error('Error getting school info:', error);
+        res.status(500).json({ error: 'Помилка при отриманні інформації про школу' });
+    }
+});
 
 module.exports = router;

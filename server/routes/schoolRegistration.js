@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const School = require('../models/School');
 const bcrypt = require('bcryptjs');
-const { createDatabase, getSchoolUserModel } = require('../config/databaseManager');
+const { createDatabase, getSchoolUserModel, getSchools, schoolExists } = require('../config/databaseManager');
 
 console.log('School registration routes loaded!');
 
@@ -40,42 +39,15 @@ function transliterate(text) {
         .toLowerCase();
 }
 
-// Діагностичний маршрут для перевірки підключення
-// router.get('/test-db', async (req, res) => {
-//     try {
-//         // Перевірка підключення до головної бази
-//         const schoolsCount = await School.countDocuments();
-
-//         // Перевірка створення тестової бази
-//         const testDbName = 'test_db_' + Date.now();
-//         await createDatabase(testDbName);
-
-//         res.json({
-//             status: 'OK',
-//             mainDatabase: 'Connected',
-//             testDatabase: 'Created successfully',
-//             schoolsCount: schoolsCount,
-//             testDbName: testDbName
-//         });
-//     } catch (error) {
-//         console.error('Database test failed:', error);
-//         res.status(500).json({
-//             status: 'ERROR',
-//             error: error.message,
-//             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-//         });
-//     }
-// });
-
 // ПЕРЕВІРИТИ ЧИ ІСНУЄ ШКОЛА
 router.get('/check-school', async (req, res) => {
     try {
         console.log('Checking if school exists...');
-        const schoolsCount = await School.countDocuments({ isActive: true });
-        console.log(`Schools found: ${schoolsCount}`);
+        const schools = await getSchools();
+        console.log(`Schools found: ${schools.length}`);
         res.json({
-            hasSchool: schoolsCount > 0,
-            count: schoolsCount
+            hasSchool: schools.length > 0,
+            count: schools.length
         });
     } catch (error) {
         console.error('Error checking school:', error);
@@ -89,7 +61,6 @@ router.get('/check-school', async (req, res) => {
 // ЗАРЕЄСТРУВАТИ ШКОЛУ
 router.post('/register', async (req, res) => {
     let schoolDbConnection = null;
-    let createdSchool = null;
 
     try {
         console.log('SCHOOL REGISTRATION START');
@@ -126,34 +97,20 @@ router.post('/register', async (req, res) => {
         console.log('All required fields present');
 
         console.log('3. Checking if school already exists...');
-        const existingSchool = await School.findOne({ isActive: true });
-        if (existingSchool) {
-            console.log('School already exists:', existingSchool.databaseName);
+        const schools = await getSchools();
+        if (schools.length > 0) {
+            console.log('School already exists');
             return res.status(400).json({
                 message: 'Навчальний заклад вже зареєстрований в системі'
             });
         }
-        console.log('✅ No existing school found');
+        console.log('No existing school found');
 
         console.log('4. Validating institution type specific fields...');
         if (['school', 'gymnasium', 'lyceum'].includes(institutionType) && !number) {
             console.log('Missing number for', institutionType);
             return res.status(400).json({
                 message: 'Для обраного типу закладу номер є обов\'язковим'
-            });
-        }
-
-        if (['gymnasium', 'lyceum', 'college', 'university'].includes(institutionType) && !name) {
-            console.log('Missing name for', institutionType);
-            return res.status(400).json({
-                message: 'Для обраного типу закладу назва є обов\'язковою'
-            });
-        }
-
-        if (['college', 'university'].includes(institutionType) && !honoraryName) {
-            console.log('Missing honoraryName for', institutionType);
-            return res.status(400).json({
-                message: 'Для коледжу та університету імені є обов\'язковим'
             });
         }
         console.log('Institution type validation passed');
@@ -167,11 +124,11 @@ router.post('/register', async (req, res) => {
             city
         );
 
-        console.log('✅ Database name generated:', databaseName);
+        console.log('Database name generated:', databaseName);
 
         console.log('6. Checking for duplicate database name...');
-        const existingDb = await School.findOne({ databaseName });
-        if (existingDb) {
+        const dbExists = await schoolExists(databaseName);
+        if (dbExists) {
             console.log('Database already exists:', databaseName);
             return res.status(400).json({
                 message: 'База даних з такою назвою вже існує'
@@ -183,8 +140,25 @@ router.post('/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(adminPassword, 12);
         console.log('Password hashed successfully');
 
-        console.log('8. Creating database...');
-        schoolDbConnection = await createDatabase(databaseName);
+        console.log('8. Creating database and school record...');
+
+        // Підготуємо дані для школи
+        const schoolData = {
+            institutionType,
+            number: number || undefined,
+            name: name || undefined,
+            honoraryName: honoraryName || undefined,
+            city,
+            address,
+            databaseName,
+            adminFullName,
+            adminPosition,
+            adminEmail,
+            adminPhone,
+            adminPassword: hashedPassword
+        };
+
+        schoolDbConnection = await createDatabase(databaseName, schoolData);
         console.log('Database created successfully');
 
         console.log('9. Getting SchoolUser model...');
@@ -205,31 +179,19 @@ router.post('/register', async (req, res) => {
         await adminUser.save();
         console.log('Admin user created with ID:', adminUser._id);
 
-        console.log('11. Creating school record...');
-        const school = new School({
-            institutionType,
-            number: number || undefined,
-            name: name || undefined,
-            honoraryName: honoraryName || undefined,
-            city,
-            address,
-            databaseName,
-            adminFullName,
-            adminPosition,
-            adminEmail,
-            adminPhone,
-            adminPassword: hashedPassword,
-            adminUserId: adminUser._id
-        });
+        console.log('11. Updating school record with admin user ID...');
+        const School = schoolDbConnection.model('School');
+        await School.findOneAndUpdate(
+            { databaseName },
+            { adminUserId: adminUser._id }
+        );
+        console.log('School record updated with admin user ID');
 
-        createdSchool = await school.save();
-        console.log('School record saved with ID:', createdSchool._id);
         console.log('SCHOOL REGISTRATION SUCCESS');
 
         res.status(201).json({
             message: 'Навчальний заклад успішно зареєстровано',
             school: {
-                id: school._id,
                 institutionType,
                 fullName: getInstitutionFullName(institutionType, number, name, honoraryName),
                 city,
@@ -242,26 +204,8 @@ router.post('/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error registering school:', error);
+        console.error('Error registering school:', error);
         console.error('Error stack:', error.stack);
-
-        if (createdSchool) {
-            try {
-                await School.findByIdAndDelete(createdSchool._id);
-                console.log('Rollback: School record deleted');
-            } catch (rollbackError) {
-                console.error('Error during school record rollback:', rollbackError);
-            }
-        }
-
-        if (schoolDbConnection) {
-            try {
-                await schoolDbConnection.dropDatabase();
-                console.log('Rollback: School database dropped');
-            } catch (dropError) {
-                console.error('Error dropping database during rollback:', dropError);
-            }
-        }
 
         if (error.code === 11000) {
             return res.status(400).json({
@@ -302,7 +246,7 @@ function getInstitutionFullName(type, number, name, honoraryName) {
         fullName += ` №${number}`;
     }
 
-    if (name && ['gymnasium', 'lyceum', 'college', 'university'].includes(type)) {
+    if (name) {
         fullName += ` ${name}`;
     }
 

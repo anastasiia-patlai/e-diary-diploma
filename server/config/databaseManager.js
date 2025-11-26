@@ -1,21 +1,60 @@
 const mongoose = require('mongoose');
 
-// Імпортуємо СХЕМИ, а не моделі
 const userSchema = require('../models/User').schema;
 const groupSchema = require('../models/Group').schema;
 const classroomSchema = require('../models/Classroom').schema;
 const dayOfWeekSchema = require('../models/DayOfWeek').schema;
 const timeTabSchema = require('../models/TimeTab').schema;
 const scheduleSchema = require('../models/Schedule').schema;
+const schoolSchema = require('../models/School').schema;
+const semesterSchema = require('../models/Semester').schema;
+const quarterSchema = require('../models/Quarter').schema;
+const holidaySchema = require('../models/Holiday').schema;
 
-// ГОЛОВНЕ ПІДКЛЮЧЕННЯ ДО БАЗИ ДАНИХ ДЛЯ НАВЧАЛЬНИХ ЗАКЛАДІВ
-const mainConnection = mongoose.createConnection(process.env.MONGODB_URI || 'mongodb://localhost:27017/school_system_main');
+// ФАЙЛ ДЛЯ ЗБЕРІГАННЯ ІНФОРМАЦІЇ ПРО ШКОЛИ
+const fs = require('fs').promises;
+const path = require('path');
+const SCHOOLS_FILE = path.join(__dirname, 'schools.json');
 
-// КОЛЕКЦІЯ З'ЄДНАННЬ ДЛЯ НАВЧАЛЬНИХ ЗАКЛАДІВ
+// КОЛЕКЦІЯ З'ЄДНАНЬ ДЛЯ НАВЧАЛЬНИХ ЗАКЛАДІВ
 const schoolConnections = new Map();
 
-// ФУНКЦІЯ ДЛЯ СТВОРЕННЯ НОВОЇ БАЗИ ДАНИХ ШКОЛИ З ВСІМА МОДЕЛЯМИ
-async function createDatabase(databaseName) {
+// ФУНКЦІЇ ДЛЯ РОБОТИ З ФАЙЛОМ ШКІЛ
+async function loadSchools() {
+    try {
+        const data = await fs.readFile(SCHOOLS_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return [];
+    }
+}
+
+async function saveSchools(schools) {
+    await fs.writeFile(SCHOOLS_FILE, JSON.stringify(schools, null, 2));
+}
+
+async function addSchool(schoolInfo) {
+    const schools = await loadSchools();
+    schools.push(schoolInfo);
+    await saveSchools(schools);
+}
+
+async function getSchools() {
+    return await loadSchools();
+}
+
+async function getSchoolByDatabaseName(databaseName) {
+    const schools = await loadSchools();
+    return schools.find(school => school.databaseName === databaseName);
+}
+
+async function schoolExists(databaseName) {
+    const schools = await loadSchools();
+    return schools.some(school => school.databaseName === databaseName);
+}
+
+// ФУНКЦІЯ ДЛЯ СТВОРЕННЯ НОВОЇ БАЗИ ДАНИХ ШКОЛИ
+async function createDatabase(databaseName, schoolData) {
     try {
         console.log(`Creating database: ${databaseName}`);
 
@@ -28,7 +67,6 @@ async function createDatabase(databaseName) {
             useUnifiedTopology: true,
         });
 
-        // Чекаємо на підключення
         await new Promise((resolve, reject) => {
             schoolConnection.on('connected', resolve);
             schoolConnection.on('error', reject);
@@ -36,23 +74,41 @@ async function createDatabase(databaseName) {
 
         console.log(`Connected to database: ${databaseName}`);
 
-        // Реєструємо моделі з СХЕМАМИ
         schoolConnection.model('User', userSchema);
         schoolConnection.model('Group', groupSchema);
         schoolConnection.model('Classroom', classroomSchema);
         schoolConnection.model('DayOfWeek', dayOfWeekSchema);
         schoolConnection.model('TimeTab', timeTabSchema);
         schoolConnection.model('Schedule', scheduleSchema);
+        schoolConnection.model('School', schoolSchema);
+        schoolConnection.model('Semester', semesterSchema);
+        schoolConnection.model('Quarter', quarterSchema);
+        schoolConnection.model('Holiday', holidaySchema);
 
         console.log(`All models registered for database: ${databaseName}`);
 
-        // Ініціалізуємо базові дані
+        await addSchool({
+            databaseName: databaseName,
+            institutionType: schoolData.institutionType,
+            city: schoolData.city,
+            fullName: getInstitutionFullName(
+                schoolData.institutionType,
+                schoolData.number,
+                schoolData.name,
+                schoolData.honoraryName
+            ),
+            createdAt: new Date().toISOString()
+        });
+
         await initializeBaseData(schoolConnection);
 
-        // Зберігаємо підключення
+        const School = schoolConnection.model('School');
+        const schoolRecord = new School(schoolData);
+        await schoolRecord.save();
+
         schoolConnections.set(databaseName, schoolConnection);
 
-        console.log(`Database ${databaseName} created successfully with ALL models`);
+        console.log(`Database ${databaseName} created successfully with ALL models and school record`);
         return schoolConnection;
     } catch (error) {
         console.error(`Error creating database ${databaseName}:`, error);
@@ -84,6 +140,32 @@ async function initializeBaseData(connection) {
     }
 }
 
+function getInstitutionFullName(type, number, name, honoraryName) {
+    const typeNames = {
+        school: 'Школа',
+        gymnasium: 'Гімназія',
+        lyceum: 'Ліцей',
+        college: 'Коледж',
+        university: 'Університет'
+    };
+
+    let fullName = typeNames[type] || type;
+
+    if (number && ['school', 'gymnasium', 'lyceum'].includes(type)) {
+        fullName += ` №${number}`;
+    }
+
+    if (name && ['gymnasium', 'lyceum', 'college', 'university'].includes(type)) {
+        fullName += ` ${name}`;
+    }
+
+    if (honoraryName) {
+        fullName += ` імені ${honoraryName}`;
+    }
+
+    return fullName;
+}
+
 // ФУНКЦІЯ ДЛЯ ОТРИМАННЯ ПІДКЛЮЧЕННЯ ДО БАЗИ ДАНИХ НАВЧАЛЬНОГО ЗАКЛАДУ
 function getSchoolDBConnection(databaseName) {
     let connection = schoolConnections.get(databaseName);
@@ -98,13 +180,16 @@ function getSchoolDBConnection(databaseName) {
             useUnifiedTopology: true,
         });
 
-        // Реєструємо моделі з СХЕМАМИ
         connection.model('User', userSchema);
         connection.model('Group', groupSchema);
         connection.model('Classroom', classroomSchema);
         connection.model('DayOfWeek', dayOfWeekSchema);
         connection.model('TimeTab', timeTabSchema);
         connection.model('Schedule', scheduleSchema);
+        connection.model('School', schoolSchema);
+        connection.model('Semester', semesterSchema);
+        connection.model('Quarter', quarterSchema);
+        connection.model('Holiday', holidaySchema);
 
         schoolConnections.set(databaseName, connection);
         console.log(`New connection created for database: ${databaseName}`);
@@ -144,8 +229,27 @@ function getSchoolScheduleModel(databaseName) {
     return connection.model('Schedule');
 }
 
+function getSchoolModel(databaseName) {
+    const connection = getSchoolDBConnection(databaseName);
+    return connection.model('School');
+}
+
+function getSchoolSemesterModel(databaseName) {
+    const connection = getSchoolDBConnection(databaseName);
+    return connection.model('Semester');
+}
+
+function getSchoolQuarterModel(databaseName) {
+    const connection = getSchoolDBConnection(databaseName);
+    return connection.model('Quarter');
+}
+
+function getSchoolHolidayModel(databaseName) {
+    const connection = getSchoolDBConnection(databaseName);
+    return connection.model('Holiday');
+}
+
 module.exports = {
-    mainConnection,
     createDatabase,
     getSchoolDBConnection,
     getSchoolUserModel,
@@ -154,5 +258,13 @@ module.exports = {
     getSchoolDayOfWeekModel,
     getSchoolTimeTabModel,
     getSchoolScheduleModel,
-    schoolConnections
+    getSchoolModel,
+    getSchoolSemesterModel,
+    getSchoolQuarterModel,
+    getSchoolHolidayModel,
+    schoolConnections,
+    loadSchools,
+    getSchools,
+    getSchoolByDatabaseName,
+    schoolExists
 };
