@@ -58,10 +58,13 @@ function Login() {
             }
 
             if (data.user && data.user.role) {
-                // ЗБЕРІГАЄМО ДАНІ В localStorage
+                // ЗБЕРІГАЄМО ВСІ ДАНІ В localStorage
                 localStorage.setItem("user", JSON.stringify(data.user));
 
-                // ДОДАЄМО ЗБЕРЕЖЕННЯ ДАНИХ ДЛЯ ПРОФІЛЮ
+                // ДОДАЄМО ЗБЕРЕЖЕННЯ databaseName окремо для надійності
+                localStorage.setItem("databaseName", data.user.databaseName);
+
+                // Зберігаємо повну інформацію для профілю
                 const userInfo = {
                     userId: data.user.id,
                     databaseName: data.user.databaseName,
@@ -69,12 +72,21 @@ function Login() {
                     role: data.user.role,
                     email: data.user.email,
                     phone: data.user.phone,
-                    position: data.user.position || 'Директор',
-                    positions: data.user.positions || ['Директор']
+                    position: data.user.position || (data.user.role === 'admin' ? 'Адміністратор' : data.user.role),
+                    positions: data.user.positions || [],
+                    schoolName: data.user.schoolName || 'Навчальний заклад'
                 };
 
                 localStorage.setItem("userInfo", JSON.stringify(userInfo));
-                console.log("✅ Дані для профілю збережено:", userInfo);
+                console.log("✅ Всі дані збережено в localStorage:", {
+                    user: data.user,
+                    databaseName: data.user.databaseName,
+                    userInfo: userInfo
+                });
+
+                // Перевіряємо, що дані збереглися
+                const savedDbName = localStorage.getItem('databaseName');
+                console.log("Перевірка збереження databaseName:", savedDbName);
 
                 // Перенаправлення на відповідну сторінку
                 window.location.href = `/${data.user.role}`;

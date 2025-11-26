@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
@@ -12,19 +11,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// БІЛЬШЕ НЕ ПІДКЛЮЧАЄМОСЯ ДО ГОЛОВНОЇ БАЗИ ДАНИХ
-// Замість цього використовуємо окремі бази для кожного навчального закладу
-
+// Додамо middleware для обробки підключення до бази даних
 app.use(async (req, res, next) => {
     try {
-        if (req.path === '/api/school/check-school' || req.path === '/api/school/register') {
+        // Для маршрутів, які не потребують бази даних
+        if (req.path === '/api/school/check-school' || req.path === '/api/school/register' || req.path === '/api/debug' || req.path === '/api/system/info') {
             return next();
         }
 
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            console.log('Authenticated request');
-        }
+        // Для маршрутів, які потребують бази даних, ми повинні мати інформацію про школу
+        // Поки що просто пропускаємо, але в майбутньому тут буде логіка вибору бази даних школи
+        console.log('Запит до API, що потребує бази даних:', req.path);
 
         next();
     } catch (error) {

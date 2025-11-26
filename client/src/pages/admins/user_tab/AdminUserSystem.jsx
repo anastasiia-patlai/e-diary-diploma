@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUserFriends, FaUserShield } from "react-icons/fa";
 import Signup from "../Signup";
 import AdminShowStudent from "./student/AdminShowStudent";
@@ -9,8 +9,61 @@ import AdminShowAdmin from "./admin/AdminShowAdmin";
 const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
     const [showPopup, setShowPopup] = useState(false);
+    const [databaseName, setDatabaseName] = useState("");
+
+    // Покращене отримання databaseName
+    useEffect(() => {
+        const getDatabaseName = () => {
+            // Спроба 1: Окреме поле databaseName
+            let dbName = localStorage.getItem('databaseName');
+
+            // Спроба 2: З об'єкта user
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        dbName = user.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            // Спроба 3: З об'єкта userInfo
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        dbName = userInfo.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            if (dbName) {
+                setDatabaseName(dbName);
+                console.log("✅ Database name отримано:", dbName);
+            } else {
+                console.warn("❌ Database name не знайдено в localStorage!");
+                console.log("Доступні дані в localStorage:");
+                console.log("- databaseName:", localStorage.getItem('databaseName'));
+                console.log("- user:", localStorage.getItem('user'));
+                console.log("- userInfo:", localStorage.getItem('userInfo'));
+            }
+        };
+
+        getDatabaseName();
+    }, []);
 
     const handleAddUser = () => {
+        if (!databaseName) {
+            alert("Помилка: не вдалося визначити базу даних школи. Будь ласка, перезавантажте сторінку або увійдіть знову.");
+            console.error("Database name відсутній при спробі додати користувача");
+            return;
+        }
         setShowPopup(true);
     };
 
@@ -20,14 +73,21 @@ const AdminUserSystem = () => {
 
     return (
         <div>
-            {/* ЗАГОЛОВОК І КНОПКА */}
+            {/* Заголовок з інформацією про базу даних */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: '20px'
             }}>
-                <h3 style={{ margin: 0 }}>Управління користувачами</h3>
+                <div>
+                    <h3 style={{ margin: 0 }}>Управління користувачами</h3>
+                    {databaseName && (
+                        <small style={{ color: '#666', fontSize: '12px' }}>
+                            База даних: {databaseName}
+                        </small>
+                    )}
+                </div>
                 <button
                     onClick={handleAddUser}
                     style={{
@@ -56,7 +116,7 @@ const AdminUserSystem = () => {
                 </button>
             </div>
 
-            {/* САМІ ВКЛАДКИ */}
+            {/* Решта коду залишається без змін */}
             <div style={{
                 display: 'flex',
                 borderBottom: '1px solid #e5e7eb',
@@ -92,6 +152,8 @@ const AdminUserSystem = () => {
                     <FaUserGraduate />
                     Учні/Студенти
                 </button>
+
+                {/* Решта кнопок залишається без змін */}
                 <button
                     onClick={() => setActiveTab("teachers")}
                     style={{
@@ -137,13 +199,13 @@ const AdminUserSystem = () => {
                         transition: 'all 0.3s ease'
                     }}
                     onMouseOver={(e) => {
-                        if (activeTab !== "teachers") {
+                        if (activeTab !== "parents") {
                             e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
                             e.target.style.color = 'white';
                         }
                     }}
                     onMouseOut={(e) => {
-                        if (activeTab !== "teachers") {
+                        if (activeTab !== "parents") {
                             e.target.style.backgroundColor = 'transparent';
                             e.target.style.color = '#374151';
                         }
@@ -203,7 +265,10 @@ const AdminUserSystem = () => {
 
             {/* Попап для реєстрації */}
             {showPopup && (
-                <Signup onClose={handleClosePopup} />
+                <Signup
+                    onClose={handleClosePopup}
+                    databaseName={databaseName}
+                />
             )}
         </div>
     );

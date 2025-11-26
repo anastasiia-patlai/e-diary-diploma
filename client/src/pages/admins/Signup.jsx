@@ -3,7 +3,7 @@ import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
 
-function Signup({ onClose }) {
+function Signup({ onClose, databaseName }) {
     const [formData, setFormData] = useState({
         fullName: "",
         role: "",
@@ -21,7 +21,6 @@ function Signup({ onClose }) {
     const [touched, setTouched] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
 
-    // НОВЕ ПОЛЕ ДЛЯ ПРЕДМЕТУ
     const addPositionField = () => {
         setFormData(prev => ({
             ...prev,
@@ -29,7 +28,6 @@ function Signup({ onClose }) {
         }));
     };
 
-    // ВИДАЛИТИ ПОЛЕ ДЛЯ ПРЕДМЕТУ
     const removePositionField = (index) => {
         if (formData.positions.length > 1) {
             setFormData(prev => ({
@@ -39,7 +37,6 @@ function Signup({ onClose }) {
         }
     };
 
-    // ОНОВИТИ ПРЕДМЕТ
     const updatePosition = (index, value) => {
         setFormData(prev => ({
             ...prev,
@@ -105,6 +102,12 @@ function Signup({ onClose }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        // Перевірка наявності databaseName
+        if (!databaseName) {
+            alert("Помилка: не вказано базу даних школи. Будь ласка, спочатку зареєструйте школу.");
+            return;
+        }
+
         Object.keys(formData).forEach((field) => {
             if (field === "positions") {
                 validateField(field, formData[field]);
@@ -114,26 +117,29 @@ function Signup({ onClose }) {
         });
 
         if (Object.values(errors).every((err) => !err)) {
-            const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
+            const filteredPositions = formData.role === "teacher"
+                ? formData.positions.filter(pos => pos.trim() !== "")
+                : [];
 
             const submitData = {
-                ...formData,
-                positions: filteredPositions,
-                position: filteredPositions.join(", ")
+                databaseName: databaseName, // ДОДАЄМО databaseName
+                fullName: formData.fullName,
+                role: formData.role,
+                phone: formData.phone,
+                dateOfBirth: formData.dateOfBirth,
+                email: formData.email,
+                password: formData.password
             };
 
-            if (formData.role !== "teacher") {
-                delete submitData.positions;
-                delete submitData.position;
+            if (formData.role === "student") {
+                submitData.group = formData.group;
+            } else if (formData.role === "teacher") {
+                submitData.positions = filteredPositions;
+            } else if (formData.role === "admin") {
+                submitData.jobPosition = formData.jobPosition;
             }
 
-            if (formData.role !== "student") {
-                delete submitData.group;
-            }
-
-            if (formData.role !== "admin") {
-                delete submitData.jobPosition;
-            }
+            console.log("Відправляємо дані:", submitData);
 
             axios.post("http://localhost:3001/api/signup", submitData)
                 .then((res) => {
@@ -157,7 +163,28 @@ function Signup({ onClose }) {
                         if (onClose) onClose();
                     }, 2000);
                 })
-                .catch((err) => console.error(err));
+                .catch((err) => {
+                    console.error("Детальна помилка реєстрації:", err);
+
+                    if (err.response) {
+                        console.error("Статус помилки:", err.response.status);
+                        console.error("Дані помилки:", err.response.data);
+
+                        if (err.response.data && err.response.data.error) {
+                            alert("Помилка реєстрації: " + err.response.data.error);
+                        } else if (err.response.data && err.response.data.details) {
+                            alert("Помилка валідації: " + JSON.stringify(err.response.data.details));
+                        } else {
+                            alert("Сталася помилка під час реєстрації (код: " + err.response.status + ")");
+                        }
+                    } else if (err.request) {
+                        console.error("Не вдалося отримати відповідь від сервера:", err.request);
+                        alert("Не вдалося підключитися до сервера. Перевірте підключення до мережі.");
+                    } else {
+                        console.error("Помилка налаштування запиту:", err.message);
+                        alert("Помилка при відправці запиту: " + err.message);
+                    }
+                });
         }
     };
 
@@ -196,7 +223,6 @@ function Signup({ onClose }) {
                     maxHeight: '90vh',
                     overflowY: 'auto'
                 }}>
-                    {/* ЗАКРИТИ*/}
                     <button
                         onClick={onClose}
                         style={{
@@ -213,7 +239,6 @@ function Signup({ onClose }) {
                         <FaTimes />
                     </button>
 
-                    {/* УСПІШНЕ ДОДАННЯ КОРИСТУВАЧА */}
                     {successMessage && (
                         <div
                             style={{
