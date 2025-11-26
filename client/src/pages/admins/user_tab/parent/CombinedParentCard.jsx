@@ -9,6 +9,7 @@ import RemoveParentChoicePopup from './RemoveParentChoicePopup';
 
 const CombinedParentCard = ({
     parents,
+    databaseName,
     onAddChild,
     onEdit,
     onDelete,
@@ -417,6 +418,7 @@ const CombinedParentCard = ({
                 <AddParentPopup
                     child={selectedChild}
                     currentParent={parents[0]}
+                    databaseName={databaseName}
                     onClose={closeAddParentPopup}
                     onAddParent={handleAddParentConfirm}
                 />

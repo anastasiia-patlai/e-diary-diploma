@@ -6,6 +6,7 @@ const AddChildPopup = ({
     searchQuery,
     searchResults,
     isSearching,
+    databaseName,
     onClose,
     onSearchChange,
     onAddChild
@@ -55,13 +56,26 @@ const AddChildPopup = ({
                     </button>
                 </div>
 
+                {databaseName && (
+                    <div style={{
+                        fontSize: '12px',
+                        color: '#666',
+                        marginBottom: '10px',
+                        padding: '5px 10px',
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: '4px'
+                    }}>
+                        База даних: {databaseName}
+                    </div>
+                )}
+
                 <div style={{ position: 'relative', marginBottom: '20px' }}>
                     <div style={{ position: 'relative' }}>
                         <input
                             type="text"
                             placeholder="Введіть ім'я, email або назву групи (мінімум 3 символи)..."
                             value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
+                            onChange={(e) => onSearchChange(e.target.value)} // Повертаємо оригінальну функцію
                             style={{
                                 width: '100%',
                                 padding: '12px 45px 12px 15px',
@@ -118,6 +132,12 @@ const AddChildPopup = ({
                                             border: '1px solid #e5e7eb',
                                             cursor: 'pointer',
                                             transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = '#f3f4f6';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = '#f9fafb';
                                         }}
                                     >
                                         <div style={{

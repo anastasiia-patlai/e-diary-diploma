@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaSave, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
-const AdminParentEdit = ({ parent, onClose, onUpdate }) => {
+const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -31,11 +31,20 @@ const AdminParentEdit = ({ parent, onClose, onUpdate }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
-            const response = await axios.put(`http://localhost:3001/api/users/${parent._id}`, formData);
+            const response = await axios.put(`http://localhost:3001/api/users/${parent._id}`, {
+                ...formData,
+                databaseName
+            });
             onUpdate(response.data.user);
             onClose();
         } catch (err) {

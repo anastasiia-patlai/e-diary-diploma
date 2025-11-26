@@ -41,7 +41,7 @@ router.get('/parents', async (req, res) => {
 // ОТРИМАТИ ВСІХ СТУДЕНТІВ
 router.get('/students', async (req, res) => {
     try {
-        const { databaseName } = req.query;
+        const { databaseName, search } = req.query;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -50,11 +50,23 @@ router.get('/students', async (req, res) => {
         const User = getSchoolUserModel(databaseName);
         const Group = getSchoolGroupModel(databaseName);
 
-        const students = await User.find({ role: 'student' })
+        let searchCondition = { role: 'student' };
+
+        if (search && search.length >= 3) {
+            const searchRegex = new RegExp(search, 'i');
+            searchCondition.$or = [
+                { fullName: searchRegex },
+                { email: searchRegex },
+                { 'group.name': searchRegex }
+            ];
+        }
+
+        const students = await User.find(searchCondition)
             .select('fullName email phone dateOfBirth group parents')
             .populate('group', 'name')
             .populate('parents', 'fullName email phone')
             .sort({ fullName: 1 });
+
         res.json(students);
     } catch (err) {
         console.error('Помилка отримання студентів:', err);

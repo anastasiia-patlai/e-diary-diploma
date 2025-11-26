@@ -5,6 +5,7 @@ import axios from "axios";
 const AddParentPopup = ({
     child,
     currentParent,
+    databaseName, // Додаємо databaseName в пропси
     onClose,
     onAddParent
 }) => {
@@ -16,15 +17,28 @@ const AddParentPopup = ({
     const API_URL = "http://localhost:3001/api/users";
 
     useEffect(() => {
-        fetchAllParents();
-    }, []);
+        if (databaseName) {
+            fetchAllParents();
+        }
+    }, [databaseName]);
 
     const fetchAllParents = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту батьків");
+            return;
+        }
+
         try {
-            const response = await axios.get(`${API_URL}/parents`);
+            const response = await axios.get(`${API_URL}/parents`, {
+                params: { databaseName } // Додаємо databaseName як параметр
+            });
             setAllParents(response.data);
         } catch (err) {
             console.error("Помилка завантаження батьків:", err);
+            if (err.response) {
+                console.error("Статус помилки:", err.response.status);
+                console.error("Дані помилки:", err.response.data);
+            }
         }
     };
 
@@ -95,6 +109,19 @@ const AddParentPopup = ({
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             Поточний батько: {currentParent.fullName}
                         </p>
+                        {databaseName && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#666',
+                                marginTop: '5px',
+                                padding: '3px 8px',
+                                backgroundColor: '#f3f4f6',
+                                borderRadius: '4px',
+                                display: 'inline-block'
+                            }}>
+                                База даних: {databaseName}
+                            </div>
+                        )}
                     </div>
                     <button
                         onClick={onClose}
@@ -147,6 +174,16 @@ const AddParentPopup = ({
                             Введіть щонайменше 3 символи для пошуку
                         </div>
                     )}
+
+                    {!databaseName && (
+                        <div style={{
+                            fontSize: '12px',
+                            color: '#ef4444',
+                            marginTop: '5px'
+                        }}>
+                            Помилка: Не вказано базу даних
+                        </div>
+                    )}
                 </div>
 
                 <div>
@@ -167,6 +204,12 @@ const AddParentPopup = ({
                                             border: '1px solid #e5e7eb',
                                             cursor: 'pointer',
                                             transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = '#f3f4f6';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = '#f9fafb';
                                         }}
                                     >
                                         <div style={{

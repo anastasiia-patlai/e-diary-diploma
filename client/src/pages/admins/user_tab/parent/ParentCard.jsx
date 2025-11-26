@@ -9,6 +9,7 @@ import RemoveParentChoicePopup from './RemoveParentChoicePopup';
 
 const ParentCard = ({
     parent,
+    databaseName,
     onAddChild,
     onEdit,
     onDelete,
@@ -18,6 +19,7 @@ const ParentCard = ({
 }) => {
     const [showDeleteChildPopup, setShowDeleteChildPopup] = useState(false);
     const [showAddParentPopup, setShowAddParentPopup] = useState(false);
+    const [showRemoveParentChoicePopup, setShowRemoveParentChoicePopup] = useState(false); // ДОДАЄМО ЦЕЙ СТАН
     const [childToDelete, setChildToDelete] = useState(null);
     const [selectedChild, setSelectedChild] = useState(null);
 
@@ -41,16 +43,6 @@ const ParentCard = ({
         setSelectedChild(null);
     };
 
-    const handleDeleteConfirm = (childId) => {
-        onRemoveChild(parent._id, childId);
-        closeDeleteChildConfirmation();
-    };
-
-    const handleAddParentConfirm = (childId, parentId) => {
-        onAddParentToChild(childId, parentId);
-        closeAddParentPopup();
-    };
-
     const openRemoveParentChoicePopup = (child) => {
         setSelectedChild(child);
         setShowRemoveParentChoicePopup(true);
@@ -59,6 +51,16 @@ const ParentCard = ({
     const closeRemoveParentChoicePopup = () => {
         setShowRemoveParentChoicePopup(false);
         setSelectedChild(null);
+    };
+
+    const handleDeleteConfirm = (childId) => {
+        onRemoveChild(parent._id, childId);
+        closeDeleteChildConfirmation();
+    };
+
+    const handleAddParentConfirm = (childId, parentId) => {
+        onAddParentToChild(childId, parentId);
+        closeAddParentPopup();
     };
 
     const handleRemoveParent = (childId, parentId) => {
@@ -207,7 +209,7 @@ const ParentCard = ({
                 </div>
             </div>
 
-            {/* ДАТИ БАТЬКІВ*/}
+            {/* ДІТИ БАТЬКІВ */}
             <div>
                 <div style={{
                     display: 'flex',
@@ -313,7 +315,8 @@ const ParentCard = ({
                                             }}
                                             onBlur={(e) => {
                                                 e.currentTarget.style.borderColor = '#e5e7eb';
-                                            }}                                        >
+                                            }}
+                                        >
                                             <FaUserMinus size={10} />
                                             Відв'язати батька
                                         </button>
@@ -373,17 +376,18 @@ const ParentCard = ({
                 />
             )}
 
-            {/* ПОПАВ ДОДАННЯ БАТЬКА ДО ДИТИНИ */}
+            {/* ПОПАП ДОДАННЯ БАТЬКА ДО ДИТИНИ */}
             {showAddParentPopup && (
                 <AddParentPopup
                     child={selectedChild}
                     currentParent={parent}
+                    databaseName={databaseName}
                     onClose={closeAddParentPopup}
                     onAddParent={handleAddParentConfirm}
                 />
             )}
 
-            {/* ПОПАП ВИБОРУ ВИДАЛЕННЯ ДИТИНИ */}
+            {/* ПОПАП ВИБОРУ ВИДАЛЕННЯ БАТЬКА */}
             {showRemoveParentChoicePopup && (
                 <RemoveParentChoicePopup
                     child={selectedChild}

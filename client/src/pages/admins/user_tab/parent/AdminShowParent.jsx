@@ -16,6 +16,7 @@ const AdminShowParent = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [databaseName, setDatabaseName] = useState("");
 
     const [showAddChildPopup, setShowAddChildPopup] = useState(false);
     const [showEditPopup, setShowEditPopup] = useState(false);
@@ -35,9 +36,55 @@ const AdminShowParent = () => {
 
     const API_URL = "http://localhost:3001/api/users";
 
+    useEffect(() => {
+        const getDatabaseName = () => {
+            let dbName = localStorage.getItem('databaseName');
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        dbName = user.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        dbName = userInfo.databaseName;
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+            return dbName;
+        };
+
+        const dbName = getDatabaseName();
+        if (dbName) {
+            setDatabaseName(dbName);
+            console.log("Database name для запитів:", dbName);
+        } else {
+            console.error("Database name не знайдено!");
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
+
     const fetchParents = async () => {
+        if (!databaseName) {
+            console.error("Database name відсутній для запиту батьків");
+            return;
+        }
+
         try {
-            const response = await axios.get(`${API_URL}/parents`);
+            const response = await axios.get(`${API_URL}/parents`, {
+                params: { databaseName }
+            });
             setParents(response.data);
             applyFilters(response.data, parentSearchQuery);
             setLoading(false);
@@ -45,12 +92,21 @@ const AdminShowParent = () => {
             setError("Помилка завантаження батьків");
             setLoading(false);
             console.error("Помилка завантаження батьків:", err);
+
+            if (err.response) {
+                console.error("Статус помилки:", err.response.status);
+                console.error("Дані помилки:", err.response.data);
+            }
         }
     };
 
     const fetchStudents = async () => {
+        if (!databaseName) return;
+
         try {
-            const response = await axios.get(`${API_URL}/students`);
+            const response = await axios.get(`${API_URL}/students`, {
+                params: { databaseName } // Додаємо databaseName як параметр
+            });
             setStudents(response.data);
         } catch (err) {
             console.error("Помилка завантаження студентів:", err);
@@ -58,9 +114,11 @@ const AdminShowParent = () => {
     };
 
     useEffect(() => {
-        fetchParents();
-        fetchStudents();
-    }, []);
+        if (databaseName) {
+            fetchParents();
+            fetchStudents();
+        }
+    }, [databaseName]);
 
     // Функція для знаходження згрупованого батька
     const findGroupedParent = (parentId) => {
@@ -270,36 +328,50 @@ const AdminShowParent = () => {
     };
 
     const handleAddChildToParent = async (studentId) => {
+        if (!databaseName) {
+            alert("Помилка: не вказано базу даних");
+            return;
+        }
+
         try {
-            // Додаємо дитину до поточного батька
-            await axios.put(`${API_URL}/${selectedParent._id}/add-child`, {
+            console.log("=== ДОДАВАННЯ ДИТИНИ ===");
+            console.log("Database name:", databaseName);
+            console.log("Parent ID:", selectedParent._id);
+            console.log("Student ID:", studentId);
+
+            // ВИКОРИСТОВУЄМО QUERY PARAMETERS ДЛЯ ВСІХ ЗАПИТІВ
+            // ДОДАЄМО ДИТИНУ ДО ВИБРАНОГО БАТЬКА
+            await axios.put(`${API_URL}/${selectedParent._id}/add-child?databaseName=${encodeURIComponent(databaseName)}`, {
                 childId: studentId
+                // databaseName ВИЛУЧЕНО З BODY - тепер тільки в URL
             });
 
-            await axios.put(`${API_URL}/${studentId}/add-parent`, {
+            // ДОДАЄМО БАТЬКА ДО ДИТИНИ
+            await axios.put(`${API_URL}/${studentId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: selectedParent._id
+                // databaseName ВИЛУЧЕНО З BODY - тепер тільки в URL
             });
 
-            // Шукаємо згрупованого батька
+            // ШУКАЄМО ЗГРУПОВАНОГО БАТЬКА
             const groupedParent = findGroupedParent(selectedParent._id);
 
             if (groupedParent) {
                 console.log(`Знайдено згрупованого батька: ${groupedParent.fullName}`);
 
-                // Перевіряємо, скільки батьків вже має дитина
-                const studentResponse = await axios.get(`${API_URL}/${studentId}`);
+                // ПЕРЕВІРКА, СКІЛЬКІСТЬ БАТЬКІВ У ДИТИНИ
+                const studentResponse = await axios.get(`${API_URL}/${studentId}?databaseName=${encodeURIComponent(databaseName)}`);
                 const currentStudent = studentResponse.data;
 
                 if (currentStudent.parents && currentStudent.parents.length < 2) {
                     console.log('Додаємо другого батька автоматично...');
 
-                    // Додаємо дитину до другого батька
-                    await axios.put(`${API_URL}/${groupedParent._id}/add-child`, {
+                    // ДОДАЄМО ДИТИНУ ДО ЗГРУПОВАНОГО БАТЬКА
+                    await axios.put(`${API_URL}/${groupedParent._id}/add-child?databaseName=${encodeURIComponent(databaseName)}`, {
                         childId: studentId
                     });
 
-                    // Додаємо другого батька до дитини
-                    await axios.put(`${API_URL}/${studentId}/add-parent`, {
+                    // ДОДАЄМО ЗГРУПОВАНОГО БАТЬКА ДО ДИТИНИ
+                    await axios.put(`${API_URL}/${studentId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                         parentId: groupedParent._id
                     });
 
@@ -315,19 +387,30 @@ const AdminShowParent = () => {
             setSearchResults([]);
 
             await fetchParents();
+
+            console.log("Дитю успішно додано!");
         } catch (err) {
             console.error("Помилка додавання дитини:", err);
+            // ДОДАЄМО ДЕТАЛЬНУ ІНФОРМАЦІЮ ПРО ПОМИЛКУ
+            if (err.response) {
+                console.error("Статус помилки:", err.response.status);
+                console.error("Дані помилки:", err.response.data);
+                console.error("URL запиту:", err.config.url);
+                console.error("Метод запиту:", err.config.method);
+            }
             alert(err.response?.data?.error || "Помилка додавання дитини");
         }
     };
 
     const handleRemoveChild = async (parentId, childId) => {
+        if (!databaseName) return;
+
         try {
-            await axios.put(`${API_URL}/${parentId}/remove-child`, {
+            await axios.put(`${API_URL}/${parentId}/remove-child?databaseName=${encodeURIComponent(databaseName)}`, {
                 childId: childId
             });
 
-            await axios.put(`${API_URL}/${childId}/remove-parent`, {
+            await axios.put(`${API_URL}/${childId}/remove-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: parentId
             });
 
@@ -339,31 +422,25 @@ const AdminShowParent = () => {
     };
 
     const handleAddParentToChild = async (childId, parentId) => {
-        try {
-            console.log('Додаємо батька:', parentId, 'до дитини:', childId);
+        if (!databaseName) return;
 
-            const response = await axios.put(`${API_URL}/${childId}/add-parent`, {
+        try {
+            const response = await axios.put(`${API_URL}/${childId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: parentId
             });
 
-            console.log('Відповідь від сервера:', response.data);
-
-            if (response.data.parent) {
-                console.log('Оновлений батько:', response.data.parent);
-            }
-
             await fetchParents();
-
         } catch (err) {
             console.error("Помилка додавання батька:", err);
-            console.error("Деталі помилки:", err.response?.data);
             alert(err.response?.data?.error || "Помилка додавання батька");
         }
     };
 
     const handleRemoveParentFromChild = async (childId, parentId) => {
+        if (!databaseName) return;
+
         try {
-            await axios.put(`${API_URL}/${childId}/remove-parent`, {
+            await axios.put(`${API_URL}/${childId}/remove-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: parentId
             });
 
@@ -426,6 +503,7 @@ const AdminShowParent = () => {
                                 <ParentCard
                                     key={parentGroup[0]._id}
                                     parent={parentGroup[0]}
+                                    databaseName={databaseName}
                                     onAddChild={handleAddChild}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
@@ -437,6 +515,7 @@ const AdminShowParent = () => {
                                 <CombinedParentCard
                                     key={`group-${index}`}
                                     parents={parentGroup}
+                                    databaseName={databaseName}
                                     onAddChild={handleAddChild}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
@@ -469,6 +548,7 @@ const AdminShowParent = () => {
                 searchQuery={searchQuery}
                 searchResults={searchResults}
                 isSearching={isSearching}
+                databaseName={databaseName}
                 onClose={() => {
                     setShowAddChildPopup(false);
                     setSelectedParent(null);
@@ -482,6 +562,7 @@ const AdminShowParent = () => {
             {showEditPopup && (
                 <AdminParentEdit
                     parent={selectedParent}
+                    databaseName={databaseName}
                     onClose={() => {
                         setShowEditPopup(false);
                         setSelectedParent(null);
@@ -493,6 +574,7 @@ const AdminShowParent = () => {
             {showDeletePopup && (
                 <AdminParentDelete
                     parent={selectedParent}
+                    databaseName={databaseName}
                     onClose={() => {
                         setShowDeletePopup(false);
                         setSelectedParent(null);
