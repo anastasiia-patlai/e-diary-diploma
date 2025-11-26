@@ -15,8 +15,59 @@ const QuarterManager = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [quarterToDelete, setQuarterToDelete] = useState(null);
+    const [databaseName, setDatabaseName] = useState('');
+
+    useEffect(() => {
+        const getCurrentDatabase = () => {
+            let dbName = localStorage.getItem('databaseName');
+
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.databaseName) {
+                            dbName = user.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        if (userInfo.databaseName) {
+                            dbName = userInfo.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            return dbName;
+        };
+
+        const dbName = getCurrentDatabase();
+        if (dbName) {
+            setDatabaseName(dbName);
+        } else {
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
 
     const loadData = async () => {
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const [quartersRes, semestersRes] = await Promise.all([
@@ -25,31 +76,33 @@ const QuarterManager = () => {
             ]);
             setQuarters(quartersRes.data);
 
-            // Сортуємо семестри: спочатку Осінньо-зимовий, потім Зимово-весняний
+            // СОРТУЄМО СЕМЕСТРИ 
             const sortedSemesters = semestersRes.data.sort((a, b) => {
-                // Спочатку сортуємо за роком (спадання)
+                // СПОЧАТКУ СОРТУЄМО ЗА РОКОМ 
                 const yearComparison = b.year.localeCompare(a.year);
                 if (yearComparison !== 0) return yearComparison;
 
-                // Потім сортуємо за типом семестру
+                // ПОТІМ СОРТУЄМО ЗА НАЗВОЮ
                 const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
                 return order[a.name] - order[b.name];
             });
 
             setSemesters(sortedSemesters);
         } catch (err) {
-            setError('Помилка завантаження даних');
             console.error('Error loading data:', err);
+            setError(err.response?.data?.error || 'Помилка завантаження даних');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (databaseName) {
+            loadData();
+        }
+    }, [databaseName]);
 
-    // Функція для визначення статусу семестру за датами
+    // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ СТАТУСУ СЕМЕСТРУ ЗА ДАТАМИ
     const getDateStatus = (startDate, endDate) => {
         const now = currentDate;
         const start = new Date(startDate);
@@ -64,7 +117,7 @@ const QuarterManager = () => {
         }
     };
 
-    // Групування даних з додаванням статусів
+    // ГРУПУВАННЯ ДАНИХ З ДОДАВАННЯМ СТАТУСІВ
     const groupedData = semesters.reduce((acc, semester) => {
         const year = semester.year;
 
@@ -75,12 +128,12 @@ const QuarterManager = () => {
             };
         }
 
-        // Знаходимо чверті для цього семестру
+        // ЗНАХОДИМО ЧВЕРТІ ДЛЯ ПЕВНОГО СЕМЕСТРУ
         const semesterQuarters = quarters.filter(quarter =>
             quarter.semester && quarter.semester._id === semester._id
         );
 
-        // Додаємо статус для семестру
+        // ДОДАЄМО СТАТУС СЕМЕСТРУ
         const semesterStatus = getDateStatus(semester.startDate, semester.endDate);
 
         acc[year].semesters.push({
@@ -92,10 +145,10 @@ const QuarterManager = () => {
         return acc;
     }, {});
 
-    // Сортування років за спаданням
+    // СОРТУВАННЯ РОКІВ ЗА СПАДАННЯМ
     const sortedYears = Object.keys(groupedData).sort((a, b) => b.localeCompare(a));
 
-    // Сортуємо семестри всередині кожного року
+    // СОРТУЄМО СЕМЕСТРУ В СЕРЕДИНІ КОЖНОГО РОКУ
     sortedYears.forEach(year => {
         groupedData[year].semesters.sort((a, b) => {
             const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
@@ -116,10 +169,12 @@ const QuarterManager = () => {
     const handleFormClose = () => {
         setShowForm(false);
         setEditingQuarter(null);
+        setError('');
     };
 
     const handleFormSubmit = async (quarterData) => {
         try {
+            setError('');
             if (editingQuarter) {
                 await studyCalendarService.updateQuarter(editingQuarter._id, quarterData);
             } else {
@@ -128,8 +183,10 @@ const QuarterManager = () => {
             await loadData();
             handleFormClose();
         } catch (err) {
-            setError('Помилка збереження чверті');
             console.error('Error saving quarter:', err);
+            const errorMessage = err.response?.data?.error || 'Помилка збереження чверті';
+            setError(errorMessage);
+            throw err;
         }
     };
 
@@ -145,13 +202,14 @@ const QuarterManager = () => {
         if (!quarterToDelete) return;
 
         try {
+            setError('');
             await studyCalendarService.deleteQuarter(quarterToDelete._id);
             await loadData();
             setShowDeleteConfirm(false);
             setQuarterToDelete(null);
         } catch (err) {
-            setError('Помилка видалення чверті');
             console.error('Error deleting quarter:', err);
+            setError(err.response?.data?.error || 'Помилка видалення чверті');
             setShowDeleteConfirm(false);
             setQuarterToDelete(null);
         }
@@ -166,41 +224,40 @@ const QuarterManager = () => {
         try {
             setError('');
 
-            // Перевіряємо, чи семестр чверті активний
+            // ПЕРЕВІРЯЄМО, ЧИ СЕМЕСТР І ЧВЕРТІ АКТИВНІ
             const semester = semesters.find(s => s._id === quarter.semester._id);
             if (!semester || !semester.isActive) {
                 setError('Не можна активувати чверть неактивного семестру');
                 return;
             }
 
-            // Перевіряємо статус чверті за датами
+            // ПЕРЕВІРЯЄМО СТАТУС ЧВЕРТІ ЗА ДАТАМИ
             const quarterStatus = getDateStatus(quarter.startDate, quarter.endDate);
 
-            // Якщо чверть завершена - не можна активувати
+            // ЯКЩО ЧВЕРТЬ ЗАВЕРШЕНА - НЕ МОЖНА ЇЇ АКТИВУВАТИ
             if (quarterStatus.status === 'завершений') {
                 setError('Не можна активувати завершену чверть');
                 return;
             }
 
-            // Якщо чверть майбутня - не можна активувати
+            // ЯКЩО ЧВЕРТЬ МАЙБУТЬНЯ - НЕ МОЖНА ЇЇ АКТИВУВАТИ
             if (quarterStatus.status === 'майбутній' && !quarter.isActive) {
                 setError('Не можна активувати майбутню чверть');
                 return;
             }
 
             if (quarter.isActive) {
-                // Деактивуємо чверть
+                // ДЕАКТИВУЄМО ЧВЕРТЬ
                 const updatedQuarter = await studyCalendarService.updateQuarter(quarter._id, {
                     ...quarter,
                     isActive: false
                 });
 
-                // Оновлюємо локальний стан
                 setQuarters(prev => prev.map(q =>
                     q._id === quarter._id ? updatedQuarter.data : q
                 ));
             } else {
-                // Активуємо чверть - деактивуємо всі інші
+                // АКТИВУЄМО ЧВЕРТЬ - ДЕАКТИВУЄМО ІНШІ
                 const updatePromises = quarters.map(q => {
                     if (q._id === quarter._id) {
                         return studyCalendarService.updateQuarter(q._id, { ...q, isActive: true });
@@ -225,7 +282,19 @@ const QuarterManager = () => {
 
     return (
         <div>
-            {/* Заголовок та кнопки */}
+            {/* {databaseName && (
+                <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginBottom: '10px',
+                    padding: '5px 10px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px'
+                }}>
+                    База даних: {databaseName}
+                </div>
+            )} */}
+
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -281,7 +350,6 @@ const QuarterManager = () => {
                 </div>
             </div>
 
-            {/* Попередження про відсутність семестрів */}
             {semesters.length === 0 && (
                 <div style={{
                     backgroundColor: '#fef3c7',
@@ -294,7 +362,6 @@ const QuarterManager = () => {
                 </div>
             )}
 
-            {/* Помилка */}
             {error && (
                 <div style={{
                     backgroundColor: '#fee2e2',
@@ -307,7 +374,6 @@ const QuarterManager = () => {
                 </div>
             )}
 
-            {/* Групований список чвертей */}
             {sortedYears.length === 0 ? (
                 <div style={{
                     textAlign: 'center',
@@ -327,7 +393,6 @@ const QuarterManager = () => {
                             borderRadius: '8px',
                             overflow: 'hidden'
                         }}>
-                            {/* Заголовок року */}
                             <div style={{
                                 padding: '16px',
                                 backgroundColor: '#f8fafc',
@@ -342,11 +407,9 @@ const QuarterManager = () => {
                                 </h4>
                             </div>
 
-                            {/* Вміст року */}
                             <div style={{ padding: '20px', backgroundColor: 'white' }}>
                                 {groupedData[year].semesters.map(semester => (
                                     <div key={semester._id} style={{ marginBottom: '32px' }}>
-                                        {/* Заголовок семестру */}
                                         <div style={{
                                             padding: '16px',
                                             backgroundColor: '#f9fafb',
@@ -412,7 +475,7 @@ const QuarterManager = () => {
                                             </div>
                                         </div>
 
-                                        {/* Чверті семестру */}
+                                        {/* ЧВЕРТІ СЕМЕСТРУ */}
                                         <div>
                                             {semester.quarters.length === 0 ? (
                                                 <div style={{
@@ -445,7 +508,7 @@ const QuarterManager = () => {
                 </div>
             )}
 
-            {/* Форма додавання/редагування */}
+            {/* ФОРМА РЕДАГУВАННЯ/ДОДАВАННЯ */}
             {showForm && (
                 <QuarterForm
                     quarter={editingQuarter}

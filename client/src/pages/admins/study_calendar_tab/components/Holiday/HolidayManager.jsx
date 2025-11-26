@@ -14,10 +14,62 @@ const HolidayManager = () => {
     const [editingHoliday, setEditingHoliday] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [holidayToDelete, setHolidayToDelete] = useState(null);
+    const [databaseName, setDatabaseName] = useState('');
+
+    useEffect(() => {
+        const getCurrentDatabase = () => {
+            let dbName = localStorage.getItem('databaseName');
+
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.databaseName) {
+                            dbName = user.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        if (userInfo.databaseName) {
+                            dbName = userInfo.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            return dbName;
+        };
+
+        const dbName = getCurrentDatabase();
+        if (dbName) {
+            setDatabaseName(dbName);
+        } else {
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
 
     const loadData = async () => {
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
+            setError('');
             const [holidaysRes, quartersRes] = await Promise.all([
                 studyCalendarService.getHolidays(),
                 studyCalendarService.getQuarters()
@@ -25,16 +77,18 @@ const HolidayManager = () => {
             setHolidays(holidaysRes.data);
             setQuarters(quartersRes.data);
         } catch (err) {
-            setError('Помилка завантаження даних');
             console.error('Error loading data:', err);
+            setError(err.response?.data?.error || 'Помилка завантаження даних');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (databaseName) {
+            loadData();
+        }
+    }, [databaseName]);
 
     const handleCreate = () => {
         setEditingHoliday(null);
@@ -63,8 +117,9 @@ const HolidayManager = () => {
             await loadData();
             handleFormClose();
         } catch (err) {
-            setError('Помилка збереження канікул');
             console.error('Error saving holiday:', err);
+            const errorMessage = err.response?.data?.error || 'Помилка збереження канікул';
+            setError(errorMessage);
             throw err;
         }
     };
@@ -87,8 +142,8 @@ const HolidayManager = () => {
             setShowDeleteConfirm(false);
             setHolidayToDelete(null);
         } catch (err) {
-            setError('Помилка видалення канікул');
             console.error('Error deleting holiday:', err);
+            setError(err.response?.data?.error || 'Помилка видалення канікул');
             setShowDeleteConfirm(false);
             setHolidayToDelete(null);
         }
@@ -105,6 +160,19 @@ const HolidayManager = () => {
 
     return (
         <div>
+            {/* {databaseName && (
+                <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginBottom: '10px',
+                    padding: '5px 10px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px'
+                }}>
+                    База даних: {databaseName}
+                </div>
+            )} */}
+
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',

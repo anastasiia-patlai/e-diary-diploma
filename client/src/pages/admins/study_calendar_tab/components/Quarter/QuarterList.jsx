@@ -3,7 +3,6 @@ import { FaEdit, FaTrash, FaCalendar, FaCheck, FaTimes } from 'react-icons/fa';
 
 const QuarterList = ({ quarters, onEdit, onDelete, onToggleActive, compact = false, currentDate = new Date(), isSemesterActive = false }) => {
 
-    // Функція для визначення статусу чверті за датами
     const getDateStatus = (startDate, endDate) => {
         const now = currentDate;
         const start = new Date(startDate);
@@ -42,7 +41,6 @@ const QuarterList = ({ quarters, onEdit, onDelete, onToggleActive, compact = fal
             {quarters.map(quarter => {
                 const dateStatus = getDateStatus(quarter.startDate, quarter.endDate);
 
-                // Визначаємо, чи можна активувати/деактивувати чверть
                 const canToggleActive = isSemesterActive &&
                     dateStatus.status !== 'завершена' &&
                     !(dateStatus.status === 'майбутня' && !quarter.isActive);
@@ -120,6 +118,13 @@ const QuarterList = ({ quarters, onEdit, onDelete, onToggleActive, compact = fal
                                             </span>
                                         )}
                                     </div>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: '13px',
+                                        color: '#6b7280'
+                                    }}>
+                                        Семестр: {quarter.semester?.name} {quarter.semester?.year}
+                                    </p>
                                 </div>
                             </div>
 

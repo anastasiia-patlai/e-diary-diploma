@@ -28,10 +28,20 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
         return colors[type] || '#6b7280';
     };
 
+    const formatDate = (dateString) => {
+        try {
+            if (!dateString) return 'Невідома дата';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('uk-UA');
+        } catch (error) {
+            console.error('Помилка форматування дати:', error);
+            return 'Невідома дата';
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {holidays.map(holiday => {
-                // Безпечне отримання даних про чверть та семестр
                 const quarterName = holiday.quarter?.name || 'Невідома чверть';
                 const semesterName = holiday.quarter?.semester?.name || 'Невідомий семестр';
                 const semesterYear = holiday.quarter?.semester?.year || 'Невідомий рік';
@@ -72,7 +82,7 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
                                         marginBottom: '4px'
                                     }}>
                                         <h4 style={{ margin: 0, fontSize: '16px' }}>
-                                            {holiday.name}
+                                            {holiday.name || 'Без назви'}
                                         </h4>
                                         <span style={{
                                             backgroundColor: `${getHolidayColor(holiday.type)}20`,
@@ -82,7 +92,7 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
                                             fontSize: '12px',
                                             fontWeight: '500'
                                         }}>
-                                            {holiday.type}
+                                            {holiday.type || 'Невідомий тип'}
                                         </span>
                                     </div>
                                     <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
@@ -107,7 +117,7 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
                                         gap: '4px'
                                     }}
                                 >
-                                    <FaEdit size={10} />
+                                    <FaEdit size={12} />
                                     Редагувати
                                 </button>
                                 <button
@@ -125,7 +135,7 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
                                         gap: '4px'
                                     }}
                                 >
-                                    <FaTrash size={10} />
+                                    <FaTrash size={12} />
                                     Видалити
                                 </button>
                             </div>
@@ -142,11 +152,11 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <FaCalendar size={12} />
-                                Початок: {new Date(holiday.startDate).toLocaleDateString('uk-UA')}
+                                Початок: {formatDate(holiday.startDate)}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <FaCalendar size={12} />
-                                Кінець: {new Date(holiday.endDate).toLocaleDateString('uk-UA')}
+                                Кінець: {formatDate(holiday.endDate)}
                             </div>
                             <div style={{
                                 display: 'flex',
@@ -166,13 +176,26 @@ const HolidayList = ({ holidays, onEdit, onDelete }) => {
     );
 };
 
-// Функція для розрахунку тривалості канікул
+// ФУНКЦІЯ РОЗРАХУНКУ ТРИВАЛОСТІ КАНІКУЛ
 const calculateDuration = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 для включення початкової дати
-    return diffDays;
+    try {
+        if (!startDate || !endDate) return 0;
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Перевірка на коректність дат
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return 0;
+        }
+
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 для включення початкової дати
+        return diffDays;
+    } catch (error) {
+        console.error('Помилка розрахунку тривалості:', error);
+        return 0;
+    }
 };
 
 export default HolidayList;

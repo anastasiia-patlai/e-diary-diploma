@@ -1,17 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const Semester = require('../models/Semester');
-const Quarter = require('../models/Quarter');
-const Holiday = require('../models/Holiday');
+const { getSchoolSemesterModel, getSchoolQuarterModel, getSchoolHolidayModel } = require('../config/databaseManager');
 
 // ТЕСТОВИЙ РОУТ ДЛЯ ПЕРЕВІРКИ
 router.get('/test-semesters', async (req, res) => {
     try {
-        console.log("Тестовий запит на семестри отримано");
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        console.log("Тестовий запит на семестри отримано, databaseName:", databaseName);
+
+        const Semester = getSchoolSemesterModel(databaseName);
         const semesters = await Semester.find().sort({
             year: -1,
             name: 1
         });
+
         console.log("Знайдено семестрів:", semesters.length);
         res.json({
             success: true,
@@ -30,21 +37,33 @@ router.get('/test-semesters', async (req, res) => {
 // ДЛЯ СЕМЕСТРУ
 router.get('/semesters', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Semester = getSchoolSemesterModel(databaseName);
         const semesters = await Semester.find().sort({
             year: -1,
             name: 1
         });
         res.json(semesters);
     } catch (err) {
+        console.error('Помилка отримання семестрів:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 router.post('/semesters', async (req, res) => {
     try {
-        const { name, year, startDate, endDate, isActive } = req.body;
+        const { name, year, startDate, endDate, isActive, databaseName } = req.body;
 
-        console.log('Отримані дані:', { name, year, startDate, endDate, isActive }); // Для діагностики
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        console.log('Отримані дані:', { name, year, startDate, endDate, isActive, databaseName });
 
         if (!name || !year || !startDate || !endDate) {
             return res.status(400).json({
@@ -64,6 +83,7 @@ router.post('/semesters', async (req, res) => {
             return res.status(400).json({ error: 'Дата завершення має бути після дати початку' });
         }
 
+        const Semester = getSchoolSemesterModel(databaseName);
         const semester = new Semester({
             name,
             year,
@@ -82,7 +102,11 @@ router.post('/semesters', async (req, res) => {
 
 router.put('/semesters/:id', async (req, res) => {
     try {
-        const { name, year, startDate, endDate, isActive } = req.body;
+        const { name, year, startDate, endDate, isActive, databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
 
         if (!name || !year || !startDate || !endDate) {
             return res.status(400).json({ error: 'Всі обов\'язкові поля мають бути заповнені' });
@@ -94,6 +118,7 @@ router.put('/semesters/:id', async (req, res) => {
             });
         }
 
+        const Semester = getSchoolSemesterModel(databaseName);
         const semester = await Semester.findByIdAndUpdate(
             req.params.id,
             {
@@ -119,12 +144,22 @@ router.put('/semesters/:id', async (req, res) => {
 
 router.delete('/semesters/:id', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Semester = getSchoolSemesterModel(databaseName);
         const semester = await Semester.findByIdAndDelete(req.params.id);
+
         if (!semester) {
             return res.status(404).json({ error: 'Семестр не знайдено' });
         }
+
         res.json({ message: 'Семестр видалено' });
     } catch (err) {
+        console.error('Помилка видалення семестру:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -132,8 +167,14 @@ router.delete('/semesters/:id', async (req, res) => {
 // АВТОМАТИЧНЕ ОНОВЛЕННЯ АКТИВНИХ СЕМЕСТРІВ
 router.put('/semesters/auto-update', async (req, res) => {
     try {
-        const now = new Date();
+        const { databaseName } = req.body;
 
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const now = new Date();
+        const Semester = getSchoolSemesterModel(databaseName);
         const semesters = await Semester.find();
 
         const currentSemester = semesters.find(semester => {
@@ -178,44 +219,83 @@ router.put('/semesters/auto-update', async (req, res) => {
 // ДЛЯ ЧВЕРТЕЙ
 router.get('/quarters', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Quarter = getSchoolQuarterModel(databaseName);
+        const Semester = getSchoolSemesterModel(databaseName);
+
         const quarters = await Quarter.find()
             .populate('semester')
             .sort({ startDate: 1 });
         res.json(quarters);
     } catch (err) {
+        console.error('Помилка отримання чвертей:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 router.post('/quarters', async (req, res) => {
     try {
-        const quarter = new Quarter(req.body);
+        const { databaseName, ...quarterData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Quarter = getSchoolQuarterModel(databaseName);
+        const Semester = getSchoolSemesterModel(databaseName);
+
+        const quarter = new Quarter(quarterData);
         await quarter.save();
         await quarter.populate('semester');
         res.status(201).json(quarter);
     } catch (err) {
+        console.error('Помилка створення чверті:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
 router.put('/quarters/:id', async (req, res) => {
     try {
+        const { databaseName, ...updateData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Quarter = getSchoolQuarterModel(databaseName);
+        const Semester = getSchoolSemesterModel(databaseName);
+
         const quarter = await Quarter.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             { new: true }
         ).populate('semester');
+
         res.json(quarter);
     } catch (err) {
+        console.error('Помилка оновлення чверті:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
 router.delete('/quarters/:id', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Quarter = getSchoolQuarterModel(databaseName);
         await Quarter.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Quarter deleted' });
+        res.json({ message: 'Чверть видалено' });
     } catch (err) {
+        console.error('Помилка видалення чверті:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -223,6 +303,16 @@ router.delete('/quarters/:id', async (req, res) => {
 // ДЛЯ КАНІКУЛ
 router.get('/holidays', async (req, res) => {
     try {
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Holiday = getSchoolHolidayModel(databaseName);
+        const Quarter = getSchoolQuarterModel(databaseName);
+        const Semester = getSchoolSemesterModel(databaseName);
+
         const holidays = await Holiday.find()
             .populate({
                 path: 'quarter',
@@ -234,39 +324,69 @@ router.get('/holidays', async (req, res) => {
             .sort({ startDate: 1 });
         res.json(holidays);
     } catch (err) {
+        console.error('Помилка отримання канікул:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 router.post('/holidays', async (req, res) => {
     try {
-        const holiday = new Holiday(req.body);
+        const { databaseName, ...holidayData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Holiday = getSchoolHolidayModel(databaseName);
+        const Quarter = getSchoolQuarterModel(databaseName);
+
+        const holiday = new Holiday(holidayData);
         await holiday.save();
         await holiday.populate('quarter');
         res.status(201).json(holiday);
     } catch (err) {
+        console.error('Помилка створення канікул:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
 router.put('/holidays/:id', async (req, res) => {
     try {
+        const { databaseName, ...updateData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Holiday = getSchoolHolidayModel(databaseName);
+        const Quarter = getSchoolQuarterModel(databaseName);
+
         const holiday = await Holiday.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            updateData,
             { new: true }
         ).populate('quarter');
+
         res.json(holiday);
     } catch (err) {
+        console.error('Помилка оновлення канікул:', err);
         res.status(400).json({ error: err.message });
     }
 });
 
 router.delete('/holidays/:id', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Holiday = getSchoolHolidayModel(databaseName);
         await Holiday.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Holiday deleted' });
+        res.json({ message: 'Канікули видалено' });
     } catch (err) {
+        console.error('Помилка видалення канікул:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -274,7 +394,16 @@ router.delete('/holidays/:id', async (req, res) => {
 // СИНХРОНІЗАЦІЯ ЧВЕРТЕЙ ПРИ АКТИВАЦІЇ/ДЕАКТИВАЦІЇ СЕМЕСТРУ
 router.put('/semesters/:id/sync-quarters', async (req, res) => {
     try {
+        const { databaseName } = req.body;
         const semesterId = req.params.id;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Semester = getSchoolSemesterModel(databaseName);
+        const Quarter = getSchoolQuarterModel(databaseName);
+
         const semester = await Semester.findById(semesterId);
 
         if (!semester) {
@@ -300,6 +429,13 @@ router.put('/semesters/:id/sync-quarters', async (req, res) => {
 // ДЕАКТИВАЦІЯ ВСІХ ЧВЕРТЕЙ
 router.put('/quarters/deactivate-all', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Quarter = getSchoolQuarterModel(databaseName);
         await Quarter.updateMany(
             { isActive: true },
             { isActive: false }

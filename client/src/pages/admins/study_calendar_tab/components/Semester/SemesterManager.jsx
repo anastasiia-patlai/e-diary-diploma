@@ -13,20 +13,70 @@ const SemesterManager = () => {
     const [editingSemester, setEditingSemester] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [semesterToDelete, setSemesterToDelete] = useState(null);
+    const [databaseName, setDatabaseName] = useState('');
+
+    useEffect(() => {
+        const getCurrentDatabase = () => {
+            let dbName = localStorage.getItem('databaseName');
+
+            if (!dbName) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const user = JSON.parse(userStr);
+                        if (user.databaseName) {
+                            dbName = user.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу user:", e);
+                    }
+                }
+            }
+
+            if (!dbName) {
+                const userInfoStr = localStorage.getItem('userInfo');
+                if (userInfoStr) {
+                    try {
+                        const userInfo = JSON.parse(userInfoStr);
+                        if (userInfo.databaseName) {
+                            dbName = userInfo.databaseName;
+                        }
+                    } catch (e) {
+                        console.error("Помилка парсингу userInfo:", e);
+                    }
+                }
+            }
+
+            return dbName;
+        };
+
+        const dbName = getCurrentDatabase();
+        if (dbName) {
+            setDatabaseName(dbName);
+        } else {
+            setError("Не вдалося визначити базу даних школи");
+            setLoading(false);
+        }
+    }, []);
 
     const loadSemesters = async () => {
+        if (!databaseName) {
+            setError("Не вказано базу даних");
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             setError('');
             const response = await studyCalendarService.getSemesters();
 
-            // Сортуємо семестри: спочатку Осінньо-зимовий, потім Зимово-весняний
             const sortedSemesters = response.data.sort((a, b) => {
-                // Спочатку сортуємо за роком (спадання)
+                // СПОЧАТКУ сортуємо за роком у спадному порядку
                 const yearComparison = b.year.localeCompare(a.year);
                 if (yearComparison !== 0) return yearComparison;
 
-                // Потім сортуємо за типом семестру
+                // ПОТІМ СОРТУЄМО ЗА НАЗВОЮ СЕМЕСТРУ
                 const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
                 return order[a.name] - order[b.name];
             });
@@ -41,8 +91,10 @@ const SemesterManager = () => {
     };
 
     useEffect(() => {
-        loadSemesters();
-    }, []);
+        if (databaseName) {
+            loadSemesters();
+        }
+    }, [databaseName]);
 
     const handleCreate = () => {
         setEditingSemester(null);
@@ -110,20 +162,20 @@ const SemesterManager = () => {
             setError('');
 
             if (semester.isActive) {
-                // Деактивуємо семестр та всі його чверті
+                // ДЕАКТИВУЄМО СЕМЕСТР ТА ВСІ ЙОГО ЧВЕРТІ
                 const updatedSemester = await studyCalendarService.updateSemester(semester._id, {
                     ...semester,
                     isActive: false
                 });
 
-                // Деактивуємо всі чверті цього семестру
+                // ДЕАКТИВУЄМО ЧВЕРТІ СЕМЕСТРУ
                 await studyCalendarService.syncSemesterQuarters(semester._id);
 
                 setSemesters(prev => prev.map(s =>
                     s._id === semester._id ? updatedSemester.data : s
                 ));
             } else {
-                // Активуємо семестр - деактивуємо всі інші семестри та їх чверті
+                // АКТИВУЄМО СЕМЕСТР І ДЕАКТИВУЄМО ІНШІ СЕМЕСТРИ ТА ЇХНІ ЧВЕРТІ
                 const updatePromises = semesters.map(s => {
                     if (s._id === semester._id) {
                         return studyCalendarService.updateSemester(s._id, { ...s, isActive: true });
@@ -135,7 +187,7 @@ const SemesterManager = () => {
 
                 await Promise.all(updatePromises);
 
-                // Синхронізуємо чверті активного семестру
+                // СИНХРОНІЗУЄМО ЧВЕРТІ АКТИВНОГО СЕМЕСТРУ
                 await studyCalendarService.syncSemesterQuarters(semester._id);
 
                 await loadSemesters();
@@ -154,6 +206,19 @@ const SemesterManager = () => {
 
     return (
         <div>
+            {/* {databaseName && (
+                <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginBottom: '10px',
+                    padding: '5px 10px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px'
+                }}>
+                    База даних: {databaseName}
+                </div>
+            )} */}
+
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -223,7 +288,7 @@ const SemesterManager = () => {
                 </div>
             )}
 
-            {/* ІНОФРМАЦІЯ ПРО АКТИВНИЙ СЕМЕСТР*/}
+            {/* ІНФОРМАЦІЯ ПРО АКТИВНИЙ СЕМЕСТР*/}
             {!activeSemester && (
                 <div style={{
                     backgroundColor: '#fef3c7',

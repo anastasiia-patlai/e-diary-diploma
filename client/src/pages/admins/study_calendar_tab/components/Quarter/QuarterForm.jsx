@@ -203,10 +203,10 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             className={getSelectClass('number')}
                         >
                             <option value="">Оберіть номер</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
+                            <option value="1">I</option>
+                            <option value="2">II</option>
+                            <option value="3">III</option>
+                            <option value="4">IV</option>
                         </select>
                         <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
                             {errors.number}

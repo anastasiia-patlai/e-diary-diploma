@@ -13,10 +13,9 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
     const [touched, setTouched] = useState({});
     const [enrichedQuarters, setEnrichedQuarters] = useState([]);
 
-    // Обогащаем данные о четвертях информацией о семестрах
     useEffect(() => {
         if (quarters && quarters.length > 0) {
-            // Фильтруем только четверти с полной информацией о семестре
+            // ФІЛЬТРУЄМ ТІЛЬКИ ЧВЕРТІ З ПОВНОЮ ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ
             const validQuarters = quarters.filter(quarter =>
                 quarter.semester &&
                 quarter.semester.name &&
@@ -89,7 +88,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         validateField(name, value);
     };
 
-    // Автоматично встановлюємо назву при зміні типу
     useEffect(() => {
         if (formData.type && !holiday) {
             const typeNames = {
@@ -108,13 +106,11 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Валідуємо всі поля
         Object.keys(formData).forEach(field => {
             validateField(field, formData[field]);
             setTouched(prev => ({ ...prev, [field]: true }));
         });
 
-        // Перевіряємо, чи немає помилок
         if (Object.values(errors).every(err => !err)) {
             onSubmit(formData);
         }
@@ -132,7 +128,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         return 'form-select is-valid';
     };
 
-    // Функція для отримання назви чверті з інформацією про семестр
+    // ФУНКЦІЯ ДЛЯ ОТРИМАННЯ ЧВЕРТІ З ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ
     const getQuarterDisplayName = (quarter) => {
         if (!quarter.semester) {
             return `${quarter.name} (Невідомий семестр)`;
@@ -191,7 +187,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                     </button>
                 </div>
 
-                {/* Попередження про відсутність чвертей з інформацією про семестри */}
+                {/* ПОПЕРЕДЖЕННЯ ПРО ВІДСУТНІСТЬ ЧВЕРТЕЙ З ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ */}
                 {enrichedQuarters.length === 0 && quarters.length > 0 && (
                     <div style={{
                         backgroundColor: '#fef3c7',
@@ -206,7 +202,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    {/* Чверть */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Чверть *
@@ -238,7 +233,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         )}
                     </div>
 
-                    {/* Тип канікул */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Тип канікул *
@@ -261,7 +255,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* Назва канікул */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Назва канікул *
@@ -280,7 +273,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* Дата початку */}
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Дата початку *
@@ -298,7 +290,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* Дата завершення */}
                     <div style={{ marginBottom: '24px' }}>
                         <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
                             Дата завершення *
@@ -316,7 +307,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* Кнопки */}
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button
                             type="button"
