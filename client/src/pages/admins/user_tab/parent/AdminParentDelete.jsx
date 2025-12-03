@@ -17,7 +17,7 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
 
         try {
             await axios.delete(`http://localhost:3001/api/users/${parent._id}`, {
-                data: { databaseName }
+                params: { databaseName }
             });
             onDelete(parent._id);
             onClose();
