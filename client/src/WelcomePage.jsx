@@ -11,7 +11,8 @@ import {
     FaUserTie,
     FaEnvelope,
     FaPhone,
-    FaExclamationTriangle
+    FaExclamationTriangle,
+    FaMobileAlt
 } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -41,7 +42,8 @@ const WelcomePage = () => {
     const [error, setError] = useState('');
     const [hasSchool, setHasSchool] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
-    const [showRegistrationForm, setShowRegistrationForm] = useState(false); // Новий стан для показу форми
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -60,8 +62,19 @@ const WelcomePage = () => {
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        minHeight: "100vh"
+        minHeight: "100vh",
+        padding: isMobile ? '1rem' : '0'
     };
+
+    // Відслідковуємо зміну розміру вікна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const checkSchoolExists = async () => {
@@ -69,11 +82,10 @@ const WelcomePage = () => {
                 const searchParams = new URLSearchParams(location.search);
                 const forceShow = searchParams.get('force') === 'true';
 
-                // Якщо параметр force=true, одразу показуємо форму
                 if (forceShow) {
                     setChecking(false);
                     setHasSchool(false);
-                    setShowRegistrationForm(true); // Показуємо форму реєстрації
+                    setShowRegistrationForm(true);
                     return;
                 }
 
@@ -82,17 +94,15 @@ const WelcomePage = () => {
                 setHasSchool(schoolExists);
 
                 if (schoolExists) {
-                    // Якщо заклад вже існує, показуємо попереджувальний попап
                     setShowWarningModal(true);
                 } else {
-                    // Якщо заклад не існує, одразу показуємо форму
                     setShowRegistrationForm(true);
                 }
             } catch (error) {
                 console.error('Error checking school:', error);
                 if (error.response?.status === 404) {
                     setHasSchool(false);
-                    setShowRegistrationForm(true); // Показуємо форму при помилці 404
+                    setShowRegistrationForm(true);
                 } else {
                     setError('Помилка при перевірці наявності навчального закладу');
                 }
@@ -128,7 +138,7 @@ const WelcomePage = () => {
 
     const handleContinueRegistration = () => {
         setShowWarningModal(false);
-        setShowRegistrationForm(true); // Тепер показуємо форму реєстрації
+        setShowRegistrationForm(true);
     };
 
     // ВАЛІДАЦІЯ ПОЛІВ
@@ -351,19 +361,24 @@ const WelcomePage = () => {
         }
     };
 
-    // ФуУНКЦІЇ ДЛЯ ПЕРЕВІРКИ ТИПУ ЗАКЛАДУ
-    const isSchoolType = ['school', 'gymnasium', 'lyceum'].includes(formData.institutionType);
-    const isCollegeType = ['college', 'university'].includes(formData.institutionType);
+    // АДАПТИВНІ КОЛОНКИ
+    const getResponsiveCol = () => {
+        return isMobile ? 12 : 6;
+    };
 
     // РОЗРАХУНОК КІЛЬКОСТІ ПОЛІВ ДЛЯ ДИНАМІЧНОГО ВІДОБРАЖЕННЯ
     const getDynamicFields = () => {
         const fields = [];
+        const colSize = getResponsiveCol();
 
         // Завжди додаємо тип закладу
         fields.push(
-            <Col md={6} key="institutionType">
+            <Col xs={12} md={colSize} key="institutionType">
                 <Form.Group className="mb-3">
-                    <Form.Label>Тип закладу *</Form.Label>
+                    <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                        {!isMobile && <FaSchool className="me-2" />}
+                        Тип закладу *
+                    </Form.Label>
                     <Form.Select
                         name="institutionType"
                         className={getInputClass("institutionType")}
@@ -371,6 +386,8 @@ const WelcomePage = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                         required
+                        size={isMobile ? "lg" : undefined}
+                        style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
                     >
                         {institutionTypes.map(type => (
                             <option key={type.value} value={type.value}>
@@ -378,7 +395,9 @@ const WelcomePage = () => {
                             </option>
                         ))}
                     </Form.Select>
-                    <div className="invalid-feedback">{errors.institutionType}</div>
+                    <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                        {errors.institutionType}
+                    </div>
                 </Form.Group>
             </Col>
         );
@@ -386,9 +405,9 @@ const WelcomePage = () => {
         // Для школи, гімназії, ліцею додаємо номер (обов'язковий)
         if (['school', 'gymnasium', 'lyceum'].includes(formData.institutionType)) {
             fields.push(
-                <Col md={6} key="number">
+                <Col xs={12} md={colSize} key="number">
                     <Form.Group className="mb-3">
-                        <Form.Label>
+                        <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                             <FaHashtag className="me-2" />
                             Номер закладу *
                         </Form.Label>
@@ -401,8 +420,12 @@ const WelcomePage = () => {
                             onBlur={handleBlur}
                             placeholder="Наприклад: 1"
                             required
+                            size={isMobile ? "lg" : undefined}
+                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
                         />
-                        <div className="invalid-feedback">{errors.number}</div>
+                        <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                            {errors.number}
+                        </div>
                     </Form.Group>
                 </Col>
             );
@@ -411,9 +434,9 @@ const WelcomePage = () => {
         // Для коледжу додаємо номер (необов'язковий)
         if (formData.institutionType === 'college') {
             fields.push(
-                <Col md={6} key="number">
+                <Col xs={12} md={colSize} key="number">
                     <Form.Group className="mb-3">
-                        <Form.Label>
+                        <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                             <FaHashtag className="me-2" />
                             Номер закладу
                         </Form.Label>
@@ -425,8 +448,10 @@ const WelcomePage = () => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="Наприклад: 1"
+                            size={isMobile ? "lg" : undefined}
+                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
                         />
-                        <Form.Text className="text-muted">
+                        <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле для коледжу
                         </Form.Text>
                     </Form.Group>
@@ -437,9 +462,11 @@ const WelcomePage = () => {
         // Для гімназії та ліцею додаємо спеціалізацію
         if (['gymnasium', 'lyceum'].includes(formData.institutionType)) {
             fields.push(
-                <Col md={6} key="name">
+                <Col xs={12} md={colSize} key="name">
                     <Form.Group className="mb-3">
-                        <Form.Label>Спеціалізація закладу</Form.Label>
+                        <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                            Спеціалізація закладу
+                        </Form.Label>
                         <Form.Control
                             type="text"
                             name="name"
@@ -448,8 +475,10 @@ const WelcomePage = () => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="Наприклад: спеціалізована на вивченні англійської мови"
+                            size={isMobile ? "lg" : undefined}
+                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
                         />
-                        <Form.Text className="text-muted">
+                        <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле
                         </Form.Text>
                     </Form.Group>
@@ -460,9 +489,11 @@ const WelcomePage = () => {
         // "ІМЕНІ" ДЛЯ ГІМНАЗІЇ, ЛІЦЕЮ, КОЛЕДЖУ ТА УНІВЕРСИТЕТУ
         if (['gymnasium', 'lyceum', 'college', 'university'].includes(formData.institutionType)) {
             fields.push(
-                <Col md={6} key="honoraryName">
+                <Col xs={12} md={colSize} key="honoraryName">
                     <Form.Group className="mb-3">
-                        <Form.Label>Імені</Form.Label>
+                        <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                            Імені
+                        </Form.Label>
                         <Form.Control
                             type="text"
                             name="honoraryName"
@@ -471,8 +502,10 @@ const WelcomePage = () => {
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="Наприклад: Тараса Шевченка"
+                            size={isMobile ? "lg" : undefined}
+                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
                         />
-                        <Form.Text className="text-muted">
+                        <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле
                         </Form.Text>
                     </Form.Group>
@@ -488,51 +521,59 @@ const WelcomePage = () => {
             <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center" style={backgroundStyle}>
                 <div className="text-center">
                     <Spinner animation="border" style={{ color: 'rgba(105, 180, 185, 1)' }} />
-                    <p className="mt-3">Перевірка наявності навчального закладу...</p>
+                    <p className="mt-3" style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                        Перевірка наявності навчального закладу...
+                    </p>
                 </div>
             </Container>
         );
     }
 
-    // МОДАЛЬНЕ ВІКНО ДЛЯ ПІДТВЕРДЖЕННЯ РЕЄСТРАЦІЇ
+    // МОДАЛЬНЕ ВІКНО ДЛЯ ПІДТВЕРДЖЕННЯ РЕЄСТРАЦІЇ (адаптивне)
     const WarningModal = () => (
         <Modal
             show={showWarningModal}
             onHide={handleCancelRegistration}
             centered
             backdrop="static"
+            size={isMobile ? "sm" : "lg"}
         >
             <Modal.Header closeButton style={{ backgroundColor: '#fff3cd', borderColor: '#ffeaa7' }}>
                 <Modal.Title className="d-flex align-items-center">
                     <FaExclamationTriangle className="me-2" style={{ color: '#856404' }} />
-                    <span style={{ color: '#856404' }}>Увага!</span>
+                    <span style={{ color: '#856404', fontSize: isMobile ? '16px' : '18px' }}>Увага!</span>
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                <div className="text-center mb-4">
-                    <FaExclamationTriangle size={48} className="mb-3" style={{ color: '#856404' }} />
-                    <h5 className="mb-3" style={{ color: '#856404' }}>
+            <Modal.Body style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
+                <div className="text-center mb-3">
+                    <FaExclamationTriangle size={isMobile ? 36 : 48} className="mb-2" style={{ color: '#856404' }} />
+                    <h5 className="mb-2" style={{ color: '#856404', fontSize: isMobile ? '16px' : '18px' }}>
                         У системі вже зареєстровано навчальний заклад
                     </h5>
-                    <p className="text-muted">
+                    <p className="text-muted" style={{ fontSize: isMobile ? '14px' : '16px' }}>
                         Ви намагаєтесь зареєструвати новий навчальний заклад, але в системі вже існує зареєстрований заклад.
                     </p>
-                    <p className="text-muted">
+                    <p className="text-muted" style={{ fontSize: isMobile ? '14px' : '16px' }}>
                         <strong>Увага:</strong> Реєстрація нового закладу може призвести до конфліктів даних і втрати інформації про існуючий заклад.
                     </p>
                 </div>
-                <div className="alert alert-warning">
+                <div className="alert alert-warning" style={{ fontSize: isMobile ? '14px' : '16px' }}>
                     <strong>Рекомендація:</strong> Якщо ви є адміністратором існуючого закладу, будь ласка, увійдіть в систему. Якщо ви дійсно хочете зареєструвати новий заклад, продовжуйте обережно.
                 </div>
             </Modal.Body>
-            <Modal.Footer>
+            <Modal.Footer style={{
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? '0.5rem' : '0'
+            }}>
                 <Button
                     variant="secondary"
                     onClick={handleCancelRegistration}
                     style={{
-                        padding: '8px 20px',
+                        padding: isMobile ? '0.75rem' : '0.5rem 1.25rem',
                         borderRadius: '6px',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        width: isMobile ? '100%' : 'auto',
+                        fontSize: isMobile ? '16px' : '14px'
                     }}
                 >
                     Скасувати
@@ -544,9 +585,11 @@ const WelcomePage = () => {
                         backgroundColor: '#856404',
                         borderColor: '#856404',
                         color: 'white',
-                        padding: '8px 20px',
+                        padding: isMobile ? '0.75rem' : '0.5rem 1.25rem',
                         borderRadius: '6px',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        width: isMobile ? '100%' : 'auto',
+                        fontSize: isMobile ? '16px' : '14px'
                     }}
                     onMouseOver={(e) => e.target.style.backgroundColor = '#6c5203'}
                     onMouseOut={(e) => e.target.style.backgroundColor = '#856404'}
@@ -557,278 +600,331 @@ const WelcomePage = () => {
         </Modal>
     );
 
-    // ФОРМА РЕЄСТРАЦІЇ
-    const RegistrationForm = () => (
-        <div style={{ width: '785px', maxWidth: '100%' }}>
-            <Card className="shadow-lg border-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
-                <Card.Header className="text-white text-center py-4" style={{ backgroundColor: 'rgba(105, 180, 185, 1)' }}>
-                    <FaSchool size={48} className="mb-3" />
-                    <h2 className="mb-0">Реєстрація навчального закладу</h2>
-                    <p className="mb-0 mt-2 opacity-75">
-                        Заповніть інформацію про ваш навчальний заклад
-                    </p>
+    // ФОРМА РЕЄСТРАЦІЇ (адаптивна)
+    const RegistrationForm = () => {
+        const colSize = getResponsiveCol();
 
-                    {/* Показуємо попередження тільки якщо заклад вже існує */}
-                    {hasSchool && (
-                        <Alert variant="warning" className="mt-3 mb-0">
-                            <strong>Режим примусової реєстрації:</strong> Ви можете зареєструвати новий заклад, навіть якщо в системі вже є інший.
-                        </Alert>
-                    )}
-                </Card.Header>
-                <Card.Body className="p-4">
-                    {error && (
-                        <Alert variant="danger" className="mb-4">
-                            {error}
-                        </Alert>
-                    )}
+        return (
+            <div className={isMobile ? "w-100 px-2" : "w-100"} style={{ maxWidth: isMobile ? '100%' : '785px' }}>
+                <Card className="shadow-lg border-0" style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    margin: isMobile ? '0.5rem' : '0'
+                }}>
+                    <Card.Header className="text-white text-center py-3" style={{
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        padding: isMobile ? '1rem' : '1.5rem'
+                    }}>
+                        <FaSchool size={isMobile ? 32 : 48} className="mb-2" />
+                        <h2 className="mb-0" style={{ fontSize: isMobile ? '20px' : '24px' }}>
+                            Реєстрація навчального закладу
+                        </h2>
+                        <p className="mb-0 mt-2 opacity-75" style={{ fontSize: isMobile ? '14px' : '16px' }}>
+                            Заповніть інформацію про ваш навчальний заклад
+                        </p>
 
-                    <Form onSubmit={handleSubmit} noValidate>
-                        <div className="mb-4">
-                            <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
-                                <FaSchool className="me-2" />
-                                Інформація про навчальний заклад
-                            </h5>
+                        {/* Показуємо попередження тільки якщо заклад вже існує */}
+                        {hasSchool && (
+                            <Alert variant="warning" className="mt-2 mb-0" style={{ fontSize: isMobile ? '14px' : '14px' }}>
+                                <strong>Режим примусової реєстрації:</strong> Ви можете зареєструвати новий заклад, навіть якщо в системі вже є інший.
+                            </Alert>
+                        )}
+                    </Card.Header>
+                    <Card.Body className="p-3" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
+                        {error && (
+                            <Alert variant="danger" className="mb-3" style={{ fontSize: isMobile ? '14px' : '14px' }}>
+                                {error}
+                            </Alert>
+                        )}
 
-                            <Row>
-                                {getDynamicFields()}
-                            </Row>
+                        <Form onSubmit={handleSubmit} noValidate>
+                            <div className="mb-3">
+                                <h5 className="mb-2" style={{
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: isMobile ? '16px' : '18px'
+                                }}>
+                                    {!isMobile && <FaSchool className="me-2" />}
+                                    Інформація про навчальний заклад
+                                </h5>
 
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaCity className="me-2" />
-                                            Місто *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="city"
-                                            className={getInputClass("city")}
-                                            value={formData.city}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Наприклад: Київ"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.city}</div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaMapMarkerAlt className="me-2" />
-                                            Адреса *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="address"
-                                            className={getInputClass("address")}
-                                            value={formData.address}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Наприклад: вул. Шевченка, 1"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.address}</div>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
+                                <Row>
+                                    {getDynamicFields()}
+                                </Row>
 
-                            {institutionFullName && (
-                                <Alert variant="info" className="mb-3">
-                                    <strong>Повна назва:</strong> {institutionFullName}
-                                </Alert>
-                            )}
+                                <Row>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaCity className="me-2" />
+                                                Місто *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                name="city"
+                                                className={getInputClass("city")}
+                                                value={formData.city}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Наприклад: Київ"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.city}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaMapMarkerAlt className="me-2" />
+                                                Адреса *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                name="address"
+                                                className={getInputClass("address")}
+                                                value={formData.address}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Наприклад: вул. Шевченка, 1"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.address}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                            <Form.Group className="mb-3">
-                                <Form.Label>
-                                    <FaDatabase className="me-2" />
-                                    Назва бази даних
-                                </Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    value={databaseName}
-                                    readOnly
-                                    className="bg-light"
-                                    placeholder="Назва згенерується автоматично"
-                                />
-                                <Form.Text className="text-muted">
-                                    Ця назва буде використана для створення бази даних вашого закладу
-                                </Form.Text>
-                            </Form.Group>
-                        </div>
+                                {institutionFullName && (
+                                    <Alert variant="info" className="mb-2" style={{ fontSize: isMobile ? '14px' : '16px' }}>
+                                        <strong>Повна назва:</strong> {institutionFullName}
+                                    </Alert>
+                                )}
 
-                        <hr className="my-4" />
+                                <Form.Group className="mb-3">
+                                    <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                        <FaDatabase className="me-2" />
+                                        Назва бази даних
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={databaseName}
+                                        readOnly
+                                        className="bg-light"
+                                        placeholder="Назва згенерується автоматично"
+                                        size={isMobile ? "lg" : undefined}
+                                        style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                    />
+                                    <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                        Ця назва буде використана для створення бази даних вашого закладу
+                                    </Form.Text>
+                                </Form.Group>
+                            </div>
 
-                        <div className="mb-4">
-                            <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
-                                <FaUserTie className="me-2" />
-                                Дані адміністратора системи
-                            </h5>
+                            <hr className="my-3" />
 
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaUser className="me-2" />
-                                            ПІБ адміністратора *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="adminFullName"
-                                            className={getInputClass("adminFullName")}
-                                            value={formData.adminFullName}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Наприклад: Іваненко Петро Сидорович"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.adminFullName}</div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaUserTie className="me-2" />
-                                            Посада *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="adminPosition"
-                                            className={getInputClass("adminPosition")}
-                                            value={formData.adminPosition}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Наприклад: Директор"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.adminPosition}</div>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
+                            <div className="mb-3">
+                                <h5 className="mb-2" style={{
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: isMobile ? '16px' : '18px'
+                                }}>
+                                    {!isMobile && <FaUserTie className="me-2" />}
+                                    Дані адміністратора системи
+                                </h5>
 
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaEnvelope className="me-2" />
-                                            Електронна пошта *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="email"
-                                            name="adminEmail"
-                                            className={getInputClass("adminEmail")}
-                                            value={formData.adminEmail}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Наприклад: ivanenko.petro@gmail.com"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.adminEmail}</div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaPhone className="me-2" />
-                                            Номер телефону *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="tel"
-                                            name="adminPhone"
-                                            className={getInputClass("adminPhone")}
-                                            value={formData.adminPhone}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="+380XXXXXXXXX"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.adminPhone}</div>
-                                        <Form.Text className="text-muted">
-                                            Формат: +380XXXXXXXXX
-                                        </Form.Text>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
+                                <Row>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaUser className="me-2" />
+                                                ПІБ адміністратора *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                name="adminFullName"
+                                                className={getInputClass("adminFullName")}
+                                                value={formData.adminFullName}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Наприклад: Іваненко Петро Сидорович"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.adminFullName}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaUserTie className="me-2" />
+                                                Посада *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                name="adminPosition"
+                                                className={getInputClass("adminPosition")}
+                                                value={formData.adminPosition}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Наприклад: Директор"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.adminPosition}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                            <Row>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaLock className="me-2" />
-                                            Пароль *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            name="adminPassword"
-                                            className={getInputClass("adminPassword")}
-                                            value={formData.adminPassword}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Мінімум 6 символів"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.adminPassword}</div>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>
-                                            <FaLock className="me-2" />
-                                            Підтвердження пароля *
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            name="confirmPassword"
-                                            className={getInputClass("confirmPassword")}
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            onBlur={handleBlur}
-                                            placeholder="Повторіть пароль"
-                                            required
-                                        />
-                                        <div className="invalid-feedback">{errors.confirmPassword}</div>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                        </div>
+                                <Row>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaEnvelope className="me-2" />
+                                                Електронна пошта *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="email"
+                                                name="adminEmail"
+                                                className={getInputClass("adminEmail")}
+                                                value={formData.adminEmail}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Наприклад: ivanenko.petro@gmail.com"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.adminEmail}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaPhone className="me-2" />
+                                                Номер телефону *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="tel"
+                                                name="adminPhone"
+                                                className={getInputClass("adminPhone")}
+                                                value={formData.adminPhone}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="+380XXXXXXXXX"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.adminPhone}
+                                            </div>
+                                            <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                Формат: +380XXXXXXXXX
+                                            </Form.Text>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                        <Button
-                            type="submit"
-                            className="w-100 py-2"
-                            disabled={loading}
-                            style={{
-                                backgroundColor: 'rgba(105, 180, 185, 1)',
-                                border: 'none',
-                                borderRadius: '6px',
-                                color: 'white',
-                                fontWeight: '600',
-                                fontSize: '16px'
-                            }}
-                            onMouseOver={(e) => {
-                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                            }}
-                        >
-                            {loading ? (
-                                <>
-                                    <Spinner animation="border" size="sm" className="me-2" />
-                                    Реєстрація...
-                                </>
-                            ) : (
-                                'Зареєструвати навчальний заклад'
-                            )}
-                        </Button>
-                    </Form>
-                </Card.Body>
-            </Card>
-        </div>
-    );
+                                <Row>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaLock className="me-2" />
+                                                Пароль *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="password"
+                                                name="adminPassword"
+                                                className={getInputClass("adminPassword")}
+                                                value={formData.adminPassword}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Мінімум 6 символів"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.adminPassword}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} md={colSize}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
+                                                <FaLock className="me-2" />
+                                                Підтвердження пароля *
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="password"
+                                                name="confirmPassword"
+                                                className={getInputClass("confirmPassword")}
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                onBlur={handleBlur}
+                                                placeholder="Повторіть пароль"
+                                                required
+                                                size={isMobile ? "lg" : undefined}
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                            />
+                                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
+                                                {errors.confirmPassword}
+                                            </div>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                            </div>
+
+                            <Button
+                                type="submit"
+                                className="w-100 py-2"
+                                disabled={loading}
+                                style={{
+                                    backgroundColor: 'rgba(105, 180, 185, 1)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    fontSize: isMobile ? '16px' : '16px',
+                                    padding: isMobile ? '0.75rem' : '0.5rem'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                            >
+                                {loading ? (
+                                    <>
+                                        <Spinner animation="border" size={isMobile ? "sm" : "sm"} className="me-2" />
+                                        Реєстрація...
+                                    </>
+                                ) : (
+                                    'Зареєструвати навчальний заклад'
+                                )}
+                            </Button>
+                        </Form>
+                    </Card.Body>
+                </Card>
+            </div>
+        );
+    };
 
     return (
-        <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-4" style={backgroundStyle}>
+        <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-3" style={backgroundStyle}>
             {/* Модальне вікно попередження */}
             <WarningModal />
 
