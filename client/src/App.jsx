@@ -1,11 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate as Redirect } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate as RouterNavigate } from "react-router-dom";
 import Signup from "./pages/admins/Signup";
 import Login from "./Login";
 import Navigate from "./pages/Navigate";
 import WelcomePage from "./WelcomePage";
-import StudentPage from "./pages/students/StudentPage";
-import TeacherPage from "./pages/teachers/TeacherPage";
-import ParentPage from "./pages/parents/ParentPage";
 import AdminPage from "./pages/admins/AdminPage";
 
 function App() {
@@ -30,20 +27,26 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={<WelcomePage />}
-        />
+          element={<RouterNavigate to="/welcome" replace />} />
+
+        <Route
+          path="/welcome"
+          element={<WelcomePage />} />
+
         <Route
           path="/login"
-          element={user ? <Redirect to={`/${user.role}`} /> : <Login />}
+          element={user ? <RouterNavigate to={`/${user.role}`} /> : <Login />}
         />
+
         <Route path="/signup" element={<Signup />} />
 
         <Route
           path="/student"
           element={
             user?.role === "student" ? (
-              <Navigate role="student" onLogout={handleLogout} userFullName={user.fullName} />) : (
-              <Redirect to="/login" />
+              <Navigate role="student" onLogout={handleLogout} userFullName={user.fullName} />
+            ) : (
+              <RouterNavigate to="/login" />
             )
           }
         />
@@ -54,7 +57,7 @@ function App() {
             user?.role === "teacher" ? (
               <Navigate role="teacher" onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
-              <Redirect to="/login" />
+              <RouterNavigate to="/login" />
             )
           }
         />
@@ -65,7 +68,7 @@ function App() {
             user?.role === "parent" ? (
               <Navigate role="parent" onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
-              <Redirect to="/login" />
+              <RouterNavigate to="/login" />
             )
           }
         />
@@ -76,10 +79,12 @@ function App() {
             user?.role === "admin" ? (
               <AdminPage onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
-              <Redirect to="/login" />
+              <RouterNavigate to="/login" />
             )
           }
         />
+
+        <Route path="*" element={<RouterNavigate to="/welcome" />} />
       </Routes>
     </Router>
   );

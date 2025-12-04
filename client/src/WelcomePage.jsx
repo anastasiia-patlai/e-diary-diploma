@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
 import {
     FaSchool,
     FaUser,
@@ -10,9 +10,10 @@ import {
     FaMapMarkerAlt,
     FaUserTie,
     FaEnvelope,
-    FaPhone
+    FaPhone,
+    FaExclamationTriangle
 } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const WelcomePage = () => {
@@ -39,7 +40,10 @@ const WelcomePage = () => {
     const [checking, setChecking] = useState(true);
     const [error, setError] = useState('');
     const [hasSchool, setHasSchool] = useState(false);
+    const [showWarningModal, setShowWarningModal] = useState(false);
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false); // Новий стан для показу форми
     const navigate = useNavigate();
+    const location = useLocation();
 
     const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -62,15 +66,33 @@ const WelcomePage = () => {
     useEffect(() => {
         const checkSchoolExists = async () => {
             try {
+                const searchParams = new URLSearchParams(location.search);
+                const forceShow = searchParams.get('force') === 'true';
+
+                // Якщо параметр force=true, одразу показуємо форму
+                if (forceShow) {
+                    setChecking(false);
+                    setHasSchool(false);
+                    setShowRegistrationForm(true); // Показуємо форму реєстрації
+                    return;
+                }
+
                 const response = await axios.get(`${API_BASE_URL}/school/check-school`);
-                setHasSchool(response.data.hasSchool);
-                if (response.data.hasSchool) {
-                    navigate('/login');
+                const schoolExists = response.data.hasSchool;
+                setHasSchool(schoolExists);
+
+                if (schoolExists) {
+                    // Якщо заклад вже існує, показуємо попереджувальний попап
+                    setShowWarningModal(true);
+                } else {
+                    // Якщо заклад не існує, одразу показуємо форму
+                    setShowRegistrationForm(true);
                 }
             } catch (error) {
                 console.error('Error checking school:', error);
                 if (error.response?.status === 404) {
                     setHasSchool(false);
+                    setShowRegistrationForm(true); // Показуємо форму при помилці 404
                 } else {
                     setError('Помилка при перевірці наявності навчального закладу');
                 }
@@ -80,7 +102,7 @@ const WelcomePage = () => {
         };
 
         checkSchoolExists();
-    }, [navigate]);
+    }, [navigate, location.search]);
 
     // ГЕНЕРУВАННЯ НАЗВИ БАЗИ ДАНИХ ТА ПОВНОЇ НАЗВИ ЗАКЛАДУ
     useEffect(() => {
@@ -97,6 +119,17 @@ const WelcomePage = () => {
             setDatabaseName('');
         }
     }, [formData.institutionType, formData.number, formData.name, formData.honoraryName, formData.city]);
+
+    // ОБРОБНИКИ ДЛЯ МОДАЛЬНОГО ВІКНА
+    const handleCancelRegistration = () => {
+        setShowWarningModal(false);
+        navigate('/login');
+    };
+
+    const handleContinueRegistration = () => {
+        setShowWarningModal(false);
+        setShowRegistrationForm(true); // Тепер показуємо форму реєстрації
+    };
 
     // ВАЛІДАЦІЯ ПОЛІВ
     const validateField = (name, value) => {
@@ -461,271 +494,346 @@ const WelcomePage = () => {
         );
     }
 
-    if (hasSchool) {
-        return null;
-    }
+    // МОДАЛЬНЕ ВІКНО ДЛЯ ПІДТВЕРДЖЕННЯ РЕЄСТРАЦІЇ
+    const WarningModal = () => (
+        <Modal
+            show={showWarningModal}
+            onHide={handleCancelRegistration}
+            centered
+            backdrop="static"
+        >
+            <Modal.Header closeButton style={{ backgroundColor: '#fff3cd', borderColor: '#ffeaa7' }}>
+                <Modal.Title className="d-flex align-items-center">
+                    <FaExclamationTriangle className="me-2" style={{ color: '#856404' }} />
+                    <span style={{ color: '#856404' }}>Увага!</span>
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div className="text-center mb-4">
+                    <FaExclamationTriangle size={48} className="mb-3" style={{ color: '#856404' }} />
+                    <h5 className="mb-3" style={{ color: '#856404' }}>
+                        У системі вже зареєстровано навчальний заклад
+                    </h5>
+                    <p className="text-muted">
+                        Ви намагаєтесь зареєструвати новий навчальний заклад, але в системі вже існує зареєстрований заклад.
+                    </p>
+                    <p className="text-muted">
+                        <strong>Увага:</strong> Реєстрація нового закладу може призвести до конфліктів даних і втрати інформації про існуючий заклад.
+                    </p>
+                </div>
+                <div className="alert alert-warning">
+                    <strong>Рекомендація:</strong> Якщо ви є адміністратором існуючого закладу, будь ласка, увійдіть в систему. Якщо ви дійсно хочете зареєструвати новий заклад, продовжуйте обережно.
+                </div>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button
+                    variant="secondary"
+                    onClick={handleCancelRegistration}
+                    style={{
+                        padding: '8px 20px',
+                        borderRadius: '6px',
+                        fontWeight: '600'
+                    }}
+                >
+                    Скасувати
+                </Button>
+                <Button
+                    variant="warning"
+                    onClick={handleContinueRegistration}
+                    style={{
+                        backgroundColor: '#856404',
+                        borderColor: '#856404',
+                        color: 'white',
+                        padding: '8px 20px',
+                        borderRadius: '6px',
+                        fontWeight: '600'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#6c5203'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#856404'}
+                >
+                    Продовжити реєстрацію
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    );
+
+    // ФОРМА РЕЄСТРАЦІЇ
+    const RegistrationForm = () => (
+        <div style={{ width: '785px', maxWidth: '100%' }}>
+            <Card className="shadow-lg border-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+                <Card.Header className="text-white text-center py-4" style={{ backgroundColor: 'rgba(105, 180, 185, 1)' }}>
+                    <FaSchool size={48} className="mb-3" />
+                    <h2 className="mb-0">Реєстрація навчального закладу</h2>
+                    <p className="mb-0 mt-2 opacity-75">
+                        Заповніть інформацію про ваш навчальний заклад
+                    </p>
+
+                    {/* Показуємо попередження тільки якщо заклад вже існує */}
+                    {hasSchool && (
+                        <Alert variant="warning" className="mt-3 mb-0">
+                            <strong>Режим примусової реєстрації:</strong> Ви можете зареєструвати новий заклад, навіть якщо в системі вже є інший.
+                        </Alert>
+                    )}
+                </Card.Header>
+                <Card.Body className="p-4">
+                    {error && (
+                        <Alert variant="danger" className="mb-4">
+                            {error}
+                        </Alert>
+                    )}
+
+                    <Form onSubmit={handleSubmit} noValidate>
+                        <div className="mb-4">
+                            <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
+                                <FaSchool className="me-2" />
+                                Інформація про навчальний заклад
+                            </h5>
+
+                            <Row>
+                                {getDynamicFields()}
+                            </Row>
+
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaCity className="me-2" />
+                                            Місто *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="city"
+                                            className={getInputClass("city")}
+                                            value={formData.city}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Наприклад: Київ"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.city}</div>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaMapMarkerAlt className="me-2" />
+                                            Адреса *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="address"
+                                            className={getInputClass("address")}
+                                            value={formData.address}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Наприклад: вул. Шевченка, 1"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.address}</div>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            {institutionFullName && (
+                                <Alert variant="info" className="mb-3">
+                                    <strong>Повна назва:</strong> {institutionFullName}
+                                </Alert>
+                            )}
+
+                            <Form.Group className="mb-3">
+                                <Form.Label>
+                                    <FaDatabase className="me-2" />
+                                    Назва бази даних
+                                </Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={databaseName}
+                                    readOnly
+                                    className="bg-light"
+                                    placeholder="Назва згенерується автоматично"
+                                />
+                                <Form.Text className="text-muted">
+                                    Ця назва буде використана для створення бази даних вашого закладу
+                                </Form.Text>
+                            </Form.Group>
+                        </div>
+
+                        <hr className="my-4" />
+
+                        <div className="mb-4">
+                            <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
+                                <FaUserTie className="me-2" />
+                                Дані адміністратора системи
+                            </h5>
+
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaUser className="me-2" />
+                                            ПІБ адміністратора *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="adminFullName"
+                                            className={getInputClass("adminFullName")}
+                                            value={formData.adminFullName}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Наприклад: Іваненко Петро Сидорович"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.adminFullName}</div>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaUserTie className="me-2" />
+                                            Посада *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="adminPosition"
+                                            className={getInputClass("adminPosition")}
+                                            value={formData.adminPosition}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Наприклад: Директор"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.adminPosition}</div>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaEnvelope className="me-2" />
+                                            Електронна пошта *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            name="adminEmail"
+                                            className={getInputClass("adminEmail")}
+                                            value={formData.adminEmail}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Наприклад: ivanenko.petro@gmail.com"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.adminEmail}</div>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaPhone className="me-2" />
+                                            Номер телефону *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="tel"
+                                            name="adminPhone"
+                                            className={getInputClass("adminPhone")}
+                                            value={formData.adminPhone}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="+380XXXXXXXXX"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.adminPhone}</div>
+                                        <Form.Text className="text-muted">
+                                            Формат: +380XXXXXXXXX
+                                        </Form.Text>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaLock className="me-2" />
+                                            Пароль *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="password"
+                                            name="adminPassword"
+                                            className={getInputClass("adminPassword")}
+                                            value={formData.adminPassword}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Мінімум 6 символів"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.adminPassword}</div>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>
+                                            <FaLock className="me-2" />
+                                            Підтвердження пароля *
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="password"
+                                            name="confirmPassword"
+                                            className={getInputClass("confirmPassword")}
+                                            value={formData.confirmPassword}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            placeholder="Повторіть пароль"
+                                            required
+                                        />
+                                        <div className="invalid-feedback">{errors.confirmPassword}</div>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        <Button
+                            type="submit"
+                            className="w-100 py-2"
+                            disabled={loading}
+                            style={{
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                color: 'white',
+                                fontWeight: '600',
+                                fontSize: '16px'
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                            }}
+                        >
+                            {loading ? (
+                                <>
+                                    <Spinner animation="border" size="sm" className="me-2" />
+                                    Реєстрація...
+                                </>
+                            ) : (
+                                'Зареєструвати навчальний заклад'
+                            )}
+                        </Button>
+                    </Form>
+                </Card.Body>
+            </Card>
+        </div>
+    );
 
     return (
         <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-4" style={backgroundStyle}>
-            <div style={{ width: '785px', maxWidth: '100%' }}>
-                <Card className="shadow-lg border-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
-                    <Card.Header className="text-white text-center py-4" style={{ backgroundColor: 'rgba(105, 180, 185, 1)' }}>
-                        <FaSchool size={48} className="mb-3" />
-                        <h2 className="mb-0">Реєстрація навчального закладу</h2>
-                        <p className="mb-0 mt-2 opacity-75">
-                            Заповніть інформацію про ваш навчальний заклад
-                        </p>
-                    </Card.Header>
-                    <Card.Body className="p-4">
-                        {error && (
-                            <Alert variant="danger" className="mb-4">
-                                {error}
-                            </Alert>
-                        )}
+            {/* Модальне вікно попередження */}
+            <WarningModal />
 
-                        <Form onSubmit={handleSubmit} noValidate>
-                            <div className="mb-4">
-                                <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
-                                    <FaSchool className="me-2" />
-                                    Інформація про навчальний заклад
-                                </h5>
-
-                                <Row>
-                                    {getDynamicFields()}
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaCity className="me-2" />
-                                                Місто *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="city"
-                                                className={getInputClass("city")}
-                                                value={formData.city}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: Київ"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.city}</div>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaMapMarkerAlt className="me-2" />
-                                                Адреса *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="address"
-                                                className={getInputClass("address")}
-                                                value={formData.address}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: вул. Шевченка, 1"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.address}</div>
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
-                                {institutionFullName && (
-                                    <Alert variant="info" className="mb-3">
-                                        <strong>Повна назва:</strong> {institutionFullName}
-                                    </Alert>
-                                )}
-
-                                <Form.Group className="mb-3">
-                                    <Form.Label>
-                                        <FaDatabase className="me-2" />
-                                        Назва бази даних
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={databaseName}
-                                        readOnly
-                                        className="bg-light"
-                                        placeholder="Назва згенерується автоматично"
-                                    />
-                                    <Form.Text className="text-muted">
-                                        Ця назва буде використана для створення бази даних вашого закладу
-                                    </Form.Text>
-                                </Form.Group>
-                            </div>
-
-                            <hr className="my-4" />
-
-                            <div className="mb-4">
-                                <h5 className="mb-3" style={{ color: 'rgba(105, 180, 185, 1)' }}>
-                                    <FaUserTie className="me-2" />
-                                    Дані адміністратора системи
-                                </h5>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaUser className="me-2" />
-                                                ПІБ адміністратора *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="adminFullName"
-                                                className={getInputClass("adminFullName")}
-                                                value={formData.adminFullName}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: Іваненко Петро Сидорович"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.adminFullName}</div>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaUserTie className="me-2" />
-                                                Посада *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="adminPosition"
-                                                className={getInputClass("adminPosition")}
-                                                value={formData.adminPosition}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: Директор"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.adminPosition}</div>
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaEnvelope className="me-2" />
-                                                Електронна пошта *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="email"
-                                                name="adminEmail"
-                                                className={getInputClass("adminEmail")}
-                                                value={formData.adminEmail}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Наприклад: ivanenko.petro@gmail.com"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.adminEmail}</div>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaPhone className="me-2" />
-                                                Номер телефону *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="tel"
-                                                name="adminPhone"
-                                                className={getInputClass("adminPhone")}
-                                                value={formData.adminPhone}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="+380XXXXXXXXX"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.adminPhone}</div>
-                                            <Form.Text className="text-muted">
-                                                Формат: +380XXXXXXXXX
-                                            </Form.Text>
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-
-                                <Row>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaLock className="me-2" />
-                                                Пароль *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="password"
-                                                name="adminPassword"
-                                                className={getInputClass("adminPassword")}
-                                                value={formData.adminPassword}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Мінімум 6 символів"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.adminPassword}</div>
-                                        </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label>
-                                                <FaLock className="me-2" />
-                                                Підтвердження пароля *
-                                            </Form.Label>
-                                            <Form.Control
-                                                type="password"
-                                                name="confirmPassword"
-                                                className={getInputClass("confirmPassword")}
-                                                value={formData.confirmPassword}
-                                                onChange={handleChange}
-                                                onBlur={handleBlur}
-                                                placeholder="Повторіть пароль"
-                                                required
-                                            />
-                                            <div className="invalid-feedback">{errors.confirmPassword}</div>
-                                        </Form.Group>
-                                    </Col>
-                                </Row>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-100 py-2"
-                                disabled={loading}
-                                style={{
-                                    backgroundColor: 'rgba(105, 180, 185, 1)',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    color: 'white',
-                                    fontWeight: '600',
-                                    fontSize: '16px'
-                                }}
-                                onMouseOver={(e) => {
-                                    e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                            >
-                                {loading ? (
-                                    <>
-                                        <Spinner animation="border" size="sm" className="me-2" />
-                                        Реєстрація...
-                                    </>
-                                ) : (
-                                    'Зареєструвати навчальний заклад'
-                                )}
-                            </Button>
-                        </Form>
-                    </Card.Body>
-                </Card>
-            </div>
+            {/* Показуємо форму реєстрації, якщо showRegistrationForm = true */}
+            {showRegistrationForm && <RegistrationForm />}
         </Container>
     );
 };
