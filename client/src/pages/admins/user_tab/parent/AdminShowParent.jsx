@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus } from "react-icons/fa";
+import { FaArrowUp } from "react-icons/fa";
 import axios from "axios";
 
 import ParentSearch from "./ParentSearch";
@@ -32,7 +32,10 @@ const AdminShowParent = () => {
     const [filteredParents, setFilteredParents] = useState([]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(20);
+    const [itemsPerPage] = useState(10); // Змінено на 10 блоків на сторінку
+
+    const [showScrollTop, setShowScrollTop] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const API_URL = "http://localhost:3001/api/users";
 
@@ -75,6 +78,24 @@ const AdminShowParent = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
     const fetchParents = async () => {
         if (!databaseName) {
             console.error("Database name відсутній для запиту батьків");
@@ -105,7 +126,7 @@ const AdminShowParent = () => {
 
         try {
             const response = await axios.get(`${API_URL}/students`, {
-                params: { databaseName } // Додаємо databaseName як параметр
+                params: { databaseName }
             });
             setStudents(response.data);
         } catch (err) {
@@ -120,20 +141,17 @@ const AdminShowParent = () => {
         }
     }, [databaseName]);
 
-    // Функція для знаходження згрупованого батька
     const findGroupedParent = (parentId) => {
         const parent = parents.find(p => p._id === parentId);
         if (!parent || !parent.children || parent.children.length === 0) {
             return null;
         }
 
-        // Шукаємо іншого батька, який має спільну дитину з поточним батьком
         for (const otherParent of parents) {
             if (otherParent._id === parentId || !otherParent.children || otherParent.children.length === 0) {
                 continue;
             }
 
-            // Перевіряємо, чи є спільна дитина
             const hasSharedChild = otherParent.children.some(child =>
                 parent.children.some(c => c._id === child._id)
             );
@@ -150,26 +168,19 @@ const AdminShowParent = () => {
         const parentGroups = [];
         const processedParents = new Set();
 
-        console.log('Всього батьків для обробки:', parentsList.length);
-
         parentsList.forEach(parent => {
             if (processedParents.has(parent._id)) {
-                console.log(`Батька ${parent.fullName} вже оброблено, пропускаємо`);
                 return;
             }
 
             if (!parent.children || parent.children.length === 0) {
                 parentGroups.push([parent]);
                 processedParents.add(parent._id);
-                console.log(`Батько без дітей: ${parent.fullName} - додано окремо`);
                 return;
             }
 
             const sharedParents = [parent];
             processedParents.add(parent._id);
-
-            console.log(`Обробляємо батька: ${parent.fullName}`);
-            console.log(`Кількість дітей: ${parent.children ? parent.children.length : 0}`);
 
             const currentParentChildrenIds = new Set(
                 parent.children.map(child => child._id)
@@ -189,21 +200,12 @@ const AdminShowParent = () => {
                 );
 
                 if (hasSharedChild) {
-                    console.log(`Знайдено спільного батька: ${otherParent.fullName}`);
                     sharedParents.push(otherParent);
                     processedParents.add(otherParent._id);
                 }
             });
 
-            console.log(`Створено групу з ${sharedParents.length} батьків:`,
-                sharedParents.map(p => p.fullName));
             parentGroups.push(sharedParents);
-        });
-
-        console.log(`Створено ${parentGroups.length} груп:`);
-        parentGroups.forEach((group, index) => {
-            console.log(`Група ${index + 1}: ${group.length} батьків -`,
-                group.map(p => p.fullName));
         });
 
         return parentGroups;
@@ -226,7 +228,6 @@ const AdminShowParent = () => {
             });
         }
 
-        console.log('Filtered parents:', filtered.length);
         setFilteredParents(filtered);
     };
 
@@ -339,38 +340,29 @@ const AdminShowParent = () => {
             console.log("Parent ID:", selectedParent._id);
             console.log("Student ID:", studentId);
 
-            // ВИКОРИСТОВУЄМО QUERY PARAMETERS ДЛЯ ВСІХ ЗАПИТІВ
-            // ДОДАЄМО ДИТИНУ ДО ВИБРАНОГО БАТЬКА
             await axios.put(`${API_URL}/${selectedParent._id}/add-child?databaseName=${encodeURIComponent(databaseName)}`, {
                 childId: studentId
-                // databaseName ВИЛУЧЕНО З BODY - тепер тільки в URL
             });
 
-            // ДОДАЄМО БАТЬКА ДО ДИТИНИ
             await axios.put(`${API_URL}/${studentId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: selectedParent._id
-                // databaseName ВИЛУЧЕНО З BODY - тепер тільки в URL
             });
 
-            // ШУКАЄМО ЗГРУПОВАНОГО БАТЬКА
             const groupedParent = findGroupedParent(selectedParent._id);
 
             if (groupedParent) {
                 console.log(`Знайдено згрупованого батька: ${groupedParent.fullName}`);
 
-                // ПЕРЕВІРКА, СКІЛЬКІСТЬ БАТЬКІВ У ДИТИНИ
                 const studentResponse = await axios.get(`${API_URL}/${studentId}?databaseName=${encodeURIComponent(databaseName)}`);
                 const currentStudent = studentResponse.data;
 
                 if (currentStudent.parents && currentStudent.parents.length < 2) {
                     console.log('Додаємо другого батька автоматично...');
 
-                    // ДОДАЄМО ДИТИНУ ДО ЗГРУПОВАНОГО БАТЬКА
                     await axios.put(`${API_URL}/${groupedParent._id}/add-child?databaseName=${encodeURIComponent(databaseName)}`, {
                         childId: studentId
                     });
 
-                    // ДОДАЄМО ЗГРУПОВАНОГО БАТЬКА ДО ДИТИНИ
                     await axios.put(`${API_URL}/${studentId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                         parentId: groupedParent._id
                     });
@@ -391,7 +383,6 @@ const AdminShowParent = () => {
             console.log("Дитю успішно додано!");
         } catch (err) {
             console.error("Помилка додавання дитини:", err);
-            // ДОДАЄМО ДЕТАЛЬНУ ІНФОРМАЦІЮ ПРО ПОМИЛКУ
             if (err.response) {
                 console.error("Статус помилки:", err.response.status);
                 console.error("Дані помилки:", err.response.data);
@@ -451,26 +442,75 @@ const AdminShowParent = () => {
         }
     };
 
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const isMobile = windowWidth < 768;
+
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '20px' }}><p>Завантаження батьків...</p></div>;
+        return (
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '15px' : '20px',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <p>Завантаження батьків...</p>
+            </div>
+        );
     }
 
     if (error) {
-        return <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}><p>{error}</p></div>;
+        return (
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '15px' : '20px',
+                color: 'red',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <p>{error}</p>
+            </div>
+        );
     }
 
     return (
-        <div>
+        <div style={{
+            padding: isMobile ? '10px' : '20px',
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            boxSizing: 'border-box'
+        }}>
+            {/* Заголовок з адаптивним стилем */}
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? '15px' : '20px',
+                gap: isMobile ? '10px' : '0'
             }}>
                 <div style={{
-                    display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '15px',
+                    marginBottom: isMobile ? '10px' : '0',
+                    flexWrap: 'wrap'
                 }}>
-                    <h3 style={{ margin: 0 }}>Батьки ({filteredParents.length})</h3>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '18px' : '20px',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        Батьки ({filteredParents.length})
+                    </h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
             </div>
@@ -479,11 +519,19 @@ const AdminShowParent = () => {
                 searchQuery={parentSearchQuery}
                 onSearchChange={handleParentSearch}
                 filteredParentsCount={filteredParents.length}
+                isMobile={isMobile}
             />
 
             {currentParentGroups.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <p>
+                <div style={{
+                    textAlign: 'center',
+                    padding: isMobile ? '20px 15px' : '40px 20px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '1px dashed #e5e7eb',
+                    marginTop: isMobile ? '10px' : '20px'
+                }}>
+                    <p style={{ color: '#6b7280', margin: 0, fontSize: isMobile ? '14px' : '16px' }}>
                         {parentSearchQuery
                             ? `Батьки за запитом "${parentSearchQuery}" не знайдені`
                             : 'Батьки не знайдені'
@@ -492,11 +540,13 @@ const AdminShowParent = () => {
                 </div>
             ) : (
                 <>
+                    {/* Контейнер для карток батьків - 10 блоків на сторінку */}
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '20px',
-                        marginBottom: '20px'
+                        gap: isMobile ? '12px' : '15px',
+                        marginBottom: isMobile ? '15px' : '20px',
+                        width: '100%'
                     }}>
                         {currentParentGroups.map((parentGroup, index) => (
                             parentGroup.length === 1 ? (
@@ -510,6 +560,7 @@ const AdminShowParent = () => {
                                     onRemoveChild={handleRemoveChild}
                                     onAddParentToChild={handleAddParentToChild}
                                     onRemoveParentFromChild={handleRemoveParentFromChild}
+                                    isMobile={isMobile}
                                 />
                             ) : (
                                 <CombinedParentCard
@@ -522,12 +573,13 @@ const AdminShowParent = () => {
                                     onRemoveChild={handleRemoveChild}
                                     onAddParentToChild={handleAddParentToChild}
                                     onRemoveParentFromChild={handleRemoveParentFromChild}
-
+                                    isMobile={isMobile}
                                 />
                             )
                         ))}
                     </div>
 
+                    {/* Пагінація */}
                     <ParentPagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -539,10 +591,12 @@ const AdminShowParent = () => {
                         onLastPage={goToLastPage}
                         onPreviousPage={goToPreviousPage}
                         onNextPage={goToNextPage}
+                        isMobile={isMobile}
                     />
                 </>
             )}
 
+            {/* Попапи */}
             <AddChildPopup
                 selectedParent={selectedParent}
                 searchQuery={searchQuery}
@@ -557,6 +611,7 @@ const AdminShowParent = () => {
                 }}
                 onSearchChange={handleSearch}
                 onAddChild={handleAddChildToParent}
+                isMobile={isMobile}
             />
 
             {showEditPopup && (
@@ -568,6 +623,7 @@ const AdminShowParent = () => {
                         setSelectedParent(null);
                     }}
                     onUpdate={handleUpdateParent}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -580,7 +636,43 @@ const AdminShowParent = () => {
                         setSelectedParent(null);
                     }}
                     onDelete={handleDeleteParent}
+                    isMobile={isMobile}
                 />
+            )}
+
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    style={{
+                        position: 'fixed',
+                        bottom: isMobile ? '20px' : '30px',
+                        right: isMobile ? '20px' : '30px',
+                        width: isMobile ? '45px' : '50px',
+                        height: isMobile ? '45px' : '50px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        zIndex: 999,
+                        fontSize: isMobile ? '16px' : '18px',
+                        transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                >
+                    <FaArrowUp />
+                </button>
             )}
         </div>
     );

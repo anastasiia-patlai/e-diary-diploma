@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
     FaUserFriends, FaEnvelope, FaPhone, FaChild,
-    FaSearch, FaEdit, FaTrash, FaTimes, FaUserPlus, FaUserMinus
+    FaSearch, FaEdit, FaTrash, FaTimes, FaUserPlus, FaUserMinus,
+    FaEllipsisV
 } from "react-icons/fa";
 import DeleteChildPopup from './DeleteChildPopup';
 import AddParentPopup from './AddParentPopup';
@@ -15,11 +16,13 @@ const ParentCard = ({
     onDelete,
     onRemoveChild,
     onAddParentToChild,
-    onRemoveParentFromChild
+    onRemoveParentFromChild,
+    isMobile
 }) => {
     const [showDeleteChildPopup, setShowDeleteChildPopup] = useState(false);
     const [showAddParentPopup, setShowAddParentPopup] = useState(false);
-    const [showRemoveParentChoicePopup, setShowRemoveParentChoicePopup] = useState(false); // ДОДАЄМО ЦЕЙ СТАН
+    const [showRemoveParentChoicePopup, setShowRemoveParentChoicePopup] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [childToDelete, setChildToDelete] = useState(null);
     const [selectedChild, setSelectedChild] = useState(null);
 
@@ -72,7 +75,6 @@ const ParentCard = ({
         try {
             const child = parent.children.find(c => c._id === childId);
             if (child && child.parents) {
-                // Видаляємо обох батьків послідовно
                 for (const p of child.parents) {
                     await onRemoveParentFromChild(childId, p._id);
                 }
@@ -88,125 +90,264 @@ const ParentCard = ({
         <div key={parent._id} style={{
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
-            padding: '20px',
+            padding: isMobile ? '12px' : '20px',
             backgroundColor: '#f9fafb',
-            transition: 'box-shadow 0.2s'
-        }}
-            onMouseOver={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-            }}
-            onMouseOut={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-            }}
-        >
+            transition: 'box-shadow 0.2s',
+            width: '100%',
+            boxSizing: 'border-box'
+        }}>
+            {/* Заголовок з інформацією про батька */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                marginBottom: '15px'
+                marginBottom: isMobile ? '12px' : '15px',
+                position: 'relative'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: isMobile ? '8px' : '15px',
+                    flex: 1,
+                    minWidth: 0
+                }}>
                     <div style={{
-                        width: '50px',
-                        height: '50px',
+                        width: isMobile ? '40px' : '50px',
+                        height: isMobile ? '40px' : '50px',
                         borderRadius: '50%',
                         backgroundColor: 'rgba(105, 180, 185, 0.2)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: 'rgba(105, 180, 185, 1)'
+                        color: 'rgba(105, 180, 185, 1)',
+                        flexShrink: 0
                     }}>
-                        <FaUserFriends />
+                        <FaUserFriends size={isMobile ? 16 : 20} />
                     </div>
-                    <div>
-                        <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
+                    <div style={{
+                        flex: 1,
+                        minWidth: 0,
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            fontWeight: '600',
+                            fontSize: isMobile ? '14px' : '16px',
+                            marginBottom: isMobile ? '2px' : '4px',
+                            color: '#1f2937',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                        }}>
                             {parent.fullName}
                         </div>
                         <div style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '14px',
+                            flexDirection: 'column',
+                            gap: isMobile ? '1px' : '2px',
+                            fontSize: isMobile ? '11px' : '14px',
                             color: '#6b7280'
                         }}>
-                            <FaEnvelope size={12} />
-                            {parent.email}
-                        </div>
-                        {parent.phone && (
                             <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '8px',
-                                fontSize: '14px',
-                                color: '#6b7280',
-                                marginTop: '2px'
+                                gap: '4px'
                             }}>
-                                <FaPhone size={12} />
-                                {parent.phone}
+                                <FaEnvelope size={isMobile ? 10 : 12} />
+                                <span style={{
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {parent.email}
+                                </span>
                             </div>
-                        )}
+                            {parent.phone && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}>
+                                    <FaPhone size={isMobile ? 10 : 12} />
+                                    <span style={{
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {parent.phone}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={() => onAddChild(parent)}
-                        style={{
-                            padding: '6px 12px',
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <FaSearch />
-                        Знайти дитину
-                    </button>
-                    <button
-                        onClick={() => onEdit(parent)}
-                        style={{
-                            padding: '6px 12px',
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <FaEdit />
-                        Редагувати
-                    </button>
-                    <button
-                        onClick={() => onDelete(parent)}
-                        style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            transition: 'background-color 0.2s'
-                        }}
-                    >
-                        <FaTrash />
-                        Видалити
-                    </button>
-                </div>
+                {/* Кнопки дій */}
+                {isMobile ? (
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            onClick={() => setShowMobileMenu(!showMobileMenu)}
+                            style={{
+                                padding: '6px',
+                                backgroundColor: 'transparent',
+                                color: '#6b7280',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <FaEllipsisV size={14} />
+                        </button>
+
+                        {showMobileMenu && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                backgroundColor: 'white',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                zIndex: 10,
+                                minWidth: '160px'
+                            }}>
+                                <button
+                                    onClick={() => {
+                                        onAddChild(parent);
+                                        setShowMobileMenu(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'white',
+                                        color: '#374151',
+                                        border: 'none',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                >
+                                    <FaSearch size={10} />
+                                    Знайти дитину
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onEdit(parent);
+                                        setShowMobileMenu(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'white',
+                                        color: '#374151',
+                                        border: 'none',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                >
+                                    <FaEdit size={10} />
+                                    Редагувати
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onDelete(parent);
+                                        setShowMobileMenu(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        backgroundColor: 'white',
+                                        color: '#ef4444',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        transition: 'background-color 0.2s'
+                                    }}
+                                >
+                                    <FaTrash size={10} />
+                                    Видалити
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button
+                            onClick={() => onAddChild(parent)}
+                            style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                transition: 'background-color 0.2s'
+                            }}
+                        >
+                            <FaSearch size={12} />
+                            Знайти дитину
+                        </button>
+                        <button
+                            onClick={() => onEdit(parent)}
+                            style={{
+                                padding: '6px 12px',
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                transition: 'background-color 0.2s'
+                            }}
+                        >
+                            <FaEdit size={12} />
+                            Редагувати
+                        </button>
+                        <button
+                            onClick={() => onDelete(parent)}
+                            style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                transition: 'background-color 0.2s'
+                            }}
+                        >
+                            <FaTrash size={12} />
+                            Видалити
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* ДІТИ БАТЬКІВ */}
@@ -215,47 +356,60 @@ const ParentCard = ({
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '10px'
+                    marginBottom: isMobile ? '8px' : '10px'
                 }}>
                     <div style={{
                         fontWeight: '600',
-                        color: 'rgba(105, 180, 185, 1)'
+                        color: 'rgba(105, 180, 185, 1)',
+                        fontSize: isMobile ? '13px' : '14px'
                     }}>
                         Діти ({parent.children ? parent.children.length : 0})
                     </div>
                 </div>
 
                 {parent.children && parent.children.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '6px' : '8px' }}>
                         {parent.children.map(child => (
                             <div key={child._id} style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                gap: '10px',
-                                padding: '12px',
+                                gap: isMobile ? '6px' : '10px',
+                                padding: isMobile ? '10px' : '12px',
                                 backgroundColor: 'white',
                                 borderRadius: '6px',
-                                border: '1px solid #e5e7eb',
-                                transition: 'background-color 0.2s'
-                            }}
-                                onMouseOver={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'white';
-                                }}
-                            >
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <FaChild style={{ color: 'rgba(105, 180, 185, 1)' }} />
-                                    <div>
-                                        <div style={{ fontWeight: '500', marginBottom: '2px' }}>
+                                border: '1px solid #e5e7eb'
+                            }}>
+                                <div style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '8px' : '10px',
+                                    minWidth: 0
+                                }}>
+                                    <FaChild style={{
+                                        color: 'rgba(105, 180, 185, 1)',
+                                        flexShrink: 0,
+                                        fontSize: isMobile ? '14px' : '16px'
+                                    }} />
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{
+                                            fontWeight: '500',
+                                            marginBottom: '2px',
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}>
                                             {child.fullName}
                                         </div>
                                         {child.group && (
                                             <div style={{
-                                                fontSize: '12px',
-                                                color: '#6b7280'
+                                                fontSize: isMobile ? '11px' : '12px',
+                                                color: '#6b7280',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
                                             }}>
                                                 {child.group.name}
                                             </div>
@@ -263,90 +417,73 @@ const ParentCard = ({
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '5px' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: isMobile ? '4px' : '5px',
+                                    flexShrink: 0
+                                }}>
                                     {child.parents && child.parents.length < 2 && (
                                         <button
                                             onClick={() => openAddParentPopup(child)}
                                             style={{
-                                                padding: '6px 10px',
+                                                padding: isMobile ? '5px 8px' : '6px 10px',
                                                 backgroundColor: 'rgba(105, 180, 185, 1)',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '4px',
                                                 cursor: 'pointer',
-                                                fontSize: '11px',
+                                                fontSize: isMobile ? '10px' : '11px',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '4px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onFocus={(e) => {
-                                                e.currentTarget.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                            }}
-                                            onBlur={(e) => {
-                                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                                gap: '3px',
+                                                whiteSpace: 'nowrap'
                                             }}
                                         >
-                                            <FaUserPlus size={10} />
-                                            Додати батька
+                                            <FaUserPlus size={isMobile ? 9 : 10} />
+                                            {!isMobile && 'Додати батька'}
                                         </button>
                                     )}
 
-                                    {/* КНОПКА ВИДАЛИТИ БАТЬКІВ, ЯКЩО ПРИСУТНІ ОБОЄ БАТЬКІВ */}
                                     {child.parents && child.parents.length === 2 && (
                                         <button
                                             onClick={() => openRemoveParentChoicePopup(child)}
                                             style={{
-                                                padding: '6px 10px',
+                                                padding: isMobile ? '5px 8px' : '6px 10px',
                                                 backgroundColor: 'rgba(105, 180, 185, 1)',
                                                 color: 'white',
                                                 border: '1px solid #e5e7eb',
                                                 borderRadius: '4px',
                                                 cursor: 'pointer',
-                                                fontSize: '11px',
+                                                fontSize: isMobile ? '10px' : '11px',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '4px',
-                                                transition: 'border-color 0.2s',
-                                                outline: 'none'
-                                            }}
-                                            onFocus={(e) => {
-                                                e.currentTarget.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                            }}
-                                            onBlur={(e) => {
-                                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                                gap: '3px',
+                                                whiteSpace: 'nowrap'
                                             }}
                                         >
-                                            <FaUserMinus size={10} />
-                                            Відв'язати батька
+                                            <FaUserMinus size={isMobile ? 9 : 10} />
+                                            {!isMobile && 'Відв\'язати'}
                                         </button>
                                     )}
 
-                                    {/* КНОПКА ВИДАЛИТИ ДИТИНУ*/}
                                     <button
                                         onClick={() => openDeleteChildConfirmation(child)}
                                         style={{
-                                            padding: '6px 10px',
+                                            padding: isMobile ? '5px 8px' : '6px 10px',
                                             backgroundColor: '#ef4444',
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: '4px',
                                             cursor: 'pointer',
-                                            fontSize: '11px',
+                                            fontSize: isMobile ? '10px' : '11px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '4px',
-                                            transition: 'background-color 0.2s'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#dc2626';
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#ef4444';
+                                            gap: '3px',
+                                            whiteSpace: 'nowrap'
                                         }}
                                     >
-                                        <FaTimes size={10} />
-                                        Видалити
+                                        <FaTimes size={isMobile ? 9 : 10} />
+                                        {!isMobile && 'Видалити'}
                                     </button>
                                 </div>
                             </div>
@@ -355,28 +492,29 @@ const ParentCard = ({
                 ) : (
                     <div style={{
                         textAlign: 'center',
-                        padding: '20px',
+                        padding: isMobile ? '15px' : '20px',
                         color: '#6b7280',
                         backgroundColor: 'white',
                         borderRadius: '6px',
-                        border: '1px dashed #e5e7eb'
+                        border: '1px dashed #e5e7eb',
+                        fontSize: isMobile ? '13px' : '14px'
                     }}>
                         <p>Дітей не додано</p>
                     </div>
                 )}
             </div>
 
-            {/* ПОПАП ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ ДИТИНИ */}
+            {/* ПОПАПИ */}
             {showDeleteChildPopup && (
                 <DeleteChildPopup
                     child={childToDelete}
                     parent={parent}
                     onConfirm={handleDeleteConfirm}
                     onClose={closeDeleteChildConfirmation}
+                    isMobile={isMobile}
                 />
             )}
 
-            {/* ПОПАП ДОДАННЯ БАТЬКА ДО ДИТИНИ */}
             {showAddParentPopup && (
                 <AddParentPopup
                     child={selectedChild}
@@ -384,16 +522,17 @@ const ParentCard = ({
                     databaseName={databaseName}
                     onClose={closeAddParentPopup}
                     onAddParent={handleAddParentConfirm}
+                    isMobile={isMobile}
                 />
             )}
 
-            {/* ПОПАП ВИБОРУ ВИДАЛЕННЯ БАТЬКА */}
             {showRemoveParentChoicePopup && (
                 <RemoveParentChoicePopup
                     child={selectedChild}
                     onClose={closeRemoveParentChoicePopup}
                     onRemoveParent={handleRemoveParent}
                     onRemoveBothParents={handleRemoveBothParents}
+                    isMobile={isMobile}
                 />
             )}
         </div>

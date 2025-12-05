@@ -1,11 +1,11 @@
 import React from 'react';
 import { FaSearch } from "react-icons/fa";
 
-const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount }) => {
+const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount, isMobile }) => {
     return (
         <div style={{
-            marginBottom: '20px',
-            padding: '15px',
+            marginBottom: isMobile ? '15px' : '20px',
+            padding: isMobile ? '12px' : '15px',
             backgroundColor: '#f8fafc',
             borderRadius: '8px',
             border: '1px solid #e5e7eb'
@@ -13,15 +13,15 @@ const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount }) => 
             <div style={{ position: 'relative' }}>
                 <input
                     type="text"
-                    placeholder="Пошук батьків за іменем, email, телефоном або іменем дитини..."
+                    placeholder={isMobile ? "Пошук батьків..." : "Пошук батьків за іменем, email, телефоном або іменем дитини..."}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     style={{
                         width: '100%',
-                        padding: '12px 45px 12px 15px',
+                        padding: isMobile ? '10px 40px 10px 12px' : '12px 45px 12px 15px',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        fontSize: '14px',
+                        fontSize: isMobile ? '14px' : '14px',
                         outline: 'none',
                         transition: 'border-color 0.2s'
                     }}
@@ -35,23 +35,24 @@ const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount }) => 
                 <FaSearch
                     style={{
                         position: 'absolute',
-                        right: '15px',
+                        right: isMobile ? '12px' : '15px',
                         top: '50%',
                         transform: 'translateY(-50%)',
-                        color: '#6b7280'
+                        color: '#6b7280',
+                        fontSize: isMobile ? '14px' : '16px'
                     }}
                 />
             </div>
             {searchQuery && (
                 <div style={{
-                    fontSize: '14px',
+                    fontSize: isMobile ? '13px' : '14px',
                     color: '#6b7280',
-                    marginTop: '8px',
+                    marginTop: isMobile ? '6px' : '8px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px'
                 }}>
-                    <FaSearch size={12} />
+                    <FaSearch size={isMobile ? 11 : 12} />
                     Знайдено {filteredParentsCount} батьків за запитом "{searchQuery}"
                 </div>
             )}

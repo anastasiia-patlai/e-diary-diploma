@@ -56,19 +56,6 @@ const AddChildPopup = ({
                     </button>
                 </div>
 
-                {databaseName && (
-                    <div style={{
-                        fontSize: '12px',
-                        color: '#666',
-                        marginBottom: '10px',
-                        padding: '5px 10px',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '4px'
-                    }}>
-                        База даних: {databaseName}
-                    </div>
-                )}
-
                 <div style={{ position: 'relative', marginBottom: '20px' }}>
                     <div style={{ position: 'relative' }}>
                         <input

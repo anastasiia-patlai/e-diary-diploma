@@ -86,7 +86,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0, color: '#374151' }}>
-                        Редагувати батька
+                        Редагувати дані батьків
                     </h3>
                     <button
                         onClick={onClose}
