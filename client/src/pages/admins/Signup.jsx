@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
@@ -20,6 +20,18 @@ function Signup({ onClose, databaseName }) {
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth < 768;
 
     const addPositionField = () => {
         setFormData(prev => ({
@@ -102,7 +114,6 @@ function Signup({ onClose, databaseName }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Перевірка наявності databaseName
         if (!databaseName) {
             alert("Помилка: не вказано базу даних школи. Будь ласка, спочатку зареєструйте школу.");
             return;
@@ -122,7 +133,7 @@ function Signup({ onClose, databaseName }) {
                 : [];
 
             const submitData = {
-                databaseName: databaseName, // ДОДАЄМО databaseName
+                databaseName: databaseName,
                 fullName: formData.fullName,
                 role: formData.role,
                 phone: formData.phone,
@@ -212,29 +223,37 @@ function Signup({ onClose, databaseName }) {
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                zIndex: 1000
+                zIndex: 1000,
+                padding: isMobile ? '10px' : '0',
+                overflowY: 'auto'
             }}>
                 <div style={{
                     position: 'relative',
                     backgroundColor: 'white',
                     borderRadius: '10px',
-                    padding: '20px',
-                    width: '600px',
-                    maxHeight: '90vh',
-                    overflowY: 'auto'
+                    padding: isMobile ? '15px' : '20px',
+                    width: isMobile ? '100%' : '600px',
+                    maxHeight: isMobile ? '90vh' : '90vh',
+                    overflowY: 'auto',
+                    marginTop: isMobile ? '10px' : '0',
+                    marginBottom: isMobile ? '10px' : '0',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
                 }}>
                     <button
                         onClick={onClose}
                         style={{
                             position: 'absolute',
-                            top: '15px',
-                            right: '15px',
+                            top: isMobile ? '10px' : '15px',
+                            right: isMobile ? '10px' : '15px',
                             background: 'none',
                             border: 'none',
-                            fontSize: '20px',
+                            fontSize: isMobile ? '18px' : '20px',
                             cursor: 'pointer',
-                            color: '#666'
+                            color: '#666',
+                            padding: '4px',
+                            zIndex: 10
                         }}
+                        aria-label="Закрити"
                     >
                         <FaTimes />
                     </button>
@@ -244,23 +263,36 @@ function Signup({ onClose, databaseName }) {
                             style={{
                                 backgroundColor: "#59b971",
                                 color: "white",
-                                padding: "10px 20px",
-                                borderRadius: "10px",
+                                padding: isMobile ? '8px 12px' : '10px 20px',
+                                borderRadius: "8px",
                                 textAlign: "center",
                                 fontWeight: "bold",
-                                marginBottom: '20px'
+                                marginBottom: '15px',
+                                fontSize: isMobile ? '14px' : '16px'
                             }}
                         >
                             {successMessage}
                         </div>
                     )}
 
-                    <h3 className="text-center mb-4">Реєстрація користувача</h3>
+                    <h3 className="text-center mb-4" style={{
+                        fontSize: isMobile ? '18px' : '20px',
+                        paddingRight: isMobile ? '25px' : '0',
+                        paddingTop: isMobile ? '7px' : '0',
+                        wordWrap: 'break-word'
+                    }}>
+                        Реєстрація користувача
+                    </h3>
 
                     <form onSubmit={handleSubmit} noValidate>
                         {/* ПІБ */}
                         <div className="mb-3">
-                            <label className="form-label">ПІБ</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                ПІБ
+                            </label>
                             <input
                                 type="text"
                                 name="fullName"
@@ -269,19 +301,36 @@ function Signup({ onClose, databaseName }) {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Прізвище, Ім'я, По-батькові"
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             />
-                            <div className="invalid-feedback">{errors.fullName}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.fullName}
+                            </div>
                         </div>
 
                         {/* РОЛЬ */}
                         <div className="mb-3">
-                            <label className="form-label">Роль</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                Роль
+                            </label>
                             <select
                                 name="role"
                                 className={getSelectClass("role")}
                                 value={formData.role}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             >
                                 <option value="">-- Оберіть роль --</option>
                                 <option value="student">Студент / Учень</option>
@@ -289,13 +338,22 @@ function Signup({ onClose, databaseName }) {
                                 <option value="teacher">Викладач</option>
                                 <option value="admin">Адміністратор</option>
                             </select>
-                            <div className="invalid-feedback">{errors.role}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.role}
+                            </div>
                         </div>
 
                         {/* СТУДЕНТ */}
                         {formData.role === "student" && (
                             <div className="mb-3 fade-in">
-                                <label className="form-label">Група / Клас</label>
+                                <label className="form-label" style={{
+                                    fontSize: isMobile ? '15px' : '17px',
+                                    fontWeight: '500'
+                                }}>
+                                    Група / Клас
+                                </label>
                                 <input
                                     type="text"
                                     name="group"
@@ -304,32 +362,54 @@ function Signup({ onClose, databaseName }) {
                                     onChange={handleChange}
                                     onBlur={handleBlur}
                                     placeholder="Напр. ПП-42"
+                                    style={{
+                                        fontSize: isMobile ? '14px' : '16px',
+                                        padding: isMobile ? '10px' : '12px'
+                                    }}
                                 />
-                                <div className="invalid-feedback">{errors.group}</div>
+                                <div className="invalid-feedback" style={{
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}>
+                                    {errors.group}
+                                </div>
                             </div>
                         )}
 
                         {/* ВИКЛАДАЧ - КІЛЬКА ПРЕДМЕТІВ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
-                                <label className="form-label">Предмети</label>
+                                <label className="form-label" style={{
+                                    fontSize: isMobile ? '15px' : '17px',
+                                    fontWeight: '500'
+                                }}>
+                                    Предмети
+                                </label>
                                 {formData.positions.map((position, index) => (
-                                    <div key={index} className="input-group mb-2">
+                                    <div key={index} className="d-flex align-items-center mb-2">
                                         <input
                                             type="text"
-                                            className="form-control"
+                                            className="form-control me-2"
                                             value={position}
                                             onChange={(e) => updatePosition(index, e.target.value)}
                                             onBlur={() => validateField("positions", formData.positions)}
-                                            placeholder={`Предмет ${index + 1} (напр. Математика)`}
+                                            placeholder={`Предмет ${index + 1}`}
+                                            style={{
+                                                fontSize: isMobile ? '14px' : '16px',
+                                                padding: isMobile ? '10px' : '12px'
+                                            }}
                                         />
                                         {formData.positions.length > 1 && (
                                             <button
                                                 type="button"
                                                 className="btn btn-outline-danger"
                                                 onClick={() => removePositionField(index)}
+                                                style={{
+                                                    padding: isMobile ? '8px' : '10px',
+                                                    minWidth: '40px'
+                                                }}
+                                                aria-label="Видалити предмет"
                                             >
-                                                <FaMinus />
+                                                <FaMinus size={isMobile ? 14 : 16} />
                                             </button>
                                         )}
                                     </div>
@@ -337,26 +417,26 @@ function Signup({ onClose, databaseName }) {
                                 <button
                                     type="button"
                                     style={{
-                                        backgroundColor: 'rgba(85, 160, 165, 1)',
+                                        backgroundColor: 'rgba(105, 180, 185, 1)',
                                         color: 'white',
-                                        border: '1px solid rgba(85, 160, 165, 1)'
+                                        border: '1px solid rgba(105, 180, 185, 1)',
+                                        padding: isMobile ? '8px 12px' : '10px 15px',
+                                        fontSize: isMobile ? '13px' : '14px',
+                                        borderRadius: '6px',
+                                        width: '100%'
                                     }}
-                                    className="btn btn-sm"
+                                    className="btn"
                                     onClick={addPositionField}
-                                    onMouseOver={(e) => {
-                                        e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                                        e.target.style.borderColor = 'rgba(61, 117, 121, 1)';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                    }}
                                 >
                                     <FaPlus className="me-1" />
                                     Додати ще предмет
                                 </button>
                                 {errors.positions && (
-                                    <div className="invalid-feedback d-block">{errors.positions}</div>
+                                    <div className="invalid-feedback d-block" style={{
+                                        fontSize: isMobile ? '12px' : '14px'
+                                    }}>
+                                        {errors.positions}
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -364,7 +444,12 @@ function Signup({ onClose, databaseName }) {
                         {/* АДМІНІСТРАТОР - ПОСАДА */}
                         {formData.role === "admin" && (
                             <div className="mb-3 fade-in">
-                                <label className="form-label">Посада</label>
+                                <label className="form-label" style={{
+                                    fontSize: isMobile ? '15px' : '17px',
+                                    fontWeight: '500'
+                                }}>
+                                    Посада
+                                </label>
                                 <input
                                     type="text"
                                     name="jobPosition"
@@ -372,15 +457,28 @@ function Signup({ onClose, databaseName }) {
                                     value={formData.jobPosition}
                                     onChange={handleChange}
                                     onBlur={handleBlur}
-                                    placeholder="Напр. Заступник директора з навчальної роботи, тощо"
+                                    placeholder="Напр. Заступник директора"
+                                    style={{
+                                        fontSize: isMobile ? '14px' : '16px',
+                                        padding: isMobile ? '10px' : '12px'
+                                    }}
                                 />
-                                <div className="invalid-feedback">{errors.jobPosition}</div>
+                                <div className="invalid-feedback" style={{
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}>
+                                    {errors.jobPosition}
+                                </div>
                             </div>
                         )}
 
                         {/* ТЕЛЕФОН */}
                         <div className="mb-3">
-                            <label className="form-label">Телефон</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                Телефон
+                            </label>
                             <input
                                 type="tel"
                                 name="phone"
@@ -389,13 +487,26 @@ function Signup({ onClose, databaseName }) {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="+380..."
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             />
-                            <div className="invalid-feedback">{errors.phone}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.phone}
+                            </div>
                         </div>
 
                         {/* ДАТА НАРОДЖЕННЯ */}
                         <div className="mb-3">
-                            <label className="form-label">Дата народження</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                Дата народження
+                            </label>
                             <input
                                 type="date"
                                 name="dateOfBirth"
@@ -403,13 +514,26 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             />
-                            <div className="invalid-feedback">{errors.dateOfBirth}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.dateOfBirth}
+                            </div>
                         </div>
 
                         {/* ПОШТА */}
                         <div className="mb-3">
-                            <label className="form-label">Електронна пошта</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                Електронна пошта
+                            </label>
                             <input
                                 type="email"
                                 name="email"
@@ -417,13 +541,26 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             />
-                            <div className="invalid-feedback">{errors.email}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.email}
+                            </div>
                         </div>
 
                         {/* ПАРОЛЬ */}
                         <div className="mb-3">
-                            <label className="form-label">Пароль</label>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '15px' : '17px',
+                                fontWeight: '500'
+                            }}>
+                                Пароль
+                            </label>
                             <input
                                 type="password"
                                 name="password"
@@ -431,28 +568,32 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.password}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
+                                style={{
+                                    fontSize: isMobile ? '14px' : '16px',
+                                    padding: isMobile ? '10px' : '12px'
+                                }}
                             />
-                            <div className="invalid-feedback">{errors.password}</div>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '12px' : '14px'
+                            }}>
+                                {errors.password}
+                            </div>
                         </div>
 
-                        {/* КНОПКА */}
+                        {/* КНОПКА РЕЄСТРАЦІЇ */}
                         <button
                             type="submit"
                             className="btn w-100"
                             style={{
                                 backgroundColor: "rgba(105, 180, 185, 1)",
                                 color: "white",
-                                transition: "background-color 0.3s ease",
                                 border: "none",
-                                padding: "10px",
-                                borderRadius: "5px",
-                                cursor: "pointer"
-                            }}
-                            onMouseOver={(e) => {
-                                e.target.style.backgroundColor = "rgba(61, 117, 121, 1)";
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.backgroundColor = "rgba(105, 180, 185, 1)";
+                                padding: isMobile ? '12px' : '14px',
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                fontSize: isMobile ? '16px' : '18px',
+                                fontWeight: '600',
+                                transition: 'all 0.3s ease'
                             }}
                         >
                             Зареєструвати
@@ -462,6 +603,8 @@ function Signup({ onClose, databaseName }) {
             </div>
         );
     }
+
+    return null;
 }
 
 export default Signup;
