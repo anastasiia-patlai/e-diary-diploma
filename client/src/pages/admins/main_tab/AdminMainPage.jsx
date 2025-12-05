@@ -17,7 +17,7 @@ const AdminMainPage = () => {
     const [databaseName, setDatabaseName] = useState("");
 
     useEffect(() => {
-        // Отримуємо databaseName з localStorage
+        // ОТРИМУЄМО databaseName З localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         setDatabaseName(userInfo.databaseName || '');
     }, []);
@@ -32,7 +32,7 @@ const AdminMainPage = () => {
                 return;
             }
 
-            // Отримуємо всіх користувачів і фільтруємо на фронтенді
+            // ОТРИМУЄМО ВСІХ КОРИСТУВАЧІВ І ФІЛЬТРУЄМО НА ФРОНТЕНДІ
             const [usersRes, groupsRes] = await Promise.all([
                 axios.get(`http://localhost:3001/api/users?databaseName=${encodeURIComponent(databaseName)}`),
                 axios.get(`http://localhost:3001/api/groups?databaseName=${encodeURIComponent(databaseName)}`)
@@ -40,12 +40,12 @@ const AdminMainPage = () => {
 
             const users = usersRes.data;
 
-            // Фільтруємо користувачів за ролями
+            // ФІЛЬТРУЄМО КОРИСТУВАЧІВ ЗА РОЛЯМИ
             const students = users.filter(user => user.role === 'student');
             const teachers = users.filter(user => user.role === 'teacher');
             const parents = users.filter(user => user.role === 'parent');
 
-            // Отримуємо унікальні предмети з позицій викладачів
+            // ОТРИМУЄМО УНІКАЛЬНІ ПРЕДМЕТИ З ПОСАД ВИКЛАДАЧІВ
             const teacherPositions = teachers.flatMap(teacher => {
                 if (teacher.positions && teacher.positions.length > 0) {
                     return teacher.positions;
@@ -138,24 +138,6 @@ const AdminMainPage = () => {
                 }}>
                     Панель управління
                 </h1>
-                {/* <p style={{
-                    margin: 0,
-                    color: '#6b7280',
-                    fontSize: '16px'
-                }}>
-                    Загальна статистика системи електронного щоденника
-                </p>
-                <div style={{
-                    marginTop: '10px',
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    backgroundColor: '#f3f4f6',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    display: 'inline-block'
-                }}>
-                    База даних: {databaseName}
-                </div> */}
             </div>
 
             <div style={{
@@ -274,8 +256,15 @@ const AdminMainPage = () => {
                                 fontSize: '12px',
                                 backgroundColor: '#f3f4f6',
                                 padding: '4px 8px',
-                                borderRadius: '4px'
-                            }}>
+                                borderRadius: '4px',
+                                maxWidth: '200px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block'
+                            }}
+                                title={databaseName}
+                            >
                                 {databaseName}
                             </span>
                         </div>
