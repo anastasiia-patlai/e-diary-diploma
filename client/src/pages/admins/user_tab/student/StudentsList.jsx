@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { FaUser, FaEnvelope, FaSortAlphaDown, FaSortAlphaUp } from 'react-icons/fa';
+import { FaSortAlphaDown, FaSortAlphaUp } from 'react-icons/fa';
 import StudentItem from './StudentItem';
 
-const StudentsList = ({ group, onEditStudent, onDeleteStudent }) => {
-    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' або 'desc'
+const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass }) => {
+    const [sortOrder, setSortOrder] = useState('asc');
 
-    // Функція для сортування студентів за алфавітом
     const getSortedStudents = (students) => {
         if (!students) return [];
 
@@ -25,12 +24,17 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent }) => {
         return (
             <div style={{
                 backgroundColor: 'white',
-                padding: '20px',
+                padding: isMobile ? '24px 16px' : '20px',
                 borderTop: '1px solid #e5e7eb',
                 textAlign: 'center',
                 color: '#6b7280'
             }}>
-                <p>У цій групі ще немає студентів</p>
+                <p style={{
+                    fontSize: isMobile ? '15px' : '14px',
+                    margin: 0
+                }}>
+                    {isClass ? 'У цьому класі ще немає учнів' : 'У цій групі ще немає студентів'}
+                </p>
             </div>
         );
     }
@@ -38,52 +42,68 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent }) => {
     return (
         <div style={{
             backgroundColor: 'white',
-            padding: '20px',
+            padding: isMobile ? '16px 12px' : '20px',
             borderTop: '1px solid #e5e7eb'
         }}>
             {/* Заголовок з кнопкою сортування */}
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '15px',
-                paddingBottom: '10px',
-                borderBottom: '1px solid #e5e7eb'
+                alignItems: isMobile ? 'stretch' : 'center',
+                marginBottom: isMobile ? '16px' : '15px',
+                paddingBottom: isMobile ? '12px' : '10px',
+                borderBottom: '1px solid #e5e7eb',
+                gap: isMobile ? '12px' : '0'
             }}>
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Студентів: {sortedStudents.length}
+                <div style={{
+                    fontSize: isMobile ? '14px' : '12px',
+                    color: '#6b7280',
+                    textAlign: isMobile ? 'center' : 'left'
+                }}>
+                    {isClass ? 'Учнів' : 'Студентів'}: {sortedStudents.length}
                 </div>
                 <button
                     onClick={toggleSortOrder}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '8px',
-                        padding: '6px 12px',
+                        padding: isMobile ? '12px' : '6px 12px',
                         backgroundColor: 'rgba(105, 180, 185, 0.1)',
                         color: 'rgba(105, 180, 185, 1)',
                         border: '1px solid rgba(105, 180, 185, 0.3)',
-                        borderRadius: '6px',
+                        borderRadius: isMobile ? '8px' : '6px',
                         cursor: 'pointer',
-                        fontSize: '12px',
-                        transition: 'all 0.2s'
+                        fontSize: isMobile ? '14px' : '12px',
+                        transition: isMobile ? 'none' : 'all 0.2s',
+                        width: isMobile ? '100%' : 'auto',
+                        minHeight: isMobile ? '44px' : 'auto'
                     }}
                     onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
+                        }
                     }}
                     onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                        }
                     }}
                 >
-                    {sortOrder === 'asc' ? <FaSortAlphaDown /> : <FaSortAlphaUp />}
-                    {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
+                    {sortOrder === 'asc' ?
+                        <FaSortAlphaDown size={isMobile ? 16 : 14} /> :
+                        <FaSortAlphaUp size={isMobile ? 16 : 14} />
+                    }
+                    {sortOrder === 'asc' ? 'Сортувати А-Я' : 'Сортувати Я-А'}
                 </button>
             </div>
 
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px'
+                gap: isMobile ? '16px' : '12px'
             }}>
                 {sortedStudents.map(student => (
                     <StudentItem
@@ -91,6 +111,8 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent }) => {
                         student={student}
                         onEdit={onEditStudent}
                         onDelete={onDeleteStudent}
+                        isMobile={isMobile}
+                        isClass={isClass}
                     />
                 ))}
             </div>

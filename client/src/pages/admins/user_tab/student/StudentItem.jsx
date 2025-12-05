@@ -1,58 +1,98 @@
 import React from 'react';
 import { FaUser, FaEnvelope } from 'react-icons/fa';
 
-const StudentItem = ({ student, onEdit, onDelete }) => {
+const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
     return (
         <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '15px',
-            padding: '12px 15px',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: isMobile ? '12px' : '15px',
+            padding: isMobile ? '16px' : '12px 15px',
             backgroundColor: '#f9fafb',
-            borderRadius: '6px',
-            border: '1px solid #e5e7eb'
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            marginBottom: isMobile ? '12px' : '0'
         }}>
             <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(105, 180, 185, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: 'rgba(105, 180, 185, 1)'
+                gap: isMobile ? '12px' : '15px',
+                flex: 1
             }}>
-                <FaUser />
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                    {student.fullName}
-                </div>
                 <div style={{
+                    width: isMobile ? '48px' : '40px',
+                    height: isMobile ? '48px' : '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(105, 180, 185, 0.2)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    color: '#6b7280'
+                    justifyContent: 'center',
+                    color: 'rgba(105, 180, 185, 1)',
+                    flexShrink: 0
                 }}>
-                    <FaEnvelope size={12} />
-                    {student.email}
+                    <FaUser size={isMobile ? 18 : 16} />
+                </div>
+                <div style={{
+                    flex: 1,
+                    overflow: 'hidden'
+                }}>
+                    <div style={{
+                        fontWeight: '600',
+                        marginBottom: isMobile ? '6px' : '4px',
+                        fontSize: isMobile ? '16px' : '14px',
+                        wordBreak: 'break-word',
+                        color: '#1f2937'
+                    }}>
+                        {student.fullName}
+                    </div>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: isMobile ? '13px' : '12px',
+                        color: '#6b7280'
+                    }}>
+                        <FaEnvelope size={isMobile ? 12 : 10} />
+                        <span style={{
+                            wordBreak: 'break-word'
+                        }}>
+                            {student.email}
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{
+                display: 'flex',
+                gap: '10px',
+                width: isMobile ? '100%' : 'auto'
+            }}>
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onEdit(student);
                     }}
                     style={{
-                        padding: '6px 12px',
+                        padding: isMobile ? '12px' : '6px 12px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: isMobile ? '8px' : '4px',
                         cursor: 'pointer',
-                        fontSize: '12px'
+                        fontSize: isMobile ? '14px' : '12px',
+                        flex: 1,
+                        minHeight: isMobile ? '44px' : 'auto',
+                        transition: isMobile ? 'none' : 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        }
                     }}
                 >
                     Редагувати
@@ -63,13 +103,26 @@ const StudentItem = ({ student, onEdit, onDelete }) => {
                         onDelete(student);
                     }}
                     style={{
-                        padding: '6px 12px',
+                        padding: isMobile ? '12px' : '6px 12px',
                         backgroundColor: '#ef4444',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: isMobile ? '8px' : '4px',
                         cursor: 'pointer',
-                        fontSize: '12px'
+                        fontSize: isMobile ? '14px' : '12px',
+                        flex: 1,
+                        minHeight: isMobile ? '44px' : 'auto',
+                        transition: isMobile ? 'none' : 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = '#dc2626';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = '#ef4444';
+                        }
                     }}
                 >
                     Видалити

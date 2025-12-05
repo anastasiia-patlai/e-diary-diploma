@@ -5,7 +5,7 @@ import GroupsList from "./GroupsList";
 import EditStudentPopup from "./EditStudentPopup";
 import DeleteStudentPopup from "./DeleteStudentPopup";
 
-const AdminShowStudent = () => {
+const AdminShowStudent = ({ isMobile }) => {
     const [groups, setGroups] = useState([]);
     const [expandedGroups, setExpandedGroups] = useState({});
     const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ const AdminShowStudent = () => {
     const [databaseName, setDatabaseName] = useState("");
 
     useEffect(() => {
-        // Отримуємо databaseName з localStorage
+        // ОТРИМУЄМО databaseName З localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         setDatabaseName(userInfo.databaseName || '');
     }, []);
@@ -105,8 +105,8 @@ const AdminShowStudent = () => {
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-                <p>Завантаження груп...</p>
+            <div style={{ textAlign: 'center', padding: isMobile ? '40px 20px' : '20px' }}>
+                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>Завантаження груп...</p>
             </div>
         );
     }
@@ -115,14 +115,25 @@ const AdminShowStudent = () => {
         return (
             <div style={{
                 textAlign: 'center',
-                padding: '20px',
+                padding: isMobile ? '30px 16px' : '20px',
                 color: 'red',
                 backgroundColor: '#fef2f2',
                 borderRadius: '8px',
-                margin: '20px'
+                margin: isMobile ? '10px 0' : '20px'
             }}>
-                <p style={{ margin: '0 0 10px 0' }}>{error}</p>
-                <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
+                <p style={{
+                    margin: '0 0 10px 0',
+                    fontSize: isMobile ? '15px' : '14px'
+                }}>{error}</p>
+                <div style={{
+                    marginBottom: '10px',
+                    fontSize: isMobile ? '12px' : '14px',
+                    color: '#6b7280',
+                    wordBreak: 'break-all',
+                    padding: '8px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '6px'
+                }}>
                     DatabaseName: {databaseName || 'Не встановлено'}
                 </div>
                 <button
@@ -130,11 +141,13 @@ const AdminShowStudent = () => {
                     style={{
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
-                        padding: '8px 16px',
+                        padding: isMobile ? '12px 20px' : '8px 16px',
                         borderRadius: '6px',
                         border: 'none',
                         cursor: 'pointer',
-                        fontSize: '14px'
+                        fontSize: isMobile ? '14px' : '12px',
+                        minWidth: isMobile ? '140px' : 'auto',
+                        minHeight: isMobile ? '44px' : 'auto'
                     }}
                 >
                     Спробувати знову
@@ -145,20 +158,10 @@ const AdminShowStudent = () => {
 
     return (
         <div>
-            {/* <div style={{
-                marginBottom: '20px',
-                padding: '10px',
-                backgroundColor: '#f3f4f6',
-                borderRadius: '6px',
-                fontSize: '14px',
-                color: '#6b7280'
-            }}>
-                База даних: {databaseName}
-            </div> */}
-
             <StudentHeader
                 onToggleAll={toggleAllGroups}
                 allExpanded={Object.values(expandedGroups).every(Boolean)}
+                isMobile={isMobile}
             />
 
             <GroupsList
@@ -167,6 +170,7 @@ const AdminShowStudent = () => {
                 onToggleGroup={toggleGroup}
                 onEditStudent={handleEditStudent}
                 onDeleteStudent={handleDeleteStudent}
+                isMobile={isMobile}
             />
 
             {/* ПОПАП РЕДАГУВАННЯ */}
@@ -179,6 +183,7 @@ const AdminShowStudent = () => {
                         setSelectedStudent(null);
                     }}
                     onUpdate={handleUpdateStudent}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -192,6 +197,7 @@ const AdminShowStudent = () => {
                         setSelectedStudent(null);
                     }}
                     onDelete={handleDeleteConfirm}
+                    isMobile={isMobile}
                 />
             )}
         </div>

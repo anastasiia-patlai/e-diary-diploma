@@ -120,7 +120,6 @@ const AdminUserSystem = () => {
 
     return (
         <div>
-            {/* Заголовок з інформацією про базу даних */}
             <div style={{
                 display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',
@@ -141,7 +140,7 @@ const AdminUserSystem = () => {
                     }}>
                         Управління користувачами
                     </h3>
-                    {databaseName && !isMobile && (
+                    {/* {databaseName && !isMobile && (
                         <small style={{
                             color: '#666',
                             fontSize: isMobile ? '10px' : '12px',
@@ -149,7 +148,7 @@ const AdminUserSystem = () => {
                         }}>
                             База даних: {databaseName}
                         </small>
-                    )}
+                    )} */}
                 </div>
 
                 <button
@@ -187,10 +186,10 @@ const AdminUserSystem = () => {
                 </button>
             </div>
 
-            {/* Мобільне меню табів */}
+            {/* МОБІЛЬНЕ МЕНЮ ТАБІВ */}
             {isMobile ? (
                 <div style={{ marginBottom: '20px' }}>
-                    {/* Кнопка вибору табу на мобільних */}
+                    {/* КНОПКА ВИБОРУ ТАБУ НА МОБІЛЬНИХ ПРИСТРОЯХ */}
                     <button
                         onClick={toggleMobileMenu}
                         style={{
@@ -216,7 +215,7 @@ const AdminUserSystem = () => {
                         {showMobileMenu ? <FaTimes size={18} /> : <FaBars size={18} />}
                     </button>
 
-                    {/* Випадаючий список табів */}
+                    {/* ВИСПАДАЮЧИЙ СПИСОК ТАБІВ */}
                     {showMobileMenu && (
                         <div style={{
                             backgroundColor: 'white',
@@ -253,25 +252,9 @@ const AdminUserSystem = () => {
                             ))}
                         </div>
                     )}
-
-                    {/* Показувати назву бази даних під меню на мобільних */}
-                    {databaseName && isMobile && (
-                        <div style={{
-                            textAlign: 'center',
-                            marginTop: '12px',
-                            padding: '8px',
-                            backgroundColor: '#f9fafb',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            color: '#666',
-                            wordBreak: 'break-all'
-                        }}>
-                            База даних: {databaseName}
-                        </div>
-                    )}
                 </div>
             ) : (
-                /* Десктопне меню табів */
+                /* ДЕСКОТНЕ МЕНЮ ТАЮІВ */
                 <div style={{
                     display: 'flex',
                     borderBottom: '1px solid #e5e7eb',
