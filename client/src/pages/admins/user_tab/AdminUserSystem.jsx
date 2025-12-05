@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { FaUserGraduate, FaChalkboardTeacher, FaUserPlus, FaUserFriends, FaUserShield } from "react-icons/fa";
+import {
+    FaUserGraduate,
+    FaChalkboardTeacher,
+    FaUserPlus,
+    FaUserFriends,
+    FaUserShield,
+    FaBars,
+    FaTimes
+} from "react-icons/fa";
 import Signup from "../Signup";
 import AdminShowStudent from "./student/AdminShowStudent";
 import AdminShowTeacher from "./teacher/AdminShowTeacher";
@@ -10,6 +18,22 @@ const AdminUserSystem = () => {
     const [activeTab, setActiveTab] = useState("students");
     const [showPopup, setShowPopup] = useState(false);
     const [databaseName, setDatabaseName] = useState("");
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+    // Відслідковуємо зміну розміру вікна
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth <= 768;
+            setIsMobile(mobile);
+            if (!mobile) {
+                setShowMobileMenu(false); // Закриваємо меню на десктопі
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Покращене отримання databaseName
     useEffect(() => {
@@ -71,203 +95,255 @@ const AdminUserSystem = () => {
         setShowPopup(false);
     };
 
+    const handleTabClick = (tabName) => {
+        setActiveTab(tabName);
+        if (isMobile) {
+            setShowMobileMenu(false); // Закриваємо меню на мобільних
+        }
+    };
+
+    const toggleMobileMenu = () => {
+        setShowMobileMenu(!showMobileMenu);
+    };
+
+    const tabButtons = [
+        { id: "students", label: "Учні/Студенти", icon: <FaUserGraduate /> },
+        { id: "teachers", label: "Викладачі", icon: <FaChalkboardTeacher /> },
+        { id: "parents", label: "Батьки", icon: <FaUserFriends /> },
+        { id: "admins", label: "Адміністратори", icon: <FaUserShield /> }
+    ];
+
+    const getActiveTabLabel = () => {
+        const activeTabObj = tabButtons.find(tab => tab.id === activeTab);
+        return activeTabObj ? activeTabObj.label : "Учні/Студенти";
+    };
+
     return (
         <div>
             {/* Заголовок з інформацією про базу даних */}
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                alignItems: isMobile ? 'stretch' : 'center',
+                marginBottom: '20px',
+                gap: isMobile ? '16px' : '0'
             }}>
-                <div>
-                    <h3 style={{ margin: 0 }}>Управління користувачами</h3>
-                    {databaseName && (
-                        <small style={{ color: '#666', fontSize: '12px' }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isMobile ? 'center' : 'flex-start'
+                }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: '28px',
+                        textAlign: isMobile ? 'center' : 'left'
+                    }}>
+                        Управління користувачами
+                    </h3>
+                    {databaseName && !isMobile && (
+                        <small style={{
+                            color: '#666',
+                            fontSize: isMobile ? '10px' : '12px',
+                            marginTop: isMobile ? '4px' : '0'
+                        }}>
                             База даних: {databaseName}
                         </small>
                     )}
                 </div>
+
                 <button
                     onClick={handleAddUser}
                     style={{
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
-                        padding: '10px 20px',
+                        padding: isMobile ? '12px 16px' : '10px 20px',
                         borderRadius: '8px',
                         border: 'none',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '14px',
+                        justifyContent: 'center',
+                        gap: isMobile ? '6px' : '8px',
+                        fontSize: isMobile ? '13px' : '14px',
                         fontWeight: '600',
-                        transition: 'background-color 0.3s ease'
+                        transition: isMobile ? 'none' : 'background-color 0.3s ease',
+                        width: isMobile ? '100%' : 'auto',
+                        minHeight: isMobile ? '44px' : 'auto'
                     }}
                     onMouseOver={(e) => {
-                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.8)';
+                        if (!isMobile) {
+                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.8)';
+                        }
                     }}
                     onMouseOut={(e) => {
-                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        if (!isMobile) {
+                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        }
                     }}
                 >
-                    <FaUserPlus />
+                    <FaUserPlus size={isMobile ? 14 : 16} />
                     Додати користувача
                 </button>
             </div>
 
-            {/* Решта коду залишається без змін */}
-            <div style={{
-                display: 'flex',
-                borderBottom: '1px solid #e5e7eb',
-                marginBottom: '20px'
-            }}>
-                <button
-                    onClick={() => setActiveTab("students")}
-                    style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        backgroundColor: activeTab === "students" ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                        color: activeTab === "students" ? 'white' : '#374151',
-                        borderBottom: activeTab === "students" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        if (activeTab !== "students") {
-                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                            e.target.style.color = 'white';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (activeTab !== "students") {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#374151';
-                        }
-                    }}
-                >
-                    <FaUserGraduate />
-                    Учні/Студенти
-                </button>
+            {/* Мобільне меню табів */}
+            {isMobile ? (
+                <div style={{ marginBottom: '20px' }}>
+                    {/* Кнопка вибору табу на мобільних */}
+                    <button
+                        onClick={toggleMobileMenu}
+                        style={{
+                            width: '100%',
+                            padding: '14px 16px',
+                            backgroundColor: 'rgba(105, 180, 185, 1)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            marginBottom: '8px'
+                        }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {tabButtons.find(tab => tab.id === activeTab)?.icon}
+                            {getActiveTabLabel()}
+                        </span>
+                        {showMobileMenu ? <FaTimes size={18} /> : <FaBars size={18} />}
+                    </button>
 
-                {/* Решта кнопок залишається без змін */}
-                <button
-                    onClick={() => setActiveTab("teachers")}
-                    style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        backgroundColor: activeTab === "teachers" ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                        color: activeTab === "teachers" ? 'white' : '#374151',
-                        borderBottom: activeTab === "teachers" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        if (activeTab !== "teachers") {
-                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                            e.target.style.color = 'white';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (activeTab !== "teachers") {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#374151';
-                        }
-                    }}
-                >
-                    <FaChalkboardTeacher />
-                    Викладачі
-                </button>
-                <button
-                    onClick={() => setActiveTab("parents")}
-                    style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        backgroundColor: activeTab === "parents" ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                        color: activeTab === "parents" ? 'white' : '#374151',
-                        borderBottom: activeTab === "parents" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        if (activeTab !== "parents") {
-                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                            e.target.style.color = 'white';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (activeTab !== "parents") {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#374151';
-                        }
-                    }}
-                >
-                    <FaUserFriends />
-                    Батьки
-                </button>
-                <button
-                    onClick={() => setActiveTab("admins")}
-                    style={{
-                        padding: '10px 20px',
-                        border: 'none',
-                        backgroundColor: activeTab === "admins" ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                        color: activeTab === "admins" ? 'white' : '#374151',
-                        borderBottom: activeTab === "admins" ? '2px solid rgba(105, 180, 185, 1)' : 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        if (activeTab !== "admins") {
-                            e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
-                            e.target.style.color = 'white';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if (activeTab !== "admins") {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#374151';
-                        }
-                    }}
-                >
-                    <FaUserShield />
-                    Адміністратори
-                </button>
-            </div>
+                    {/* Випадаючий список табів */}
+                    {showMobileMenu && (
+                        <div style={{
+                            backgroundColor: 'white',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            overflow: 'hidden',
+                            marginBottom: '16px'
+                        }}>
+                            {tabButtons.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabClick(tab.id)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 16px',
+                                        border: 'none',
+                                        backgroundColor: activeTab === tab.id ? 'rgba(105, 180, 185, 0.1)' : 'transparent',
+                                        color: activeTab === tab.id ? 'rgba(105, 180, 185, 1)' : '#374151',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        fontSize: '15px',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '16px' }}>
+                                        {tab.icon}
+                                    </span>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Показувати назву бази даних під меню на мобільних */}
+                    {databaseName && isMobile && (
+                        <div style={{
+                            textAlign: 'center',
+                            marginTop: '12px',
+                            padding: '8px',
+                            backgroundColor: '#f9fafb',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            color: '#666',
+                            wordBreak: 'break-all'
+                        }}>
+                            База даних: {databaseName}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* Десктопне меню табів */
+                <div style={{
+                    display: 'flex',
+                    borderBottom: '1px solid #e5e7eb',
+                    marginBottom: '20px',
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch'
+                }}>
+                    {tabButtons.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => handleTabClick(tab.id)}
+                            style={{
+                                padding: '10px 20px',
+                                border: 'none',
+                                backgroundColor: activeTab === tab.id ? 'rgba(105, 180, 185, 1)' : 'transparent',
+                                color: activeTab === tab.id ? 'white' : '#374151',
+                                borderBottom: activeTab === tab.id ? '2px solid rgba(105, 180, 185, 1)' : 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                transition: 'all 0.3s ease',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                            }}
+                            onMouseOver={(e) => {
+                                if (!isMobile && activeTab !== tab.id) {
+                                    e.target.style.backgroundColor = 'rgba(61, 117, 121, 1)';
+                                    e.target.style.color = 'white';
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!isMobile && activeTab !== tab.id) {
+                                    e.target.style.backgroundColor = 'transparent';
+                                    e.target.style.color = '#374151';
+                                }
+                            }}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* КОНТЕНТ */}
-            {activeTab === "students" && (
-                <AdminShowStudent />
-            )}
+            <div style={{
+                padding: isMobile ? '0 8px' : '0'
+            }}>
+                {activeTab === "students" && (
+                    <AdminShowStudent isMobile={isMobile} />
+                )}
 
-            {activeTab === "teachers" && (
-                <AdminShowTeacher />
-            )}
+                {activeTab === "teachers" && (
+                    <AdminShowTeacher isMobile={isMobile} />
+                )}
 
-            {activeTab === "parents" && (
-                <AdminShowParent />
-            )}
+                {activeTab === "parents" && (
+                    <AdminShowParent isMobile={isMobile} />
+                )}
 
-            {activeTab === "admins" && (
-                <AdminShowAdmin />
-            )}
+                {activeTab === "admins" && (
+                    <AdminShowAdmin isMobile={isMobile} />
+                )}
+            </div>
 
             {/* Попап для реєстрації */}
             {showPopup && (
                 <Signup
                     onClose={handleClosePopup}
                     databaseName={databaseName}
+                    isMobile={isMobile}
                 />
             )}
         </div>
