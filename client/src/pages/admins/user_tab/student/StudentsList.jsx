@@ -45,7 +45,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
             padding: isMobile ? '16px 12px' : '20px',
             borderTop: '1px solid #e5e7eb'
         }}>
-            {/* Заголовок з кнопкою сортування */}
+            {/* КНОПКА СОРТУВАННЯ */}
             <div style={{
                 display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',

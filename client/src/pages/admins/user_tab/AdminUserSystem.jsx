@@ -21,13 +21,12 @@ const AdminUserSystem = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-    // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
             const mobile = window.innerWidth <= 768;
             setIsMobile(mobile);
             if (!mobile) {
-                setShowMobileMenu(false); // Закриваємо меню на десктопі
+                setShowMobileMenu(false);
             }
         };
 
@@ -35,13 +34,12 @@ const AdminUserSystem = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Покращене отримання databaseName
     useEffect(() => {
         const getDatabaseName = () => {
-            // Спроба 1: Окреме поле databaseName
+            // СПРОБА 1: ОКРЕМЕ ПОЛЕ databaseName
             let dbName = localStorage.getItem('databaseName');
 
-            // Спроба 2: З об'єкта user
+            // СПРОБА 2: З ОБ'ЄКТАа user
             if (!dbName) {
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
@@ -54,7 +52,7 @@ const AdminUserSystem = () => {
                 }
             }
 
-            // Спроба 3: З об'єкта userInfo
+            // СПРОБА 3: З ОБ'ЄКТА userInfo
             if (!dbName) {
                 const userInfoStr = localStorage.getItem('userInfo');
                 if (userInfoStr) {
@@ -69,9 +67,9 @@ const AdminUserSystem = () => {
 
             if (dbName) {
                 setDatabaseName(dbName);
-                console.log("✅ Database name отримано:", dbName);
+                console.log("Database name отримано:", dbName);
             } else {
-                console.warn("❌ Database name не знайдено в localStorage!");
+                console.warn("Database name не знайдено в localStorage!");
                 console.log("Доступні дані в localStorage:");
                 console.log("- databaseName:", localStorage.getItem('databaseName'));
                 console.log("- user:", localStorage.getItem('user'));
@@ -98,7 +96,7 @@ const AdminUserSystem = () => {
     const handleTabClick = (tabName) => {
         setActiveTab(tabName);
         if (isMobile) {
-            setShowMobileMenu(false); // Закриваємо меню на мобільних
+            setShowMobileMenu(false);
         }
     };
 
@@ -321,7 +319,7 @@ const AdminUserSystem = () => {
                 )}
             </div>
 
-            {/* Попап для реєстрації */}
+            {/* ПОПАП ДЛЯ РЕЄСТРАЦІЇ */}
             {showPopup && (
                 <Signup
                     onClose={handleClosePopup}
