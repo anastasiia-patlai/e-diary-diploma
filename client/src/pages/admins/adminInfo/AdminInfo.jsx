@@ -17,11 +17,14 @@ const AdminInfo = ({ userData }) => {
     const [currentUserData, setCurrentUserData] = useState(userData);
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
 
     // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 768);
+            const width = window.innerWidth;
+            setIsMobile(width <= 768);
+            setIsTablet(width <= 1024);
         };
 
         window.addEventListener('resize', handleResize);
@@ -135,17 +138,20 @@ const AdminInfo = ({ userData }) => {
         );
     }
 
+    // Визначаємо кількість стовпчиків
+    const useColumns = !isMobile && !isTablet; // Тільки для великих екранів
+
     return (
         <>
             <div style={{
-                maxWidth: isMobile ? '100%' : '800px',
+                maxWidth: useColumns ? '1000px' : (isMobile ? '100%' : '800px'),
                 margin: '0 auto',
                 padding: isMobile ? '0 16px' : '0'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '24px'
                 }}>
                     <button
                         onClick={() => setShowEditPopup(true)}
@@ -193,6 +199,7 @@ const AdminInfo = ({ userData }) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                     border: '1px solid #e5e7eb'
                 }}>
+                    {/* ЗАГОЛОВОК З ФОТО */}
                     <div style={{
                         display: 'flex',
                         flexDirection: isMobile ? 'column' : 'row',
@@ -210,19 +217,22 @@ const AdminInfo = ({ userData }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             marginRight: isMobile ? '0' : '20px',
-                            marginBottom: isMobile ? '16px' : '0'
+                            marginBottom: isMobile ? '16px' : '0',
+                            flexShrink: 0
                         }}>
                             <FaUser size={isMobile ? 24 : 32} color="rgba(105, 180, 185, 1)" />
                         </div>
                         <div style={{
                             textAlign: isMobile ? 'center' : 'left',
-                            width: isMobile ? '100%' : 'auto'
+                            width: isMobile ? '100%' : 'auto',
+                            flex: 1
                         }}>
                             <h1 style={{
                                 margin: 0,
                                 fontSize: isMobile ? '22px' : '28px',
                                 fontWeight: '700',
-                                color: '#1f2937'
+                                color: '#1f2937',
+                                lineHeight: '1.2'
                             }}>
                                 {displayData.fullName}
                             </h1>
@@ -231,7 +241,8 @@ const AdminInfo = ({ userData }) => {
                                 alignItems: 'center',
                                 gap: '8px',
                                 marginTop: '8px',
-                                justifyContent: isMobile ? 'center' : 'flex-start'
+                                justifyContent: isMobile ? 'center' : 'flex-start',
+                                flexWrap: 'wrap'
                             }}>
                                 <FaUserCog color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                 <span style={{
@@ -245,13 +256,17 @@ const AdminInfo = ({ userData }) => {
                         </div>
                     </div>
 
+                    {/* ОСНОВНИЙ КОНТЕНТ - АДАПТИВНА СТРУКТУРА */}
                     <div style={{
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: isMobile ? '24px' : '32px'
+                        flexDirection: useColumns ? 'row' : 'column',
+                        gap: useColumns ? '40px' : (isMobile ? '24px' : '32px')
                     }}>
-                        {/* ПРОФІЛЬНА ІНФОРМАЦІЯ (перша на мобільних) */}
-                        <div>
+                        {/* ПРОФІЛЬНА ІНФОРМАЦІЯ - ЛІВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
+                        <div style={{
+                            flex: useColumns ? 1 : 'none',
+                            width: useColumns ? '50%' : '100%'
+                        }}>
                             <h3 style={{
                                 margin: '0 0 16px 0',
                                 fontSize: isMobile ? '16px' : '18px',
@@ -265,10 +280,16 @@ const AdminInfo = ({ userData }) => {
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
+                                {/* Посада */}
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: isMobile ? '10px' : '12px'
+                                    alignItems: 'flex-start',
+                                    gap: isMobile ? '10px' : '12px',
+                                    padding: isMobile ? '12px' : '16px',
+                                    backgroundColor: 'rgba(249, 250, 251, 0.5)',
+                                    borderRadius: '8px',
+                                    border: '1px solid #f3f4f6',
+                                    transition: 'all 0.2s ease'
                                 }}>
                                     <div style={{
                                         width: isMobile ? '36px' : '40px',
@@ -282,11 +303,11 @@ const AdminInfo = ({ userData }) => {
                                     }}>
                                         <FaBriefcase color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
-                                    <div style={{ flex: 1 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
                                             fontSize: isMobile ? '13px' : '14px',
                                             color: '#6b7280',
-                                            marginBottom: '2px'
+                                            marginBottom: '4px'
                                         }}>
                                             Посада
                                         </div>
@@ -300,21 +321,29 @@ const AdminInfo = ({ userData }) => {
                                         </div>
                                         {displayData.positions && displayData.positions.length > 1 && (
                                             <div style={{
-                                                fontSize: isMobile ? '12px' : '14px',
+                                                fontSize: isMobile ? '12px' : '13px',
                                                 color: '#6b7280',
-                                                marginTop: '4px',
+                                                marginTop: '6px',
+                                                paddingTop: '6px',
+                                                borderTop: '1px solid #e5e7eb',
                                                 wordBreak: 'break-word'
                                             }}>
-                                                Додатково: {displayData.positions.slice(1).join(', ')}
+                                                <strong>Додаткові предмети:</strong> {displayData.positions.slice(1).join(', ')}
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
+                                {/* Дата народження */}
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: isMobile ? '10px' : '12px'
+                                    alignItems: 'flex-start',
+                                    gap: isMobile ? '10px' : '12px',
+                                    padding: isMobile ? '12px' : '16px',
+                                    backgroundColor: 'rgba(249, 250, 251, 0.5)',
+                                    borderRadius: '8px',
+                                    border: '1px solid #f3f4f6',
+                                    transition: 'all 0.2s ease'
                                 }}>
                                     <div style={{
                                         width: isMobile ? '36px' : '40px',
@@ -332,7 +361,7 @@ const AdminInfo = ({ userData }) => {
                                         <div style={{
                                             fontSize: isMobile ? '13px' : '14px',
                                             color: '#6b7280',
-                                            marginBottom: '2px'
+                                            marginBottom: '4px'
                                         }}>
                                             Дата народження
                                         </div>
@@ -346,10 +375,16 @@ const AdminInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
+                                {/* Дата реєстрації */}
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: isMobile ? '10px' : '12px'
+                                    alignItems: 'flex-start',
+                                    gap: isMobile ? '10px' : '12px',
+                                    padding: isMobile ? '12px' : '16px',
+                                    backgroundColor: 'rgba(249, 250, 251, 0.5)',
+                                    borderRadius: '8px',
+                                    border: '1px solid #f3f4f6',
+                                    transition: 'all 0.2s ease'
                                 }}>
                                     <div style={{
                                         width: isMobile ? '36px' : '40px',
@@ -367,7 +402,7 @@ const AdminInfo = ({ userData }) => {
                                         <div style={{
                                             fontSize: isMobile ? '13px' : '14px',
                                             color: '#6b7280',
-                                            marginBottom: '2px'
+                                            marginBottom: '4px'
                                         }}>
                                             Дата реєстрації
                                         </div>
@@ -383,8 +418,11 @@ const AdminInfo = ({ userData }) => {
                             </div>
                         </div>
 
-                        {/* КОНТАКТНА ІНФОРМАЦІЯ (друга на мобільних) */}
-                        <div>
+                        {/* КОНТАКТНА ІНФОРМАЦІЯ - ПРАВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
+                        <div style={{
+                            flex: useColumns ? 1 : 'none',
+                            width: useColumns ? '50%' : '100%'
+                        }}>
                             <h3 style={{
                                 margin: '0 0 16px 0',
                                 fontSize: isMobile ? '16px' : '18px',
@@ -398,10 +436,16 @@ const AdminInfo = ({ userData }) => {
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
+                                {/* Email */}
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: isMobile ? '10px' : '12px'
+                                    alignItems: 'flex-start',
+                                    gap: isMobile ? '10px' : '12px',
+                                    padding: isMobile ? '12px' : '16px',
+                                    backgroundColor: 'rgba(249, 250, 251, 0.5)',
+                                    borderRadius: '8px',
+                                    border: '1px solid #f3f4f6',
+                                    transition: 'all 0.2s ease'
                                 }}>
                                     <div style={{
                                         width: isMobile ? '36px' : '40px',
@@ -415,11 +459,11 @@ const AdminInfo = ({ userData }) => {
                                     }}>
                                         <FaEnvelope color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
-                                    <div style={{ flex: 1 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
                                             fontSize: isMobile ? '13px' : '14px',
                                             color: '#6b7280',
-                                            marginBottom: '2px'
+                                            marginBottom: '4px'
                                         }}>
                                             Електронна пошта
                                         </div>
@@ -434,10 +478,16 @@ const AdminInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
+                                {/* Телефон */}
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: isMobile ? '10px' : '12px'
+                                    alignItems: 'flex-start',
+                                    gap: isMobile ? '10px' : '12px',
+                                    padding: isMobile ? '12px' : '16px',
+                                    backgroundColor: 'rgba(249, 250, 251, 0.5)',
+                                    borderRadius: '8px',
+                                    border: '1px solid #f3f4f6',
+                                    transition: 'all 0.2s ease'
                                 }}>
                                     <div style={{
                                         width: isMobile ? '36px' : '40px',
@@ -451,11 +501,11 @@ const AdminInfo = ({ userData }) => {
                                     }}>
                                         <FaPhone color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
-                                    <div style={{ flex: 1 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
                                             fontSize: isMobile ? '13px' : '14px',
                                             color: '#6b7280',
-                                            marginBottom: '2px'
+                                            marginBottom: '4px'
                                         }}>
                                             Телефон
                                         </div>
@@ -469,44 +519,43 @@ const AdminInfo = ({ userData }) => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* ДОДАТКОВИЙ ІНФОРМАЦІЙНИЙ БЛОК */}
+                                <div style={{
+                                    marginTop: useColumns ? '0' : '20px',
+                                    padding: isMobile ? '16px 12px' : '20px',
+                                    backgroundColor: 'rgba(105, 180, 185, 0.05)',
+                                    border: '1px solid rgba(105, 180, 185, 0.2)',
+                                    borderRadius: '8px'
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        marginBottom: isMobile ? '6px' : '8px'
+                                    }}>
+                                        <FaUserCog color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                        <span style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            fontWeight: '600',
+                                        }}>
+                                            Статус: {getRoleDisplayName(displayData.role)}
+                                        </span>
+                                    </div>
+                                    <p style={{
+                                        margin: 0,
+                                        fontSize: isMobile ? '13px' : '14px',
+                                        color: '#6b7280',
+                                        lineHeight: '1.5'
+                                    }}>
+                                        {displayData.role === 'admin'
+                                            ? 'Ви маєте повний доступ до всіх функцій системи управління навчальним закладом'
+                                            : 'Обмежений доступ до функцій системи'
+                                        }
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div style={{
-                        marginTop: isMobile ? '24px' : '32px',
-                        padding: isMobile ? '16px 12px' : '20px',
-                        backgroundColor: 'rgba(105, 180, 185, 0.05)',
-                        border: '1px solid rgba(105, 180, 185, 0.2)',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            marginBottom: isMobile ? '6px' : '8px'
-                        }}>
-                            <FaUserCog color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
-                            <span style={{
-                                fontSize: isMobile ? '15px' : '16px',
-                                fontWeight: '600',
-                            }}>
-                                Статус: {getRoleDisplayName(displayData.role)}
-                            </span>
-                        </div>
-                        <p style={{
-                            margin: 0,
-                            fontSize: isMobile ? '13px' : '14px',
-                            color: '#6b7280',
-                            lineHeight: '1.5'
-                        }}>
-                            {displayData.role === 'admin'
-                                ? 'Ви маєте повний доступ до всіх функцій системи управління навчальним закладом'
-                                : 'Обмежений доступ до функцій системи'
-                            }
-                        </p>
                     </div>
                 </div>
             </div>
