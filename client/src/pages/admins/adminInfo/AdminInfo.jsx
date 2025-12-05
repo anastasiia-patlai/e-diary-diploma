@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     FaUser,
     FaEnvelope,
@@ -10,12 +10,23 @@ import {
     FaEdit
 } from "react-icons/fa";
 import EditAdminPopup from "./EditAdminPopup";
-import Notification from "./Notification"; // Додайте цей імпорт
+import Notification from "./Notification";
 
 const AdminInfo = ({ userData }) => {
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [currentUserData, setCurrentUserData] = useState(userData);
-    const [notification, setNotification] = useState({ show: false, message: "", type: "success" }); // Додайте стан для сповіщення
+    const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    // Відслідковуємо зміну розміру вікна
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Не вказано';
@@ -94,7 +105,6 @@ const AdminInfo = ({ userData }) => {
 
                 console.log('Дані успішно оновлено в стані:', result.user);
 
-                // Замість alert використовуємо кастомне сповіщення
                 showNotification('Дані успішно оновлено!');
                 setShowEditPopup(false);
             } else {
@@ -103,7 +113,6 @@ const AdminInfo = ({ userData }) => {
 
         } catch (error) {
             console.error('Помилка збереження:', error);
-            // Показуємо сповіщення про помилку
             showNotification(`Помилка при збереженні даних: ${error.message}`, "error");
             throw error;
         }
@@ -118,7 +127,7 @@ const AdminInfo = ({ userData }) => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 height: '400px',
-                fontSize: '18px',
+                fontSize: isMobile ? '16px' : '18px',
                 color: '#666'
             }}>
                 Завантаження інформації...
@@ -128,7 +137,11 @@ const AdminInfo = ({ userData }) => {
 
     return (
         <>
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{
+                maxWidth: isMobile ? '100%' : '800px',
+                margin: '0 auto',
+                padding: isMobile ? '0 16px' : '0'
+            }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
@@ -139,30 +152,36 @@ const AdminInfo = ({ userData }) => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 24px',
+                            gap: isMobile ? '6px' : '8px',
+                            padding: isMobile ? '10px 16px' : '12px 24px',
                             backgroundColor: 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '8px',
                             cursor: 'pointer',
-                            fontSize: '16px',
+                            fontSize: isMobile ? '14px' : '16px',
                             fontWeight: '500',
                             transition: 'all 0.3s ease',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                            width: isMobile ? '100%' : 'auto',
+                            maxWidth: isMobile ? '190px' : 'none'
                         }}
                         onMouseOver={(e) => {
-                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                            e.target.style.transform = 'translateY(-2px)';
-                            e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                            if (!isMobile) {
+                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                            }
                         }}
                         onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                            e.target.style.transform = 'translateY(0)';
-                            e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                            if (!isMobile) {
+                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                            }
                         }}
                     >
-                        <FaEdit size={16} />
+                        <FaEdit size={isMobile ? 14 : 16} />
                         Редагувати профіль
                     </button>
                 </div>
@@ -170,33 +189,38 @@ const AdminInfo = ({ userData }) => {
                 <div style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
-                    padding: '32px',
+                    padding: isMobile ? '20px 16px' : '32px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                     border: '1px solid #e5e7eb'
                 }}>
                     <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        marginBottom: '32px',
-                        paddingBottom: '24px',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        alignItems: isMobile ? 'center' : 'flex-start',
+                        marginBottom: isMobile ? '24px' : '32px',
+                        paddingBottom: isMobile ? '20px' : '24px',
                         borderBottom: '2px solid #f3f4f6'
                     }}>
                         <div style={{
-                            width: '80px',
-                            height: '80px',
+                            width: isMobile ? '70px' : '80px',
+                            height: isMobile ? '70px' : '80px',
                             borderRadius: '50%',
                             backgroundColor: 'rgba(105, 180, 185, 0.1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            marginRight: '20px'
+                            marginRight: isMobile ? '0' : '20px',
+                            marginBottom: isMobile ? '16px' : '0'
                         }}>
-                            <FaUser size={32} color="rgba(105, 180, 185, 1)" />
+                            <FaUser size={isMobile ? 24 : 32} color="rgba(105, 180, 185, 1)" />
                         </div>
-                        <div>
+                        <div style={{
+                            textAlign: isMobile ? 'center' : 'left',
+                            width: isMobile ? '100%' : 'auto'
+                        }}>
                             <h1 style={{
                                 margin: 0,
-                                fontSize: '28px',
+                                fontSize: isMobile ? '22px' : '28px',
                                 fontWeight: '700',
                                 color: '#1f2937'
                             }}>
@@ -206,11 +230,12 @@ const AdminInfo = ({ userData }) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                marginTop: '8px'
+                                marginTop: '8px',
+                                justifyContent: isMobile ? 'center' : 'flex-start'
                             }}>
-                                <FaUserCog color="rgba(105, 180, 185, 1)" />
+                                <FaUserCog color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                 <span style={{
-                                    fontSize: '16px',
+                                    fontSize: isMobile ? '14px' : '16px',
                                     color: '#6b7280',
                                     fontWeight: '500'
                                 }}>
@@ -221,191 +246,226 @@ const AdminInfo = ({ userData }) => {
                     </div>
 
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '24px'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: isMobile ? '24px' : '32px'
                     }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div>
-                                <h3 style={{
-                                    margin: '0 0 16px 0',
-                                    fontSize: '18px',
-                                    fontWeight: '600',
-                                    color: '#374151'
+                        {/* ПРОФІЛЬНА ІНФОРМАЦІЯ (перша на мобільних) */}
+                        <div>
+                            <h3 style={{
+                                margin: '0 0 16px 0',
+                                fontSize: isMobile ? '16px' : '18px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                Профільна інформація
+                            </h3>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: isMobile ? '14px' : '16px'
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '10px' : '12px'
                                 }}>
-                                    Контактна інформація
-                                </h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                        width: isMobile ? '36px' : '40px',
+                                        height: isMobile ? '36px' : '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <FaBriefcase color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
                                         <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            color: '#6b7280',
+                                            marginBottom: '2px'
                                         }}>
-                                            <FaEnvelope color="rgba(105, 180, 185, 1)" />
+                                            Посада
                                         </div>
-                                        <div>
+                                        <div style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            color: '#1f2937',
+                                            fontWeight: '500',
+                                            wordBreak: 'break-word'
+                                        }}>
+                                            {displayData.position || 'Не вказано'}
+                                        </div>
+                                        {displayData.positions && displayData.positions.length > 1 && (
                                             <div style={{
-                                                fontSize: '14px',
+                                                fontSize: isMobile ? '12px' : '14px',
                                                 color: '#6b7280',
-                                                marginBottom: '2px'
+                                                marginTop: '4px',
+                                                wordBreak: 'break-word'
                                             }}>
-                                                Електронна пошта
+                                                Додатково: {displayData.positions.slice(1).join(', ')}
                                             </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#1f2937',
-                                                fontWeight: '500'
-                                            }}>
-                                                {displayData.email || 'Не вказано'}
-                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '10px' : '12px'
+                                }}>
+                                    <div style={{
+                                        width: isMobile ? '36px' : '40px',
+                                        height: isMobile ? '36px' : '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <FaBirthdayCake color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            color: '#6b7280',
+                                            marginBottom: '2px'
+                                        }}>
+                                            Дата народження
+                                        </div>
+                                        <div style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            color: '#1f2937',
+                                            fontWeight: '500'
+                                        }}>
+                                            {formatDate(displayData.birthDate)}
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '10px' : '12px'
+                                }}>
+                                    <div style={{
+                                        width: isMobile ? '36px' : '40px',
+                                        height: isMobile ? '36px' : '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <FaCalendar color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
                                         <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            color: '#6b7280',
+                                            marginBottom: '2px'
                                         }}>
-                                            <FaPhone color="rgba(105, 180, 185, 1)" />
+                                            Дата реєстрації
                                         </div>
-                                        <div>
-                                            <div style={{
-                                                fontSize: '14px',
-                                                color: '#6b7280',
-                                                marginBottom: '2px'
-                                            }}>
-                                                Телефон
-                                            </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#1f2937',
-                                                fontWeight: '500'
-                                            }}>
-                                                {displayData.phone || 'Не вказано'}
-                                            </div>
+                                        <div style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            color: '#1f2937',
+                                            fontWeight: '500'
+                                        }}>
+                                            {formatDate(displayData.createdAt)}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div>
-                                <h3 style={{
-                                    margin: '0 0 16px 0',
-                                    fontSize: '18px',
-                                    fontWeight: '600',
-                                    color: '#374151'
+                        {/* КОНТАКТНА ІНФОРМАЦІЯ (друга на мобільних) */}
+                        <div>
+                            <h3 style={{
+                                margin: '0 0 16px 0',
+                                fontSize: isMobile ? '16px' : '18px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                Контактна інформація
+                            </h3>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: isMobile ? '14px' : '16px'
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '10px' : '12px'
                                 }}>
-                                    Профільна інформація
-                                </h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{
+                                        width: isMobile ? '36px' : '40px',
+                                        height: isMobile ? '36px' : '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <FaEnvelope color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
                                         <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            color: '#6b7280',
+                                            marginBottom: '2px'
                                         }}>
-                                            <FaBriefcase color="rgba(105, 180, 185, 1)" />
+                                            Електронна пошта
                                         </div>
-                                        <div>
-                                            <div style={{
-                                                fontSize: '14px',
-                                                color: '#6b7280',
-                                                marginBottom: '2px'
-                                            }}>
-                                                Посада
-                                            </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#1f2937',
-                                                fontWeight: '500'
-                                            }}>
-                                                {displayData.position || 'Не вказано'}
-                                            </div>
-                                            {displayData.positions && displayData.positions.length > 1 && (
-                                                <div style={{
-                                                    fontSize: '14px',
-                                                    color: '#6b7280',
-                                                    marginTop: '4px'
-                                                }}>
-                                                    Додатково: {displayData.positions.slice(1).join(', ')}
-                                                </div>
-                                            )}
+                                        <div style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            color: '#1f2937',
+                                            fontWeight: '500',
+                                            wordBreak: 'break-word'
+                                        }}>
+                                            {displayData.email || 'Не вказано'}
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            <FaBirthdayCake color="rgba(105, 180, 185, 1)" />
-                                        </div>
-                                        <div>
-                                            <div style={{
-                                                fontSize: '14px',
-                                                color: '#6b7280',
-                                                marginBottom: '2px'
-                                            }}>
-                                                Дата народження
-                                            </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#1f2937',
-                                                fontWeight: '500'
-                                            }}>
-                                                {formatDate(displayData.birthDate)}
-                                            </div>
-                                        </div>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: isMobile ? '10px' : '12px'
+                                }}>
+                                    <div style={{
+                                        width: isMobile ? '36px' : '40px',
+                                        height: isMobile ? '36px' : '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        <FaPhone color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
-
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ flex: 1 }}>
                                         <div style={{
-                                            width: '40px',
-                                            height: '40px',
-                                            borderRadius: '8px',
-                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
+                                            fontSize: isMobile ? '13px' : '14px',
+                                            color: '#6b7280',
+                                            marginBottom: '2px'
                                         }}>
-                                            <FaCalendar color="rgba(105, 180, 185, 1)" />
+                                            Телефон
                                         </div>
-                                        <div>
-                                            <div style={{
-                                                fontSize: '14px',
-                                                color: '#6b7280',
-                                                marginBottom: '2px'
-                                            }}>
-                                                Дата реєстрації
-                                            </div>
-                                            <div style={{
-                                                fontSize: '16px',
-                                                color: '#1f2937',
-                                                fontWeight: '500'
-                                            }}>
-                                                {formatDate(displayData.createdAt)}
-                                            </div>
+                                        <div style={{
+                                            fontSize: isMobile ? '15px' : '16px',
+                                            color: '#1f2937',
+                                            fontWeight: '500',
+                                            wordBreak: 'break-word'
+                                        }}>
+                                            {displayData.phone || 'Не вказано'}
                                         </div>
                                     </div>
                                 </div>
@@ -414,8 +474,8 @@ const AdminInfo = ({ userData }) => {
                     </div>
 
                     <div style={{
-                        marginTop: '32px',
-                        padding: '20px',
+                        marginTop: isMobile ? '24px' : '32px',
+                        padding: isMobile ? '16px 12px' : '20px',
                         backgroundColor: 'rgba(105, 180, 185, 0.05)',
                         border: '1px solid rgba(105, 180, 185, 0.2)',
                         borderRadius: '8px',
@@ -426,11 +486,11 @@ const AdminInfo = ({ userData }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            marginBottom: '8px'
+                            marginBottom: isMobile ? '6px' : '8px'
                         }}>
-                            <FaUserCog color="rgba(105, 180, 185, 1)" />
+                            <FaUserCog color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                             <span style={{
-                                fontSize: '16px',
+                                fontSize: isMobile ? '15px' : '16px',
                                 fontWeight: '600',
                             }}>
                                 Статус: {getRoleDisplayName(displayData.role)}
@@ -438,8 +498,9 @@ const AdminInfo = ({ userData }) => {
                         </div>
                         <p style={{
                             margin: 0,
-                            fontSize: '14px',
-                            color: '#6b7280'
+                            fontSize: isMobile ? '13px' : '14px',
+                            color: '#6b7280',
+                            lineHeight: '1.5'
                         }}>
                             {displayData.role === 'admin'
                                 ? 'Ви маєте повний доступ до всіх функцій системи управління навчальним закладом'
@@ -455,6 +516,7 @@ const AdminInfo = ({ userData }) => {
                     userData={displayData}
                     onSave={handleSave}
                     onClose={() => setShowEditPopup(false)}
+                    isMobile={isMobile}
                 />
             )}
 
