@@ -11,6 +11,7 @@ function Login() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [loading, setLoading] = useState(false);
 
+    // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 768);
@@ -78,9 +79,10 @@ function Login() {
                 // ЗБЕРІГАЄМО ВСІ ДАНІ В localStorage
                 localStorage.setItem("user", JSON.stringify(data.user));
 
-                // ДОДАЄМО ЗБЕРЕЖЕННЯ databaseName ОКРЕМО ДЛЯ НАДІЙНОСТІ
+                // ДОДАЄМО ЗБЕРЕЖЕННЯ databaseName окремо для надійності
                 localStorage.setItem("databaseName", data.user.databaseName);
 
+                // Зберігаємо повну інформацію для профілю
                 const userInfo = {
                     userId: data.user.id,
                     databaseName: data.user.databaseName,
@@ -94,16 +96,17 @@ function Login() {
                 };
 
                 localStorage.setItem("userInfo", JSON.stringify(userInfo));
-                console.log("Всі дані збережено в localStorage:", {
+                console.log("✅ Всі дані збережено в localStorage:", {
                     user: data.user,
                     databaseName: data.user.databaseName,
                     userInfo: userInfo
                 });
 
-                // ПЕРЕВІРЯЄМО, ЧИ ДАНІ ЗБЕРЕГЛИСЯ
+                // Перевіряємо, що дані збереглися
                 const savedDbName = localStorage.getItem('databaseName');
                 console.log("Перевірка збереження databaseName:", savedDbName);
 
+                // Перенаправлення на відповідну сторінку
                 window.location.href = `/${data.user.role}`;
             } else {
                 alert("Некоректна відповідь від сервера");
@@ -129,7 +132,6 @@ function Login() {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         minHeight: "100vh",
-        padding: isMobile ? '1rem' : '0 0 0 350px'
     };
 
     return (
@@ -140,8 +142,9 @@ function Login() {
             <div
                 className="card shadow-lg border-0"
                 style={{
-                    width: isMobile ? '90%' : '700px',
-                    minHeight: isMobile ? 'auto' : '300px',
+                    width: isMobile ? '90%' : '750px',
+                    maxWidth: isMobile ? '90%' : '750px',
+                    minHeight: isMobile ? 'auto' : '350px',
                     backgroundColor: "rgba(255, 255, 255, 0.95)",
                     borderRadius: "15px",
                     margin: isMobile ? '0.5rem' : '0'
@@ -149,50 +152,40 @@ function Login() {
             >
                 <div className="card-body p-4 p-md-5">
                     <div className="text-center mb-4">
-                        <div style={{
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                            borderRadius: '50%',
-                            width: isMobile ? '60px' : '70px',
-                            height: isMobile ? '60px' : '70px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 15px auto'
-                        }}>
-                            <FaSignInAlt
-                                style={{
-                                    color: 'white',
-                                    fontSize: isMobile ? '28px' : '32px'
-                                }}
-                            />
+                        <div className="d-flex justify-content-center align-items-center mb-3">
+                            <FaSignInAlt style={{
+                                fontSize: isMobile ? '2rem' : '2.5rem',
+                                color: 'rgba(105, 180, 185, 1)',
+                                marginRight: '15px'
+                            }} />
+                            <h2 style={{
+                                fontSize: isMobile ? '1.5rem' : '1.7rem',
+                                color: 'rgba(105, 180, 185, 1)',
+                                fontWeight: '700',
+                                margin: 0
+                            }}>
+                                Вхід в систему
+                            </h2>
                         </div>
 
-                        <h2 style={{
+                        <h3 style={{
+                            fontSize: isMobile ? '1.2rem' : '1.5rem',
+                            color: '#333',
+                            fontWeight: '500',
                             margin: 0,
-                            fontSize: isMobile ? '1.25rem' : '1.5rem',
-                            fontWeight: '600',
-                            color: 'rgba(105, 180, 185, 1)',
-                            marginBottom: '5px'
-                        }}>
-                            Вхід до системи
-                        </h2>
-
-                        <p style={{
-                            margin: '8px 0 0 0',
-                            fontSize: isMobile ? '1rem' : '1.125rem',
-                            color: 'rgba(85, 160, 165, 1)',
-                            fontWeight: '700',
-                            letterSpacing: '0.5px',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                            paddingTop: '5px'
                         }}>
                             Електронний щоденник
-                        </p>
+                        </h3>
                     </div>
 
                     <form onSubmit={handleSubmit} noValidate>
                         {/* ПОШТА */}
                         <div className="mb-3">
-                            <label className="form-label" style={{ fontSize: isMobile ? '14px' : '16px' }}>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '16px' : '20px',
+                                fontWeight: '500'
+                            }}>
                                 <FaEnvelope className="me-2" />
                                 Електронна пошта
                             </label>
@@ -204,17 +197,26 @@ function Login() {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Введіть email"
-                                style={{ fontSize: isMobile ? '14px' : '16px' }}
+                                style={{
+                                    fontSize: isMobile ? '16px' : '20px',
+                                    padding: isMobile ? '12px 15px' : '14px 18px',
+                                    height: isMobile ? '50px' : '55px'
+                                }}
                                 size={isMobile ? "lg" : undefined}
                             />
-                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '14px' : '16px'
+                            }}>
                                 {errors.email}
                             </div>
                         </div>
 
                         {/* ПАРОЛЬ */}
                         <div className="mb-4">
-                            <label className="form-label" style={{ fontSize: isMobile ? '14px' : '16px' }}>
+                            <label className="form-label" style={{
+                                fontSize: isMobile ? '16px' : '20px',
+                                fontWeight: '500'
+                            }}>
                                 <FaLock className="me-2" />
                                 Пароль
                             </label>
@@ -226,26 +228,33 @@ function Login() {
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Введіть пароль"
-                                style={{ fontSize: isMobile ? '14px' : '16px' }}
+                                style={{
+                                    fontSize: isMobile ? '16px' : '20px',
+                                    padding: isMobile ? '12px 15px' : '14px 18px',
+                                    height: isMobile ? '50px' : '55px'
+                                }}
                                 size={isMobile ? "lg" : undefined}
                             />
-                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                            <div className="invalid-feedback" style={{
+                                fontSize: isMobile ? '14px' : '16px'
+                            }}>
                                 {errors.password}
                             </div>
                         </div>
 
                         <button
                             type="submit"
-                            className="btn w-100"
+                            className="btn w-100 d-flex justify-content-center align-items-center"
                             disabled={loading}
                             style={{
                                 backgroundColor: "rgba(105, 180, 185, 1)",
                                 color: "white",
-                                height: isMobile ? '45px' : '50px',
-                                fontSize: isMobile ? '1rem' : '1.2rem',
+                                height: isMobile ? '50px' : '60px',
+                                fontSize: isMobile ? '1.1rem' : '1.4rem',
                                 border: 'none',
-                                borderRadius: '6px',
-                                fontWeight: '600'
+                                borderRadius: '8px',
+                                fontWeight: '600',
+                                padding: isMobile ? '10px' : '12px'
                             }}
                             onMouseOver={(e) => {
                                 if (!loading) e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
@@ -260,7 +269,10 @@ function Login() {
                                     Вхід...
                                 </>
                             ) : (
-                                'Увійти'
+                                <>
+                                    <FaSignInAlt className="me-2" />
+                                    Увійти
+                                </>
                             )}
                         </button>
                     </form>
