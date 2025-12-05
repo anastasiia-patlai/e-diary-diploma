@@ -73,16 +73,20 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         onEdit(student);
                     }}
                     style={{
-                        padding: isMobile ? '12px' : '6px 12px',
+                        padding: isMobile ? '8px' : '4px 8px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: isMobile ? '8px' : '4px',
+                        borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '14px' : '12px',
+                        fontSize: isMobile ? '13px' : '11px',
                         flex: 1,
-                        minHeight: isMobile ? '44px' : 'auto',
-                        transition: isMobile ? 'none' : 'background-color 0.2s'
+                        minHeight: '32px',
+                        height: '32px',
+                        transition: isMobile ? 'none' : 'background-color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
@@ -103,16 +107,20 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         onDelete(student);
                     }}
                     style={{
-                        padding: isMobile ? '12px' : '6px 12px',
+                        padding: isMobile ? '8px' : '4px 8px',
                         backgroundColor: '#ef4444',
                         color: 'white',
                         border: 'none',
-                        borderRadius: isMobile ? '8px' : '4px',
+                        borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '14px' : '12px',
+                        fontSize: isMobile ? '13px' : '11px',
                         flex: 1,
-                        minHeight: isMobile ? '44px' : 'auto',
-                        transition: isMobile ? 'none' : 'background-color 0.2s'
+                        minHeight: '32px',
+                        height: '32px',
+                        transition: isMobile ? 'none' : 'background-color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
