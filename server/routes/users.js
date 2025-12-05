@@ -97,8 +97,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName } = req.query;
-        const { fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
+        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -167,7 +166,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName } = req.query;
+        const { databaseName } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
