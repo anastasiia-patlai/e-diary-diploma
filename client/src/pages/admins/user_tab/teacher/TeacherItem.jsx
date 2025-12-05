@@ -1,67 +1,110 @@
 import React from 'react';
 import { FaUser, FaEnvelope } from "react-icons/fa";
 
-const TeacherItem = ({ teacher, onEdit, onDelete }) => {
+const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
     return (
         <div key={teacher._id} style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '15px',
-            padding: '12px 15px',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: isMobile ? '12px' : '15px',
+            padding: isMobile ? '16px' : '12px 15px',
             backgroundColor: '#f9fafb',
-            borderRadius: '6px',
-            border: '1px solid #e5e7eb'
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            marginBottom: isMobile ? '12px' : '0'
         }}>
             <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(105, 180, 185, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: 'rgba(105, 180, 185, 1)'
+                gap: isMobile ? '12px' : '15px',
+                flex: 1
             }}>
-                <FaUser />
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                    {teacher.fullName}
-                </div>
                 <div style={{
+                    width: isMobile ? '48px' : '40px',
+                    height: isMobile ? '48px' : '40px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(105, 180, 185, 0.2)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    marginBottom: '4px'
+                    justifyContent: 'center',
+                    color: 'rgba(105, 180, 185, 1)',
+                    flexShrink: 0
                 }}>
-                    <FaEnvelope size={12} />
-                    {teacher.email}
+                    <FaUser size={isMobile ? 18 : 16} />
                 </div>
-                {teacher.phone && (
+                <div style={{
+                    flex: 1,
+                    overflow: 'hidden'
+                }}>
                     <div style={{
-                        fontSize: '14px',
-                        color: '#6b7280'
+                        fontWeight: '600',
+                        marginBottom: isMobile ? '6px' : '4px',
+                        fontSize: isMobile ? '16px' : '14px',
+                        wordBreak: 'break-word'
                     }}>
-                        📞 {teacher.phone}
+                        {teacher.fullName}
                     </div>
-                )}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: isMobile ? '13px' : '12px',
+                        color: '#6b7280',
+                        marginBottom: isMobile ? '8px' : '4px'
+                    }}>
+                        <FaEnvelope size={isMobile ? 12 : 10} />
+                        <span style={{
+                            wordBreak: 'break-word'
+                        }}>
+                            {teacher.email}
+                        </span>
+                    </div>
+                    {teacher.phone && (
+                        <div style={{
+                            fontSize: isMobile ? '13px' : '12px',
+                            color: '#6b7280'
+                        }}>
+                            📞 {teacher.phone}
+                        </div>
+                    )}
+                </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{
+                display: 'flex',
+                gap: '10px',
+                width: isMobile ? '100%' : 'auto'
+            }}>
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onEdit(teacher);
                     }}
                     style={{
-                        padding: '6px 12px',
+                        padding: isMobile ? '8px' : '4px 8px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: '12px'
+                        fontSize: isMobile ? '13px' : '11px',
+                        flex: 1,
+                        minHeight: '32px',
+                        height: '32px',
+                        transition: isMobile ? 'none' : 'background-color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    onMouseOver={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                        }
                     }}
                 >
                     Редагувати
@@ -72,13 +115,30 @@ const TeacherItem = ({ teacher, onEdit, onDelete }) => {
                         onDelete(teacher);
                     }}
                     style={{
-                        padding: '6px 12px',
+                        padding: isMobile ? '8px' : '4px 8px',
                         backgroundColor: '#ef4444',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: '12px'
+                        fontSize: isMobile ? '13px' : '11px',
+                        flex: 1,
+                        minHeight: '32px',
+                        height: '32px',
+                        transition: isMobile ? 'none' : 'background-color 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    onMouseOver={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = '#dc2626';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if (!isMobile) {
+                            e.currentTarget.style.backgroundColor = '#ef4444';
+                        }
                     }}
                 >
                     Видалити

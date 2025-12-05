@@ -5,7 +5,7 @@ import SubjectsList from './SubjectsList';
 import EditTeacherPopup from "./EditTeacherPopup";
 import DeleteTeacherPopup from "./DeleteTeacherPopup";
 
-const AdminShowTeacher = () => {
+const AdminShowTeacher = ({ isMobile }) => {
     const [teachers, setTeachers] = useState([]);
     const [expandedSubjects, setExpandedSubjects] = useState({});
     const [loading, setLoading] = useState(true);
@@ -169,26 +169,42 @@ const AdminShowTeacher = () => {
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-                <p>Завантаження викладачів...</p>
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '40px 20px' : '20px'
+            }}>
+                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>Завантаження викладачів...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
-                <p>{error}</p>
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 16px' : '20px',
+                color: 'red',
+                backgroundColor: '#fef2f2',
+                borderRadius: '8px',
+                margin: isMobile ? '10px' : '20px'
+            }}>
+                <p style={{
+                    fontSize: isMobile ? '15px' : '14px',
+                    marginBottom: '12px'
+                }}>{error}</p>
                 <button
                     onClick={() => window.location.reload()}
                     style={{
                         marginTop: '10px',
-                        padding: '8px 16px',
+                        padding: isMobile ? '12px 20px' : '8px 16px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: isMobile ? '14px' : '12px',
+                        minHeight: isMobile ? '44px' : 'auto',
+                        minWidth: isMobile ? '140px' : 'auto'
                     }}
                 >
                     Спробувати знову
@@ -204,6 +220,7 @@ const AdminShowTeacher = () => {
             <TeacherHeader
                 onToggleAll={toggleAllSubjects}
                 allExpanded={Object.values(expandedSubjects).every(Boolean)}
+                isMobile={isMobile}
             />
 
             <SubjectsList
@@ -212,9 +229,9 @@ const AdminShowTeacher = () => {
                 onToggleSubject={toggleSubject}
                 onEditTeacher={handleEditTeacher}
                 onDeleteTeacher={handleDeleteTeacher}
+                isMobile={isMobile}
             />
 
-            {/* Попапи */}
             {showEditPopup && selectedTeacher && (
                 <EditTeacherPopup
                     teacher={selectedTeacher}
@@ -224,6 +241,7 @@ const AdminShowTeacher = () => {
                     }}
                     onUpdate={handleUpdateTeacher}
                     databaseName={databaseName}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -236,6 +254,7 @@ const AdminShowTeacher = () => {
                     }}
                     onDelete={handleDeleteConfirm}
                     databaseName={databaseName}
+                    isMobile={isMobile}
                 />
             )}
         </div>
