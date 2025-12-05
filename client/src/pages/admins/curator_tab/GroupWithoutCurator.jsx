@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaPlus } from 'react-icons/fa';
 
-const GroupWithoutCurator = ({ group, onAddCurator }) => {
+const GroupWithoutCurator = ({ group, onAddCurator, isMobile }) => {
     return (
         <div style={{
             border: '1px solid #e5e7eb',
@@ -10,14 +10,26 @@ const GroupWithoutCurator = ({ group, onAddCurator }) => {
             backgroundColor: 'white'
         }}>
             <div style={{
-                padding: '15px 20px',
+                padding: isMobile ? '12px 15px' : '15px 20px',
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: isMobile ? '12px' : '0'
             }}>
-                <div>
-                    <h4 style={{ margin: 0, fontSize: '18px' }}>{group.name}</h4>
-                    <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '5px' }}>
+                <div style={{ flex: 1 }}>
+                    <h4 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        lineHeight: '1.3'
+                    }}>
+                        {group.name}
+                    </h4>
+                    <div style={{
+                        fontSize: isMobile ? '13px' : '14px',
+                        color: '#6b7280',
+                        marginTop: '5px'
+                    }}>
                         Студентів: {group.students?.length || 0}
                     </div>
                 </div>
@@ -27,17 +39,20 @@ const GroupWithoutCurator = ({ group, onAddCurator }) => {
                     style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '8px',
-                        padding: '8px 16px',
+                        padding: isMobile ? '10px 16px' : '8px 16px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',
-                        fontSize: '14px'
+                        fontSize: isMobile ? '14px' : '14px',
+                        width: isMobile ? '100%' : 'auto',
+                        whiteSpace: 'nowrap'
                     }}
                 >
-                    <FaPlus />
+                    <FaPlus size={isMobile ? 14 : 16} />
                     Призначити куратора
                 </button>
             </div>

@@ -10,7 +10,8 @@ const CuratorPopup = ({
     teachers,
     groups,
     onSelectCurator,
-    onClose
+    onClose,
+    isMobile
 }) => {
     return (
         <div style={{
@@ -23,33 +24,47 @@ const CuratorPopup = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            padding: isMobile ? '10px' : '20px'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '500px',
-                maxHeight: '80vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? '85vh' : '80vh',
+                overflowY: 'auto',
+                marginTop: isMobile ? '10px' : '0'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '20px'
+                    alignItems: 'flex-start',
+                    marginBottom: isMobile ? '16px' : '20px'
                 }}>
-                    <h3 style={{ margin: 0 }}>Оберіть куратора для {selectedGroup?.name}</h3>
+                    <div style={{ flex: 1 }}>
+                        <h3 style={{
+                            margin: 0,
+                            fontSize: isMobile ? '18px' : '20px',
+                            lineHeight: '1.3'
+                        }}>
+                            Оберіть куратора для {selectedGroup?.name}
+                        </h3>
+                    </div>
                     <button
                         onClick={onClose}
                         style={{
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
-                            color: '#6b7280'
+                            fontSize: isMobile ? '18px' : '20px',
+                            color: '#6b7280',
+                            padding: '4px',
+                            marginLeft: '10px',
+                            flexShrink: 0
                         }}
+                        aria-label="Закрити"
                     >
                         <FaTimes />
                     </button>
@@ -58,16 +73,24 @@ const CuratorPopup = ({
                 <AvailableCuratorsList
                     availableTeachers={availableTeachers}
                     onSelectCurator={onSelectCurator}
+                    isMobile={isMobile}
                 />
 
                 <BusyCuratorsList
                     busyTeachers={busyTeachers}
                     groups={groups}
+                    isMobile={isMobile}
                 />
 
                 {teachers.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                        <p>Викладачі не знайдені</p>
+                    <div style={{
+                        textAlign: 'center',
+                        padding: isMobile ? '20px' : '30px',
+                        color: '#6b7280'
+                    }}>
+                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
+                            Викладачі не знайдені
+                        </p>
                     </div>
                 )}
             </div>

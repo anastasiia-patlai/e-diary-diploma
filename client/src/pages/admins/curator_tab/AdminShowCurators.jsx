@@ -16,6 +16,20 @@ const AdminShowCurators = () => {
     const [groupToDelete, setGroupToDelete] = useState(null);
     const [sortOrder, setSortOrder] = useState('asc');
     const [databaseName, setDatabaseName] = useState("");
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
+
+    // Відслідковуємо зміну розміру вікна
+    useEffect(() => {
+        const handleResize = () => {
+            const width = window.innerWidth;
+            setIsMobile(width <= 768);
+            setIsTablet(width <= 1024);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Отримання databaseName з localStorage
     useEffect(() => {
@@ -56,7 +70,6 @@ const AdminShowCurators = () => {
         const dbName = getCurrentDatabase();
         if (dbName) {
             setDatabaseName(dbName);
-            console.log("Database name встановлено:", dbName);
         } else {
             console.error("Database name не знайдено!");
             setError("Не вдалося визначити базу даних школи");
@@ -98,7 +111,6 @@ const AdminShowCurators = () => {
             setTeachers(response.data);
         } catch (err) {
             console.error("Помилка завантаження викладачів:", err);
-            // Не встановлюємо загальну помилку, щоб не блокувати відображення груп
         }
     };
 
@@ -238,7 +250,6 @@ const AdminShowCurators = () => {
         return teachers.filter(teacher => !busyTeacherIds.includes(teacher._id));
     };
 
-    // Функція для повторного завантаження даних
     const handleRetry = () => {
         if (databaseName) {
             setError("");
@@ -250,26 +261,48 @@ const AdminShowCurators = () => {
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-                <p>Завантаження груп з кураторами...</p>
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 15px' : '40px 20px',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <p style={{ fontSize: isMobile ? '16px' : '18px' }}>
+                    Завантаження груп з кураторами...
+                </p>
             </div>
         );
     }
 
     if (error && groups.length === 0) {
         return (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'red' }}>
-                <p>{error}</p>
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 15px' : '40px 20px',
+                color: 'red',
+                minHeight: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <p style={{ fontSize: isMobile ? '16px' : '18px', marginBottom: '15px' }}>
+                    {error}
+                </p>
                 <button
                     onClick={handleRetry}
                     style={{
-                        marginTop: '10px',
-                        padding: '8px 16px',
+                        padding: isMobile ? '10px 20px' : '12px 24px',
                         backgroundColor: 'rgba(105, 180, 185, 1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: isMobile ? '14px' : '16px',
+                        fontWeight: '500'
                     }}
                 >
                     Спробувати знову
@@ -285,40 +318,33 @@ const AdminShowCurators = () => {
     const availableTeachers = getAvailableTeachers();
 
     return (
-        <div>
-            {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
-                </div>
-            )}
-
+        <div style={{
+            padding: isMobile ? '10px' : '20px',
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            boxSizing: 'border-box'
+        }}>
             {error && (
                 <div style={{
                     backgroundColor: '#fee2e2',
                     color: '#dc2626',
-                    padding: '10px',
-                    borderRadius: '4px',
-                    marginBottom: '15px'
+                    padding: isMobile ? '12px' : '15px',
+                    borderRadius: '8px',
+                    marginBottom: isMobile ? '12px' : '15px',
+                    fontSize: isMobile ? '14px' : '16px'
                 }}>
                     {error}
                     <button
                         onClick={handleRetry}
                         style={{
                             marginLeft: '10px',
-                            padding: '2px 8px',
+                            padding: isMobile ? '4px 8px' : '6px 12px',
                             backgroundColor: '#dc2626',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '2px',
+                            borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '12px'
+                            fontSize: isMobile ? '12px' : '14px'
                         }}
                     >
                         Оновити
@@ -333,6 +359,8 @@ const AdminShowCurators = () => {
                 availableTeachers={availableTeachers}
                 sortOrder={sortOrder}
                 toggleSortOrder={toggleSortOrder}
+                isMobile={isMobile}
+                isTablet={isTablet}
             />
 
             <CuratorGroupsList
@@ -340,6 +368,7 @@ const AdminShowCurators = () => {
                 groupsWithoutCurators={groupsWithoutCurators}
                 onAddCurator={handleAddCurator}
                 onRemoveCurator={openDeleteConfirmation}
+                isMobile={isMobile}
             />
 
             {showCuratorPopup && (
@@ -354,6 +383,7 @@ const AdminShowCurators = () => {
                         setShowCuratorPopup(false);
                         setSelectedGroup(null);
                     }}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -362,6 +392,7 @@ const AdminShowCurators = () => {
                     group={groupToDelete}
                     onConfirm={handleRemoveCurator}
                     onClose={closeDeleteConfirmation}
+                    isMobile={isMobile}
                 />
             )}
         </div>
