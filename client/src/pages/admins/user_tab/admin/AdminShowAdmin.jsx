@@ -16,9 +16,15 @@ const AdminShowAdmin = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState('asc');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(20);
+    const [itemsPerPage] = useState(() => {
+        const width = window.innerWidth;
+        if (width < 768) return 5;
+        if (width < 1024) return 10;
+        return 15;
+    });
     const [databaseName, setDatabaseName] = useState("");
     const [currentAdminId, setCurrentAdminId] = useState("");
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const [editingAdmin, setEditingAdmin] = useState(null);
     const [deletingAdmin, setDeletingAdmin] = useState(null);
@@ -26,23 +32,23 @@ const AdminShowAdmin = () => {
     const API_URL = "http://localhost:3001/api/users";
 
     useEffect(() => {
-        const getCurrentAdminInfo = () => {
-            console.log("=== ДІАГНОСТИКА LOCALSTORAGE ===");
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
 
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const getCurrentAdminInfo = () => {
             let dbName = localStorage.getItem('databaseName');
             let currentUserId = "";
 
-            console.log("databaseName з localStorage:", dbName);
-
-            // Спроба отримати з об'єкта user
             const userStr = localStorage.getItem('user');
-            console.log("user з localStorage:", userStr);
-
             if (userStr) {
                 try {
                     const user = JSON.parse(userStr);
-                    console.log("Розпарсений user:", user);
-
                     if (!dbName && user.databaseName) {
                         dbName = user.databaseName;
                     }
@@ -56,15 +62,10 @@ const AdminShowAdmin = () => {
                 }
             }
 
-            // Спроба отримати з об'єкта userInfo
             const userInfoStr = localStorage.getItem('userInfo');
-            console.log("userInfo з localStorage:", userInfoStr);
-
             if (userInfoStr) {
                 try {
                     const userInfo = JSON.parse(userInfoStr);
-                    console.log("Розпарсений userInfo:", userInfo);
-
                     if (!dbName && userInfo.databaseName) {
                         dbName = userInfo.databaseName;
                     }
@@ -76,7 +77,6 @@ const AdminShowAdmin = () => {
                 }
             }
 
-            console.log("Результат:", { dbName, currentUserId });
             return { dbName, currentUserId };
         };
 
@@ -84,10 +84,7 @@ const AdminShowAdmin = () => {
 
         if (dbName) {
             setDatabaseName(dbName);
-            // Встановлюємо currentAdminId навіть якщо він порожній
             setCurrentAdminId(currentUserId || "");
-            console.log("Database name встановлено:", dbName);
-            console.log("Current admin ID встановлено:", currentUserId || "не знайдено");
         } else {
             console.error("Database name не знайдено!");
             setError("Не вдалося визначити базу даних школи");
@@ -95,7 +92,6 @@ const AdminShowAdmin = () => {
         }
     }, []);
 
-    // ОТРИМАТИ АДМІНІСТРАТОРІВ (БЕЗ ПОТОЧНОГО АДМІНІСТРАТОРА)
     const fetchAdmins = async () => {
         if (!databaseName) {
             console.error("Database name відсутній для запиту адміністраторів");
@@ -107,24 +103,17 @@ const AdminShowAdmin = () => {
         try {
             setLoading(true);
             setError("");
-            console.log("Виконуємо запит адміністраторів...");
 
             const response = await axios.get(`${API_URL}/by-role/admin`, {
                 params: { databaseName }
             });
 
-            console.log("Отримано адміністраторів:", response.data);
-
-            // Фільтруємо адміністраторів - виключаємо поточного, якщо currentAdminId не порожній
             const adminsWithoutCurrent = currentAdminId
                 ? response.data.filter(admin => admin._id !== currentAdminId)
                 : response.data;
 
             setAdmins(adminsWithoutCurrent);
             setFilteredAdmins(adminsWithoutCurrent);
-
-            console.log("Всього адміністраторів:", response.data.length);
-            console.log("Адміністраторів без поточного:", adminsWithoutCurrent.length);
 
         } catch (err) {
             console.error("Помилка завантаження адміністраторів:", err);
@@ -139,16 +128,13 @@ const AdminShowAdmin = () => {
     };
 
     useEffect(() => {
-        console.log("useEffect запущений, databaseName:", databaseName);
         if (databaseName) {
             fetchAdmins();
         } else {
-            // Якщо databaseName не встановлено, зупиняємо завантаження
             setLoading(false);
         }
     }, [databaseName, currentAdminId]);
 
-    // ПОШУК
     useEffect(() => {
         if (searchQuery.trim() === '') {
             setFilteredAdmins(admins);
@@ -165,7 +151,6 @@ const AdminShowAdmin = () => {
         setCurrentPage(1);
     }, [searchQuery, admins]);
 
-    // СОРТУВАННЯ
     const sortAdmins = (adminsArray, order) => {
         return [...adminsArray].sort((a, b) => {
             const nameA = a.fullName?.toLowerCase() || '';
@@ -180,7 +165,6 @@ const AdminShowAdmin = () => {
 
     const sortedAdmins = sortAdmins(filteredAdmins, sortOrder);
 
-    // ПАГІНАЦІЯ
     const totalItems = sortedAdmins.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -193,7 +177,6 @@ const AdminShowAdmin = () => {
     const goToPreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
     const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
-    // ОБРОБНИКИ ПОПАПІВ
     const handleEdit = (admin) => {
         setEditingAdmin(admin);
     };
@@ -222,52 +205,53 @@ const AdminShowAdmin = () => {
         setDeletingAdmin(null);
     };
 
+    const isMobile = windowWidth < 768;
+
     if (loading) {
-        return <LoadingState message="Завантаження адміністраторів..." />;
+        return <LoadingState message="Завантаження адміністраторів..." isMobile={isMobile} />;
     }
 
     if (error) {
-        return <ErrorState error={error} onRetry={fetchAdmins} />;
+        return <ErrorState error={error} onRetry={fetchAdmins} isMobile={isMobile} />;
     }
 
     return (
-        <div>
-            {/* {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    Показано адміністраторів: {filteredAdmins.length}
-                    {currentAdminId && ` (без поточного адміністратора)`}
-                    {!currentAdminId && ` (поточний адміністратор не визначений)`}
-                </div>
-            )} */}
-
+        <div style={{
+            padding: isMobile ? '10px' : '20px',
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            boxSizing: 'border-box'
+        }}>
             <AdminHeader
                 adminCount={filteredAdmins.length}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 sortOrder={sortOrder}
                 onSortToggle={handleSortToggle}
+                isMobile={isMobile}
             />
 
             {filteredAdmins.length === 0 && !loading ? (
                 <div style={{
                     textAlign: 'center',
-                    padding: '40px 20px',
+                    padding: isMobile ? '20px 15px' : '40px 20px',
                     color: '#6b7280',
                     backgroundColor: '#f9fafb',
                     borderRadius: '8px',
-                    border: '1px dashed #e5e7eb'
+                    border: '1px dashed #e5e7eb',
+                    marginTop: isMobile ? '10px' : '20px'
                 }}>
-                    <h4 style={{ marginBottom: '10px', color: '#374151' }}>
+                    <h4 style={{
+                        marginBottom: '10px',
+                        color: '#374151',
+                        fontSize: isMobile ? '16px' : '18px'
+                    }}>
                         Інших адміністраторів не знайдено
                     </h4>
-                    <p style={{ margin: 0 }}>
+                    <p style={{
+                        margin: 0,
+                        fontSize: isMobile ? '14px' : '16px'
+                    }}>
                         {searchQuery
                             ? `За запитом "${searchQuery}" інших адміністраторів не знайдено`
                             : 'У системі немає інших адміністраторів'
@@ -281,6 +265,7 @@ const AdminShowAdmin = () => {
                         searchQuery={searchQuery}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        isMobile={isMobile}
                     />
 
                     {totalPages > 1 && (
@@ -294,28 +279,30 @@ const AdminShowAdmin = () => {
                             onPreviousPage={goToPreviousPage}
                             onNextPage={goToNextPage}
                             onLastPage={goToLastPage}
+                            onPageChange={goToPage}
+                            isMobile={isMobile}
                         />
                     )}
                 </>
             )}
 
-            {/* ПОПАП РЕДАГУВАННЯ */}
             {editingAdmin && (
                 <EditAdminPopup
                     admin={editingAdmin}
                     databaseName={databaseName}
                     onClose={closeEditPopup}
                     onUpdate={handleUpdateAdmin}
+                    isMobile={isMobile}
                 />
             )}
 
-            {/* ПОПАП ВИДАЛЕННЯ */}
             {deletingAdmin && (
                 <DeleteAdminPopup
                     admin={deletingAdmin}
                     databaseName={databaseName}
                     onClose={closeDeletePopup}
                     onDelete={handleDeleteAdmin}
+                    isMobile={isMobile}
                 />
             )}
         </div>

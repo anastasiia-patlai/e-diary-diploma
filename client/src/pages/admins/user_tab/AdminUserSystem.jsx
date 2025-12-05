@@ -162,7 +162,7 @@ const AdminUserSystem = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: isMobile ? '6px' : '8px',
-                        fontSize: isMobile ? '13px' : '14px',
+                        fontSize: isMobile ? '16px' : '18px',
                         fontWeight: '600',
                         transition: isMobile ? 'none' : 'background-color 0.3s ease',
                         width: isMobile ? '100%' : 'auto',

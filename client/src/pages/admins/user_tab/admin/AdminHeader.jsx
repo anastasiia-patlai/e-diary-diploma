@@ -1,22 +1,34 @@
 import React from 'react';
 import { FaSort, FaSearch } from "react-icons/fa";
 
-const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSortToggle }) => {
+const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSortToggle, isMobile }) => {
     return (
         <div style={{
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-            flexWrap: 'wrap',
-            gap: '15px'
+            alignItems: isMobile ? 'flex-start' : 'center',
+            marginBottom: isMobile ? '15px' : '20px',
+            gap: isMobile ? '12px' : '15px',
+            width: '100%'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <h3 style={{ margin: 0 }}>Адміністратори ({adminCount})</h3>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: isMobile ? '10px' : '15px',
+                flexWrap: 'wrap'
+            }}>
+                <h3 style={{
+                    margin: 0,
+                    fontSize: isMobile ? '18px' : '20px',
+                    whiteSpace: 'nowrap'
+                }}>
+                    Адміністратори ({adminCount})
+                </h3>
                 <button
                     onClick={onSortToggle}
                     style={{
-                        padding: '8px 12px',
+                        padding: isMobile ? '6px 10px' : '8px 12px',
                         backgroundColor: 'transparent',
                         color: 'rgba(105, 180, 185, 1)',
                         border: '1px solid rgba(105, 180, 185, 1)',
@@ -24,28 +36,27 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.2s'
-                    }}
-                    onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
+                        gap: '5px',
+                        fontSize: isMobile ? '13px' : '14px',
+                        whiteSpace: 'nowrap'
                     }}
                 >
-                    <FaSort />
+                    <FaSort size={isMobile ? 12 : 14} />
                     {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
                 </button>
             </div>
 
-            <div style={{ position: 'relative', width: '300px' }}>
+            <div style={{
+                position: 'relative',
+                width: isMobile ? '100%' : '300px'
+            }}>
                 <FaSearch style={{
                     position: 'absolute',
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#6b7280'
+                    color: '#6b7280',
+                    fontSize: isMobile ? '14px' : '16px'
                 }} />
                 <input
                     type="text"
@@ -54,10 +65,11 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                     onChange={(e) => onSearchChange(e.target.value)}
                     style={{
                         width: '100%',
-                        padding: '10px 10px 10px 35px',
+                        padding: isMobile ? '8px 8px 8px 35px' : '10px 10px 10px 35px',
                         border: '1px solid #e5e7eb',
                         borderRadius: '6px',
-                        fontSize: '14px'
+                        fontSize: isMobile ? '14px' : '14px',
+                        boxSizing: 'border-box'
                     }}
                 />
             </div>
