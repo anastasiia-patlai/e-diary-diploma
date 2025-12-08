@@ -129,12 +129,12 @@ const AdminMainPage = () => {
 
     return (
         <div>
-            <div style={{ marginBottom: '30px' }}>
+            <div style={{ marginBottom: '15px', marginLeft: '5px' }}>
                 <h1 style={{
-                    margin: '0 0 10px 0',
+                    margin: '0 0 0 0',
                     color: '#1f2937',
-                    fontSize: '28px',
-                    fontWeight: '700'
+                    fontSize: '26px',
+                    fontWeight: '500'
                 }}>
                     Панель управління
                 </h1>

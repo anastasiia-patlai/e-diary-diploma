@@ -22,8 +22,9 @@ const CuratorStatistics = ({
                 gap: isMobile ? '12px' : '0'
             }}>
                 <h3 style={{
-                    margin: 0,
-                    fontSize: '28px',
+                    marginTop: '-10px',
+                    fontSize: '26px',
+                    fontWeight: '500',
                     lineHeight: '1.2'
                 }}>
                     Групи з кураторами

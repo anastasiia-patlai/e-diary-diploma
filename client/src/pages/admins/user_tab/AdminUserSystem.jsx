@@ -129,12 +129,13 @@ const AdminUserSystem = () => {
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: isMobile ? 'center' : 'flex-start'
+                    alignItems: 'flex-start'
                 }}>
                     <h3 style={{
                         margin: 0,
-                        fontSize: '28px',
-                        textAlign: isMobile ? 'center' : 'left'
+                        fontSize: '26px',
+                        fontWeight: '500',
+                        textAlign: 'left'
                     }}>
                         Управління користувачами
                     </h3>
