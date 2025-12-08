@@ -5,7 +5,7 @@ import SemesterForm from './SemesterForm';
 import SemesterList from './SemesterList';
 import ConfirmationModal from '../ConfirmationModal';
 
-const SemesterManager = () => {
+const SemesterManager = ({ isMobile = false }) => {
     const [semesters, setSemesters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -72,11 +72,9 @@ const SemesterManager = () => {
             const response = await studyCalendarService.getSemesters();
 
             const sortedSemesters = response.data.sort((a, b) => {
-                // СПОЧАТКУ сортуємо за роком у спадному порядку
                 const yearComparison = b.year.localeCompare(a.year);
                 if (yearComparison !== 0) return yearComparison;
 
-                // ПОТІМ СОРТУЄМО ЗА НАЗВОЮ СЕМЕСТРУ
                 const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
                 return order[a.name] - order[b.name];
             });
@@ -162,20 +160,17 @@ const SemesterManager = () => {
             setError('');
 
             if (semester.isActive) {
-                // ДЕАКТИВУЄМО СЕМЕСТР ТА ВСІ ЙОГО ЧВЕРТІ
                 const updatedSemester = await studyCalendarService.updateSemester(semester._id, {
                     ...semester,
                     isActive: false
                 });
 
-                // ДЕАКТИВУЄМО ЧВЕРТІ СЕМЕСТРУ
                 await studyCalendarService.syncSemesterQuarters(semester._id);
 
                 setSemesters(prev => prev.map(s =>
                     s._id === semester._id ? updatedSemester.data : s
                 ));
             } else {
-                // АКТИВУЄМО СЕМЕСТР І ДЕАКТИВУЄМО ІНШІ СЕМЕСТРИ ТА ЇХНІ ЧВЕРТІ
                 const updatePromises = semesters.map(s => {
                     if (s._id === semester._id) {
                         return studyCalendarService.updateSemester(s._id, { ...s, isActive: true });
@@ -186,10 +181,7 @@ const SemesterManager = () => {
                 });
 
                 await Promise.all(updatePromises);
-
-                // СИНХРОНІЗУЄМО ЧВЕРТІ АКТИВНОГО СЕМЕСТРУ
                 await studyCalendarService.syncSemesterQuarters(semester._id);
-
                 await loadSemesters();
             }
         } catch (err) {
@@ -201,48 +193,55 @@ const SemesterManager = () => {
     const activeSemester = semesters.find(s => s.isActive);
 
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '40px' }}>Завантаження семестрів...</div>;
+        return (
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 20px' : '40px',
+                color: '#6b7280'
+            }}>
+                Завантаження семестрів...
+            </div>
+        );
     }
 
     return (
         <div>
-            {/* {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
-                </div>
-            )} */}
-
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? '16px' : '20px',
+                gap: isMobile ? '12px' : '0'
             }}>
-                <div>
-                    <h3 style={{ margin: 0 }}>Управління семестрами</h3>
+                <div style={{ flex: 1 }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        fontWeight: '600'
+                    }}>
+                        Управління семестрами
+                    </h3>
                     {activeSemester && (
                         <p style={{
-                            margin: '4px 0 0 0',
+                            margin: isMobile ? '2px 0 0 0' : '4px 0 0 0',
                             color: 'rgba(105, 180, 185, 1)',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '12px' : '14px',
                             fontWeight: '500'
                         }}>
                             Активний семестр: {activeSemester.name} {activeSemester.year}
                         </p>
                     )}
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{
+                    display: 'flex',
+                    gap: isMobile ? '8px' : '10px',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
                     <button
                         onClick={loadSemesters}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: 'transparent',
                             color: 'rgba(105, 180, 185, 1)',
                             border: '1px solid rgba(105, 180, 185, 1)',
@@ -250,16 +249,18 @@ const SemesterManager = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaSync />
-                        Оновити
+                        <FaSync size={isMobile ? 12 : 14} />
+                        {isMobile ? 'Онов.' : 'Оновити'}
                     </button>
                     <button
                         onClick={handleCreate}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
@@ -267,10 +268,12 @@ const SemesterManager = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaPlus />
+                        <FaPlus size={isMobile ? 12 : 14} />
                         Додати семестр
                     </button>
                 </div>
@@ -280,22 +283,23 @@ const SemesterManager = () => {
                 <div style={{
                     backgroundColor: '#fee2e2',
                     color: '#dc2626',
-                    padding: '12px',
+                    padding: isMobile ? '10px 12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     {error}
                 </div>
             )}
 
-            {/* ІНФОРМАЦІЯ ПРО АКТИВНИЙ СЕМЕСТР*/}
             {!activeSemester && (
                 <div style={{
                     backgroundColor: '#fef3c7',
                     color: '#d97706',
-                    padding: '12px',
+                    padding: isMobile ? '10px 12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     Жоден семестр не активний. Будь ласка, активуйте семестр для використання в системі.
                 </div>
@@ -306,6 +310,7 @@ const SemesterManager = () => {
                 onEdit={handleEdit}
                 onDelete={handleDeleteClick}
                 onToggleActive={handleToggleActive}
+                isMobile={isMobile}
             />
 
             {showForm && (
@@ -313,6 +318,7 @@ const SemesterManager = () => {
                     semester={editingSemester}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -325,6 +331,7 @@ const SemesterManager = () => {
                     confirmText="Видалити"
                     cancelText="Скасувати"
                     type="danger"
+                    isMobile={isMobile}
                 />
             )}
         </div>

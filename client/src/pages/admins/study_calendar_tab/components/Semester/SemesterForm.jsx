@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSchool } from 'react-icons/fa';
 
-const SemesterForm = ({ semester, onClose, onSubmit }) => {
+const SemesterForm = ({ semester, onClose, onSubmit, isMobile = false }) => {
     const [formData, setFormData] = useState({
         name: '',
         year: '',
@@ -32,14 +32,14 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                 break;
             case 'year':
                 if (!value) error = 'Навчальний рік обов\'язковий';
-                else if (!/^\d{4}-\d{4}$/.test(value)) error = 'Формат року: XXXX-XXXX (напр. 2024-2025)';
+                else if (!/^\d{4}-\d{4}$/.test(value)) error = 'Формат року: XXXX-XXXX';
                 break;
             case 'startDate':
                 if (!value) error = 'Дата початку обов\'язкова';
                 else {
                     const startDate = new Date(value);
                     if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
-                        error = 'Дата початку не може бути давніше 5 років';
+                        error = 'Дата не може бути давніше 5 років';
                     }
                 }
                 break;
@@ -49,7 +49,7 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                     const startDate = new Date(formData.startDate);
                     const endDate = new Date(value);
                     if (endDate <= startDate) {
-                        error = 'Дата завершення має бути після дати початку';
+                        error = 'Дата має бути після дати початку';
                     }
                 }
                 break;
@@ -74,29 +74,50 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Валідуємо всі поля
         Object.keys(formData).forEach(field => {
             validateField(field, formData[field]);
             setTouched(prev => ({ ...prev, [field]: true }));
         });
 
-        // Перевіряємо, чи немає помилок
         if (Object.values(errors).every(err => !err)) {
             onSubmit(formData);
         }
     };
 
     const getInputClass = (name) => {
-        if (!touched[name]) return 'form-control';
-        if (errors[name]) return 'form-control is-invalid';
-        return 'form-control is-valid';
+        if (!touched[name]) return '';
+        if (errors[name]) return 'invalid';
+        return 'valid';
     };
 
     const getSelectClass = (name) => {
-        if (!touched[name]) return 'form-select';
-        if (errors[name]) return 'form-select is-invalid';
-        return 'form-select is-valid';
+        if (!touched[name]) return '';
+        if (errors[name]) return 'invalid';
+        return 'valid';
     };
+
+    const inputStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${getInputClass(name) === 'invalid' ? '#dc2626' : getInputClass(name) === 'valid' ? '#10b981' : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s'
+    });
+
+    const selectStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${getSelectClass(name) === 'invalid' ? '#dc2626' : getSelectClass(name) === 'valid' ? '#10b981' : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        backgroundColor: 'white',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s'
+    });
 
     return (
         <div style={{
@@ -109,24 +130,33 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '500px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                overflowY: 'auto',
+                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px'
                 }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: isMobile ? '16px' : '18px'
+                    }}>
                         <FaSchool />
                         {semester ? 'Редагувати семестр' : 'Додати семестр'}
                     </h3>
@@ -136,8 +166,9 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
-                            color: '#6b7280'
+                            fontSize: isMobile ? '18px' : '20px',
+                            color: '#6b7280',
+                            padding: '4px'
                         }}
                     >
                         <FaTimes />
@@ -146,8 +177,13 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
 
                 <form onSubmit={handleSubmit}>
                     {/* Назва семестру */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Назва семестру *
                         </label>
                         <select
@@ -155,20 +191,32 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             value={formData.name}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getSelectClass('name')}
+                            style={selectStyle('name')}
                         >
                             <option value="">Оберіть семестр</option>
                             <option value="I. Осінньо-зимовий">I. Осінньо-зимовий</option>
                             <option value="II. Зимово-весняний">II. Зимово-весняний</option>
                         </select>
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.name}
-                        </div>
+                        {errors.name && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.name}
+                            </div>
+                        )}
                     </div>
 
                     {/* Навчальний рік */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Навчальний рік *
                         </label>
                         <input
@@ -177,17 +225,29 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             value={formData.year}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('year')}
+                            style={inputStyle('year')}
                             placeholder="Напр. 2024-2025"
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.year}
-                        </div>
+                        {errors.year && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.year}
+                            </div>
+                        )}
                     </div>
 
                     {/* Дата початку */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата початку *
                         </label>
                         <input
@@ -196,16 +256,28 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             value={formData.startDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('startDate')}
+                            style={inputStyle('startDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.startDate}
-                        </div>
+                        {errors.startDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.startDate}
+                            </div>
+                        )}
                     </div>
 
                     {/* Дата завершення */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата завершення *
                         </label>
                         <input
@@ -214,27 +286,39 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                             value={formData.endDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('endDate')}
+                            style={inputStyle('endDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.endDate}
-                        </div>
+                        {errors.endDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.endDate}
+                            </div>
+                        )}
                     </div>
 
                     {/* Кнопки */}
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{
+                        display: 'flex',
+                        gap: '10px',
+                        flexDirection: isMobile ? 'column' : 'row'
+                    }}>
                         <button
                             type="button"
                             onClick={onClose}
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: '#6b7280',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px',
+                                flex: isMobile ? '1' : '1'
                             }}
                         >
                             Скасувати
@@ -242,14 +326,15 @@ const SemesterForm = ({ semester, onClose, onSubmit }) => {
                         <button
                             type="submit"
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px',
+                                flex: isMobile ? '1' : '1'
                             }}
                         >
                             {semester ? 'Оновити' : 'Додати'}

@@ -8,7 +8,8 @@ const ConfirmationModal = ({
     onCancel,
     confirmText = "Підтвердити",
     cancelText = "Скасувати",
-    type = "info"
+    type = "info",
+    isMobile = false
 }) => {
     const getIcon = () => {
         switch (type) {
@@ -43,15 +44,17 @@ const ConfirmationModal = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '20px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '400px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                margin: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
@@ -59,10 +62,14 @@ const ConfirmationModal = ({
                     gap: '12px',
                     marginBottom: '16px'
                 }}>
-                    <div style={{ fontSize: '24px' }}>
+                    <div style={{ fontSize: isMobile ? '20px' : '24px' }}>
                         {getIcon()}
                     </div>
-                    <h3 style={{ margin: 0, fontSize: '18px', color: '#1f2937' }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        color: '#1f2937'
+                    }}>
                         {title}
                     </h3>
                 </div>
@@ -70,24 +77,30 @@ const ConfirmationModal = ({
                 <p style={{
                     margin: '0 0 24px 0',
                     color: '#6b7280',
-                    fontSize: '14px',
+                    fontSize: isMobile ? '13px' : '14px',
                     lineHeight: '1.5'
                 }}>
                     {message}
                 </p>
 
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'flex-end',
+                    flexDirection: isMobile ? 'column' : 'row'
+                }}>
                     <button
                         onClick={onCancel}
                         style={{
-                            padding: '10px 20px',
+                            padding: isMobile ? '12px 16px' : '10px 20px',
                             backgroundColor: '#f3f4f6',
                             color: '#374151',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px'
+                            fontSize: isMobile ? '14px' : '13px',
+                            width: isMobile ? '100%' : 'auto'
                         }}
                     >
                         {cancelText}
@@ -95,13 +108,14 @@ const ConfirmationModal = ({
                     <button
                         onClick={onConfirm}
                         style={{
-                            padding: '10px 20px',
+                            padding: isMobile ? '12px 16px' : '10px 20px',
                             ...getConfirmButtonStyle(),
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px'
+                            fontSize: isMobile ? '14px' : '13px',
+                            width: isMobile ? '100%' : 'auto'
                         }}
                     >
                         {confirmText}
