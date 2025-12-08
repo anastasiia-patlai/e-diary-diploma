@@ -55,7 +55,7 @@ const StudyCalendar = () => {
                     </p>
                 </div>
 
-                {isMobile && (
+                {/* {isMobile && (
                     <button
                         onClick={() => setShowMobileMenu(!showMobileMenu)}
                         style={{
@@ -69,7 +69,7 @@ const StudyCalendar = () => {
                     >
                         {showMobileMenu ? <FaTimes /> : <FaBars />}
                     </button>
-                )}
+                )} */}
             </div>
 
             {/* ТАБИ ДЛЯ ДЕСКТОПУ */}
