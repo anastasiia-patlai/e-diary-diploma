@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCalendar } from 'react-icons/fa';
 
-const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
+const QuarterForm = ({ quarter, semesters, onClose, onSubmit, isMobile = false }) => {
     const [formData, setFormData] = useState({
         semester: '',
         number: '',
@@ -44,7 +44,7 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                 else {
                     const startDate = new Date(value);
                     if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
-                        error = 'Дата початку не може бути давніше 5 років';
+                        error = 'Дата не може бути давніше 5 років';
                     }
                 }
                 break;
@@ -54,7 +54,7 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                     const startDate = new Date(formData.startDate);
                     const endDate = new Date(value);
                     if (endDate <= startDate) {
-                        error = 'Дата завершення має бути після дати початку';
+                        error = 'Дата має бути після дати початку';
                     }
                 }
                 break;
@@ -76,7 +76,6 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
         validateField(name, value);
     };
 
-    // Автоматично генеруємо назву при зміні номера
     useEffect(() => {
         if (formData.number && !quarter) {
             const quarterNames = {
@@ -95,29 +94,39 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Валідуємо всі поля
         Object.keys(formData).forEach(field => {
             validateField(field, formData[field]);
             setTouched(prev => ({ ...prev, [field]: true }));
         });
 
-        // Перевіряємо, чи немає помилок
         if (Object.values(errors).every(err => !err)) {
             onSubmit(formData);
         }
     };
 
-    const getInputClass = (name) => {
-        if (!touched[name]) return 'form-control';
-        if (errors[name]) return 'form-control is-invalid';
-        return 'form-control is-valid';
-    };
+    const inputStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${touched[name] ? (errors[name] ? '#dc2626' : '#10b981') : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        backgroundColor: name === 'name' && !quarter ? '#f9fafb' : 'white'
+    });
 
-    const getSelectClass = (name) => {
-        if (!touched[name]) return 'form-select';
-        if (errors[name]) return 'form-select is-invalid';
-        return 'form-select is-valid';
-    };
+    const selectStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${touched[name] ? (errors[name] ? '#dc2626' : '#10b981') : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        backgroundColor: 'white',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s'
+    });
 
     return (
         <div style={{
@@ -130,24 +139,33 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '500px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                overflowY: 'auto',
+                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px'
                 }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: isMobile ? '16px' : '18px'
+                    }}>
                         <FaCalendar />
                         {quarter ? 'Редагувати чверть' : 'Додати чверть'}
                     </h3>
@@ -157,8 +175,9 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
-                            color: '#6b7280'
+                            fontSize: isMobile ? '18px' : '20px',
+                            color: '#6b7280',
+                            padding: '4px'
                         }}
                     >
                         <FaTimes />
@@ -166,9 +185,14 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    {/* Семестр */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    {/* СЕМЕСТР */}
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Семестр *
                         </label>
                         <select
@@ -176,7 +200,7 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             value={formData.semester}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getSelectClass('semester')}
+                            style={selectStyle('semester')}
                         >
                             <option value="">Оберіть семестр</option>
                             {semesters.map(semester => (
@@ -185,14 +209,26 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                                 </option>
                             ))}
                         </select>
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.semester}
-                        </div>
+                        {errors.semester && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.semester}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Номер чверті */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    {/* НОМЕР ЧВЕРТІ */}
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Номер чверті *
                         </label>
                         <select
@@ -200,7 +236,7 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             value={formData.number}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getSelectClass('number')}
+                            style={selectStyle('number')}
                         >
                             <option value="">Оберіть номер</option>
                             <option value="1">I</option>
@@ -208,14 +244,26 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             <option value="3">III</option>
                             <option value="4">IV</option>
                         </select>
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.number}
-                        </div>
+                        {errors.number && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.number}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Назва чверті */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    {/* НАЗВА ЧВЕРТІ */}
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Назва чверті *
                         </label>
                         <input
@@ -224,17 +272,29 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             value={formData.name}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('name')}
-                            readOnly={!quarter} // Тільки для редагування можна змінювати назву
+                            style={inputStyle('name')}
+                            readOnly={!quarter}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.name}
-                        </div>
+                        {errors.name && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.name}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Дата початку */}
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    {/* ДАТА ПОЧАТКУ */}
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата початку *
                         </label>
                         <input
@@ -243,16 +303,28 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             value={formData.startDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('startDate')}
+                            style={inputStyle('startDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.startDate}
-                        </div>
+                        {errors.startDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.startDate}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Дата завершення */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    {/* ДАТА ЗАВЕРШЕННЯ */}
+                    <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата завершення *
                         </label>
                         <input
@@ -261,27 +333,38 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                             value={formData.endDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('endDate')}
+                            style={inputStyle('endDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.endDate}
-                        </div>
+                        {errors.endDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.endDate}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Кнопки */}
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    {/* КНОПКИ */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '10px',
+                        flexDirection: isMobile ? 'column' : 'row'
+                    }}>
                         <button
                             type="button"
                             onClick={onClose}
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: '#6b7280',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px'
                             }}
                         >
                             Скасувати
@@ -289,14 +372,14 @@ const QuarterForm = ({ quarter, semesters, onClose, onSubmit }) => {
                         <button
                             type="submit"
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px'
                             }}
                         >
                             {quarter ? 'Оновити' : 'Додати'}

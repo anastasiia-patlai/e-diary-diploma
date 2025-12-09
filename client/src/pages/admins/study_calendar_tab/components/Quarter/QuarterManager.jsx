@@ -5,7 +5,7 @@ import QuarterForm from './QuarterForm';
 import QuarterList from './QuarterList';
 import ConfirmationModal from '../ConfirmationModal';
 
-const QuarterManager = () => {
+const QuarterManager = ({ isMobile = false }) => {
     const [quarters, setQuarters] = useState([]);
     const [semesters, setSemesters] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -76,13 +76,10 @@ const QuarterManager = () => {
             ]);
             setQuarters(quartersRes.data);
 
-            // СОРТУЄМО СЕМЕСТРИ 
             const sortedSemesters = semestersRes.data.sort((a, b) => {
-                // СПОЧАТКУ СОРТУЄМО ЗА РОКОМ 
                 const yearComparison = b.year.localeCompare(a.year);
                 if (yearComparison !== 0) return yearComparison;
 
-                // ПОТІМ СОРТУЄМО ЗА НАЗВОЮ
                 const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
                 return order[a.name] - order[b.name];
             });
@@ -102,7 +99,6 @@ const QuarterManager = () => {
         }
     }, [databaseName]);
 
-    // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ СТАТУСУ СЕМЕСТРУ ЗА ДАТАМИ
     const getDateStatus = (startDate, endDate) => {
         const now = currentDate;
         const start = new Date(startDate);
@@ -117,7 +113,6 @@ const QuarterManager = () => {
         }
     };
 
-    // ГРУПУВАННЯ ДАНИХ З ДОДАВАННЯМ СТАТУСІВ
     const groupedData = semesters.reduce((acc, semester) => {
         const year = semester.year;
 
@@ -128,12 +123,10 @@ const QuarterManager = () => {
             };
         }
 
-        // ЗНАХОДИМО ЧВЕРТІ ДЛЯ ПЕВНОГО СЕМЕСТРУ
         const semesterQuarters = quarters.filter(quarter =>
             quarter.semester && quarter.semester._id === semester._id
         );
 
-        // ДОДАЄМО СТАТУС СЕМЕСТРУ
         const semesterStatus = getDateStatus(semester.startDate, semester.endDate);
 
         acc[year].semesters.push({
@@ -145,10 +138,8 @@ const QuarterManager = () => {
         return acc;
     }, {});
 
-    // СОРТУВАННЯ РОКІВ ЗА СПАДАННЯМ
     const sortedYears = Object.keys(groupedData).sort((a, b) => b.localeCompare(a));
 
-    // СОРТУЄМО СЕМЕСТРУ В СЕРЕДИНІ КОЖНОГО РОКУ
     sortedYears.forEach(year => {
         groupedData[year].semesters.sort((a, b) => {
             const order = { 'I. Осінньо-зимовий': 1, 'II. Зимово-весняний': 2 };
@@ -224,30 +215,25 @@ const QuarterManager = () => {
         try {
             setError('');
 
-            // ПЕРЕВІРЯЄМО, ЧИ СЕМЕСТР І ЧВЕРТІ АКТИВНІ
             const semester = semesters.find(s => s._id === quarter.semester._id);
             if (!semester || !semester.isActive) {
                 setError('Не можна активувати чверть неактивного семестру');
                 return;
             }
 
-            // ПЕРЕВІРЯЄМО СТАТУС ЧВЕРТІ ЗА ДАТАМИ
             const quarterStatus = getDateStatus(quarter.startDate, quarter.endDate);
 
-            // ЯКЩО ЧВЕРТЬ ЗАВЕРШЕНА - НЕ МОЖНА ЇЇ АКТИВУВАТИ
             if (quarterStatus.status === 'завершений') {
                 setError('Не можна активувати завершену чверть');
                 return;
             }
 
-            // ЯКЩО ЧВЕРТЬ МАЙБУТЬНЯ - НЕ МОЖНА ЇЇ АКТИВУВАТИ
             if (quarterStatus.status === 'майбутній' && !quarter.isActive) {
                 setError('Не можна активувати майбутню чверть');
                 return;
             }
 
             if (quarter.isActive) {
-                // ДЕАКТИВУЄМО ЧВЕРТЬ
                 const updatedQuarter = await studyCalendarService.updateQuarter(quarter._id, {
                     ...quarter,
                     isActive: false
@@ -257,7 +243,6 @@ const QuarterManager = () => {
                     q._id === quarter._id ? updatedQuarter.data : q
                 ));
             } else {
-                // АКТИВУЄМО ЧВЕРТЬ - ДЕАКТИВУЄМО ІНШІ
                 const updatePromises = quarters.map(q => {
                     if (q._id === quarter._id) {
                         return studyCalendarService.updateQuarter(q._id, { ...q, isActive: true });
@@ -277,45 +262,52 @@ const QuarterManager = () => {
     };
 
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '40px' }}>Завантаження чвертей...</div>;
+        return (
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 20px' : '40px',
+                color: '#6b7280'
+            }}>
+                Завантаження чвертей...
+            </div>
+        );
     }
 
     return (
         <div>
-            {/* {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
-                </div>
-            )} */}
-
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? '16px' : '20px',
+                gap: isMobile ? '12px' : '0'
             }}>
-                <div>
-                    <h3 style={{ margin: 0 }}>Управління чвертями</h3>
+                <div style={{ flex: 1 }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        fontWeight: '600'
+                    }}>
+                        Управління чвертями
+                    </h3>
                     <p style={{
-                        margin: '4px 0 0 0',
+                        margin: isMobile ? '2px 0 0 0' : '4px 0 0 0',
                         color: '#6b7280',
-                        fontSize: '13px'
+                        fontSize: isMobile ? '12px' : '13px'
                     }}>
                         Поточна дата: {currentDate.toLocaleDateString('uk-UA')}
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{
+                    display: 'flex',
+                    gap: isMobile ? '8px' : '10px',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
                     <button
                         onClick={loadData}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: 'transparent',
                             color: 'rgba(105, 180, 185, 1)',
                             border: '1px solid rgba(105, 180, 185, 1)',
@@ -323,17 +315,20 @@ const QuarterManager = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaSync />
-                        Оновити
+                        <FaSync size={isMobile ? 12 : 14} />
+                        {isMobile ? 'Онов.' : 'Оновити'}
                     </button>
                     <button
                         onClick={handleCreate}
                         disabled={semesters.length === 0}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: semesters.length === 0 ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
@@ -341,10 +336,13 @@ const QuarterManager = () => {
                             cursor: semesters.length === 0 ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaPlus />
+                        <FaPlus size={isMobile ? 12 : 14} />
                         Додати чверть
                     </button>
                 </div>
@@ -354,9 +352,10 @@ const QuarterManager = () => {
                 <div style={{
                     backgroundColor: '#fef3c7',
                     color: '#d97706',
-                    padding: '12px',
+                    padding: isMobile ? '12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     Для створення чвертей спочатку потрібно додати семестри
                 </div>
@@ -366,9 +365,10 @@ const QuarterManager = () => {
                 <div style={{
                     backgroundColor: '#fee2e2',
                     color: '#dc2626',
-                    padding: '12px',
+                    padding: isMobile ? '12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     {error}
                 </div>
@@ -377,16 +377,16 @@ const QuarterManager = () => {
             {sortedYears.length === 0 ? (
                 <div style={{
                     textAlign: 'center',
-                    padding: '40px',
+                    padding: isMobile ? '30px 20px' : '40px',
                     color: '#6b7280',
                     backgroundColor: '#f9fafb',
                     borderRadius: '8px'
                 }}>
-                    <p>Чверті ще не додані</p>
-                    <p style={{ fontSize: '14px' }}>Додайте першу чверть для початку роботи</p>
+                    <p style={{ fontSize: isMobile ? '14px' : '16px' }}>Чверті ще не додані</p>
+                    <p style={{ fontSize: isMobile ? '12px' : '14px' }}>Додайте першу чверть для початку роботи</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '16px' : '24px' }}>
                     {sortedYears.map(year => (
                         <div key={year} style={{
                             border: '1px solid #e5e7eb',
@@ -394,41 +394,47 @@ const QuarterManager = () => {
                             overflow: 'hidden'
                         }}>
                             <div style={{
-                                padding: '16px',
+                                padding: isMobile ? '12px' : '16px',
                                 backgroundColor: '#f8fafc',
                                 borderBottom: '1px solid #e5e7eb'
                             }}>
                                 <h4 style={{
                                     margin: 0,
-                                    fontSize: '16px',
-                                    color: '#1f2937'
+                                    fontSize: isMobile ? '15px' : '16px',
+                                    color: '#1f2937',
+                                    fontWeight: '600'
                                 }}>
                                     Навчальний рік: {year}
                                 </h4>
                             </div>
 
-                            <div style={{ padding: '20px', backgroundColor: 'white' }}>
+                            <div style={{ padding: isMobile ? '16px' : '20px', backgroundColor: 'white' }}>
                                 {groupedData[year].semesters.map(semester => (
-                                    <div key={semester._id} style={{ marginBottom: '32px' }}>
+                                    <div key={semester._id} style={{ marginBottom: isMobile ? '20px' : '24px' }}>
                                         <div style={{
-                                            padding: '16px',
+                                            padding: isMobile ? '12px' : '16px',
                                             backgroundColor: '#f9fafb',
                                             borderRadius: '6px',
-                                            marginBottom: '20px',
+                                            marginBottom: isMobile ? '12px' : '16px',
                                             border: '1px solid #e5e7eb',
                                             borderLeft: `4px solid ${semester.dateStatus.color}`
                                         }}>
                                             <div style={{
                                                 display: 'flex',
-                                                alignItems: 'center',
+                                                flexDirection: isMobile ? 'column' : 'row',
+                                                alignItems: isMobile ? 'flex-start' : 'center',
                                                 justifyContent: 'space-between',
-                                                flexWrap: 'wrap',
-                                                gap: '12px'
+                                                gap: isMobile ? '8px' : '12px'
                                             }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: isMobile ? '8px' : '12px',
+                                                    flexWrap: 'wrap'
+                                                }}>
                                                     <h5 style={{
                                                         margin: 0,
-                                                        fontSize: '15px',
+                                                        fontSize: isMobile ? '14px' : '15px',
                                                         color: '#374151',
                                                         fontWeight: '600'
                                                     }}>
@@ -438,9 +444,9 @@ const QuarterManager = () => {
                                                         <span style={{
                                                             backgroundColor: 'rgba(105, 180, 185, 1)',
                                                             color: 'white',
-                                                            padding: '4px 10px',
+                                                            padding: '3px 8px',
                                                             borderRadius: '12px',
-                                                            fontSize: '12px',
+                                                            fontSize: isMobile ? '11px' : '12px',
                                                             fontWeight: '500'
                                                         }}>
                                                             Активний
@@ -449,9 +455,9 @@ const QuarterManager = () => {
                                                     <span style={{
                                                         backgroundColor: `${semester.dateStatus.color}15`,
                                                         color: semester.dateStatus.color,
-                                                        padding: '4px 10px',
+                                                        padding: '3px 8px',
                                                         borderRadius: '12px',
-                                                        fontSize: '12px',
+                                                        fontSize: isMobile ? '11px' : '12px',
                                                         fontWeight: '500',
                                                         border: `1px solid ${semester.dateStatus.color}30`
                                                     }}>
@@ -461,9 +467,10 @@ const QuarterManager = () => {
                                                 <div style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
-                                                    gap: '16px',
-                                                    fontSize: '13px',
-                                                    color: '#6b7280'
+                                                    gap: isMobile ? '8px' : '12px',
+                                                    fontSize: isMobile ? '12px' : '13px',
+                                                    color: '#6b7280',
+                                                    flexWrap: 'wrap'
                                                 }}>
                                                     <span>
                                                         {semester.quarters.length} чверті
@@ -480,9 +487,9 @@ const QuarterManager = () => {
                                             {semester.quarters.length === 0 ? (
                                                 <div style={{
                                                     textAlign: 'center',
-                                                    padding: '20px',
+                                                    padding: isMobile ? '16px' : '20px',
                                                     color: '#9ca3af',
-                                                    fontSize: '14px',
+                                                    fontSize: isMobile ? '13px' : '14px',
                                                     backgroundColor: '#f9fafb',
                                                     borderRadius: '6px'
                                                 }}>
@@ -497,6 +504,7 @@ const QuarterManager = () => {
                                                     compact={false}
                                                     currentDate={currentDate}
                                                     isSemesterActive={semester.isActive}
+                                                    isMobile={isMobile}
                                                 />
                                             )}
                                         </div>
@@ -515,6 +523,7 @@ const QuarterManager = () => {
                     semesters={semesters}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -527,6 +536,7 @@ const QuarterManager = () => {
                     confirmText="Видалити"
                     cancelText="Скасувати"
                     type="danger"
+                    isMobile={isMobile}
                 />
             )}
         </div>
