@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Container, Alert } from "react-bootstrap";
 import axios from "axios";
-
 import ClassroomsHeader from "./components/ClassroomsHeader";
 import ClassroomsList from "./components/ClassroomsList";
 import ClassroomModal from "./components/ClassroomModal";
 import DeleteClassroom from "./components/DeleteClassroom";
 
-const ClassroomsTab = () => {
+const ClassroomsTab = ({ isMobile = false }) => {
     const [classrooms, setClassrooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -20,54 +18,38 @@ const ClassroomsTab = () => {
     useEffect(() => {
         const getCurrentDatabase = () => {
             let dbName = localStorage.getItem('databaseName');
-
             if (!dbName) {
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
                     try {
                         const user = JSON.parse(userStr);
-                        if (user.databaseName) {
-                            dbName = user.databaseName;
-                        }
-                    } catch (e) {
-                        console.error("Помилка парсингу user:", e);
-                    }
+                        if (user.databaseName) dbName = user.databaseName;
+                    } catch (e) { }
                 }
             }
-
             if (!dbName) {
                 const userInfoStr = localStorage.getItem('userInfo');
                 if (userInfoStr) {
                     try {
                         const userInfo = JSON.parse(userInfoStr);
-                        if (userInfo.databaseName) {
-                            dbName = userInfo.databaseName;
-                        }
-                    } catch (e) {
-                        console.error("Помилка парсингу userInfo:", e);
-                    }
+                        if (userInfo.databaseName) dbName = userInfo.databaseName;
+                    } catch (e) { }
                 }
             }
-
             return dbName;
         };
 
         const dbName = getCurrentDatabase();
         if (dbName) {
             setDatabaseName(dbName);
-            console.log("Database name встановлено для аудиторій:", dbName);
         } else {
-            console.error("Database name не знайдено для аудиторій!");
             setError("Не вдалося визначити базу даних школи");
             setLoading(false);
         }
     }, []);
 
     const loadClassrooms = async () => {
-        if (!databaseName) {
-            console.error("Database name відсутній для запиту аудиторій");
-            return;
-        }
+        if (!databaseName) return;
 
         try {
             setLoading(true);
@@ -77,13 +59,11 @@ const ClassroomsTab = () => {
 
             if (response.data && Array.isArray(response.data)) {
                 setClassrooms(response.data);
-                console.log("Аудиторії завантажені:", response.data.length);
             } else {
                 setClassrooms([]);
             }
             setError("");
         } catch (err) {
-            console.error("Error loading classrooms:", err);
             setError("Помилка при завантаженні аудиторій: " + (err.response?.data?.message || err.message));
             setClassrooms([]);
         } finally {
@@ -112,7 +92,6 @@ const ClassroomsTab = () => {
         setShowDeleteModal(true);
     };
 
-    // Функція для підтвердження видалення
     const handleConfirmDelete = async () => {
         if (!databaseName || !deletingClassroom) {
             setError("Помилка: не вказано базу даних або аудиторію");
@@ -128,14 +107,12 @@ const ClassroomsTab = () => {
             setDeletingClassroom(null);
             setError("");
         } catch (err) {
-            console.error("Error deleting classroom:", err);
             setError(err.response?.data?.message || "Помилка при видаленні аудиторії");
             setShowDeleteModal(false);
             setDeletingClassroom(null);
         }
     };
 
-    // Функція для закриття попапу видалення
     const handleCloseDeleteModal = () => {
         setShowDeleteModal(false);
         setDeletingClassroom(null);
@@ -157,13 +134,11 @@ const ClassroomsTab = () => {
             };
 
             if (editingClassroom) {
-                // ОНОВЛЕННЯ ІСНУЮЧОЇ АУДИТОРІЇ
                 response = await axios.put(
                     `http://localhost:3001/api/classrooms/${editingClassroom._id}`,
                     dataWithDatabase
                 );
             } else {
-                // СТВОРЕННЯ НОВОЇ АУДИТОРІЇ
                 response = await axios.post(
                     "http://localhost:3001/api/classrooms",
                     dataWithDatabase
@@ -175,7 +150,6 @@ const ClassroomsTab = () => {
             setEditingClassroom(null);
             setError("");
         } catch (err) {
-            console.error("Error saving classroom:", err);
             setError(err.response?.data?.message || "Помилка при збереженні аудиторії");
         } finally {
             setLoading(false);
@@ -195,40 +169,32 @@ const ClassroomsTab = () => {
             await loadClassrooms();
             setError("");
         } catch (err) {
-            console.error("Error toggling classroom:", err);
             setError(err.response?.data?.message || "Помилка при зміні статусу аудиторії");
         }
     };
 
     return (
-        <Container fluid style={{ padding: "0 0 24px 0" }}>
-            {/* {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
-                </div>
-            )} */}
-
-            <ClassroomsHeader onShowCreateModal={handleShowCreateModal} />
+        <div style={{ padding: isMobile ? "12px" : "0 0 24px 0" }}>
+            <ClassroomsHeader
+                onShowCreateModal={handleShowCreateModal}
+                isMobile={isMobile}
+            />
 
             {error && (
-                <Alert variant="danger" dismissible onClose={() => setError("")}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        borderRadius: "6px",
-                        marginBottom: "16px"
-                    }}
-                >
+                <div style={{
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    padding: isMobile ? '10px 12px' : '12px 16px',
+                    borderRadius: '6px',
+                    marginBottom: isMobile ? '12px' : '16px',
+                    fontSize: isMobile ? '13px' : '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <span>⚠️</span>
                     {error}
-                </Alert>
+                </div>
             )}
 
             <ClassroomsList
@@ -237,6 +203,7 @@ const ClassroomsTab = () => {
                 onEditClassroom={handleShowEditModal}
                 onDeleteClassroom={handleShowDeleteModal}
                 onToggleClassroom={handleToggleClassroom}
+                isMobile={isMobile}
             />
 
             <ClassroomModal
@@ -247,6 +214,7 @@ const ClassroomsTab = () => {
                 }}
                 onSave={handleSaveClassroom}
                 classroom={editingClassroom}
+                isMobile={isMobile}
             />
 
             <DeleteClassroom
@@ -254,8 +222,9 @@ const ClassroomsTab = () => {
                 onClose={handleCloseDeleteModal}
                 onConfirm={handleConfirmDelete}
                 classroom={deletingClassroom}
+                isMobile={isMobile}
             />
-        </Container>
+        </div>
     );
 };
 

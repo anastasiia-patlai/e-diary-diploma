@@ -1,8 +1,18 @@
 import React from "react";
 import { FaExclamationTriangle, FaTimes, FaTrash } from "react-icons/fa";
 
-const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
+const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false }) => {
     if (!show) return null;
+
+    const getTypeLabel = (type) => {
+        const labels = {
+            'lecture': 'Лекційна',
+            'practice': 'Практична',
+            'lab': 'Лабораторія',
+            'general': 'Загальна'
+        };
+        return labels[type] || 'Загальна';
+    };
 
     return (
         <div style={{
@@ -14,27 +24,29 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
+            alignItems: isMobile ? 'flex-start' : 'center',
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '400px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'flex-start',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px'
                 }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px'
+                        gap: isMobile ? '8px' : '10px'
                     }}>
                         <div style={{
                             backgroundColor: '#fef2f2',
@@ -42,16 +54,17 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
                             padding: '8px',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            flexShrink: 0
                         }}>
                             <FaExclamationTriangle style={{
                                 color: '#ef4444',
-                                fontSize: '20px'
+                                fontSize: isMobile ? '18px' : '20px'
                             }} />
                         </div>
                         <h3 style={{
                             margin: 0,
-                            fontSize: '18px',
+                            fontSize: isMobile ? '16px' : '18px',
                             color: '#374151',
                             fontWeight: '600'
                         }}>
@@ -64,27 +77,22 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '18px',
+                            fontSize: isMobile ? '18px' : '20px',
                             color: '#6b7280',
-                            transition: 'color 0.2s',
-                            padding: '4px'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.color = '#374151';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.color = '#6b7280';
+                            padding: '4px',
+                            flexShrink: 0
                         }}
                     >
                         <FaTimes />
                     </button>
                 </div>
 
-                <div style={{ marginBottom: '24px' }}>
+                <div style={{ marginBottom: isMobile ? '20px' : '24px' }}>
                     <p style={{
                         margin: '0 0 12px 0',
                         color: '#6b7280',
-                        lineHeight: '1.5'
+                        lineHeight: '1.5',
+                        fontSize: isMobile ? '14px' : '15px'
                     }}>
                         Ви впевнені, що хочете видалити аудиторію?
                     </p>
@@ -92,20 +100,22 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
                     {classroom && (
                         <div style={{
                             backgroundColor: '#f9fafb',
-                            padding: '12px',
+                            padding: isMobile ? '10px 12px' : '12px 16px',
                             borderRadius: '6px',
-                            border: '1px solid #e5e7eb'
+                            border: '1px solid #e5e7eb',
+                            marginBottom: '12px'
                         }}>
                             <p style={{
                                 margin: '0 0 4px 0',
                                 fontWeight: '600',
-                                color: '#374151'
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
                             }}>
                                 {classroom.name}
                             </p>
                             <p style={{
                                 margin: 0,
-                                fontSize: '14px',
+                                fontSize: isMobile ? '13px' : '14px',
                                 color: '#6b7280'
                             }}>
                                 Тип: {getTypeLabel(classroom.type)} • Місткість: {classroom.capacity} осіб
@@ -115,17 +125,20 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
 
                     <div style={{
                         backgroundColor: '#fef2f2',
-                        padding: '12px',
-                        borderRadius: '6px',
-                        marginTop: '12px'
+                        padding: isMobile ? '10px 12px' : '12px 16px',
+                        borderRadius: '6px'
                     }}>
                         <p style={{
                             margin: 0,
-                            fontSize: '14px',
+                            fontSize: isMobile ? '13px' : '14px',
                             color: '#dc2626',
-                            fontWeight: '500'
+                            fontWeight: '500',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
                         }}>
-                            ⚠️ Цю дію неможливо скасувати!
+                            <FaExclamationTriangle />
+                            Цю дію неможливо скасувати!
                         </p>
                     </div>
                 </div>
@@ -133,76 +146,55 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom }) => {
                 <div style={{
                     display: 'flex',
                     gap: '10px',
-                    justifyContent: 'flex-end'
+                    justifyContent: 'flex-end',
+                    flexDirection: isMobile ? 'column' : 'row'
                 }}>
                     <button
                         type="button"
                         onClick={onClose}
                         style={{
-                            padding: '10px 20px',
+                            padding: isMobile ? '12px' : '12px',
                             backgroundColor: '#f3f4f6',
                             color: '#374151',
                             border: '1px solid #d1d5db',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '14px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#e5e7eb';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#f3f4f6';
+                            justifyContent: 'center',
+                            gap: '8px'
                         }}
                     >
-                        <FaTimes />
+                        <FaTimes size={isMobile ? 12 : 14} />
                         Скасувати
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         style={{
-                            padding: '10px 20px',
+                            padding: isMobile ? '12px' : '12px',
                             backgroundColor: '#ef4444',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '14px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px',
-                            transition: 'background-color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#dc2626';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#ef4444';
+                            justifyContent: 'center',
+                            gap: '8px'
                         }}
                     >
-                        <FaTrash />
+                        <FaTrash size={isMobile ? 12 : 14} />
                         Видалити
                     </button>
                 </div>
             </div>
         </div>
     );
-};
-
-const getTypeLabel = (type) => {
-    const labels = {
-        'lecture': 'Лекційна',
-        'practice': 'Практична',
-        'lab': 'Лабораторія',
-        'general': 'Загальна'
-    };
-    return labels[type] || 'Загальна';
 };
 
 export default DeleteClassroom;

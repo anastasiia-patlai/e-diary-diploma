@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaSave, FaDoorOpen, FaUsers, FaList, FaPlus, FaMinus } from "react-icons/fa";
 
-const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
+const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) => {
     const [formData, setFormData] = useState({
         name: "",
         capacity: 30,
@@ -15,7 +15,6 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
     useEffect(() => {
         if (show) {
             if (classroom) {
-                // Режим редагування
                 setFormData({
                     name: classroom.name || "",
                     capacity: classroom.capacity || 30,
@@ -27,7 +26,6 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                     isActive: classroom.isActive !== undefined ? classroom.isActive : true
                 });
             } else {
-                // Режим створення
                 setFormData({
                     name: "",
                     capacity: 30,
@@ -74,9 +72,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
         }
     };
 
-    // ВАЛІДАЦІЯ ТА ЗБЕРЕЖЕННЯ
     const handleSave = () => {
-        // Валідація
         if (!formData.name.trim()) {
             setError("Назва аудиторії обов'язкова");
             return;
@@ -110,49 +106,54 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1000
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? 'calc(100% - 32px)' : '90%',
                 maxWidth: '500px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+                // Додаємо для центрування
+                position: 'relative',
+                margin: 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '20px'
+                    alignItems: 'flex-start',
+                    marginBottom: isMobile ? '16px' : '20px',
+                    gap: '12px'
                 }}>
-                    <h2 style={{
-                        margin: 0,
-                        fontSize: '20px',
-                        color: '#374151',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px'
-                    }}>
-                        <FaDoorOpen />
-                        {classroom ? 'Редагувати аудиторію' : 'Додати аудиторію'}
-                    </h2>
+                    <div style={{ flex: 1 }}>
+                        <h2 style={{
+                            margin: 0,
+                            fontSize: isMobile ? '18px' : '20px',
+                            color: '#374151',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: isMobile ? '8px' : '10px'
+                        }}>
+                            <FaDoorOpen size={isMobile ? 16 : 18} />
+                            {classroom ? 'Редагувати аудиторію' : 'Додати аудиторію'}
+                        </h2>
+                    </div>
                     <button
                         onClick={onClose}
                         style={{
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
+                            fontSize: isMobile ? '18px' : '20px',
                             color: '#6b7280',
-                            transition: 'color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.color = '#374151';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.color = '#6b7280';
+                            transition: 'color 0.2s',
+                            padding: '4px',
+                            flexShrink: 0
                         }}
                     >
                         <FaTimes />
@@ -163,9 +164,10 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                     <div style={{
                         backgroundColor: '#fee2e2',
                         color: '#dc2626',
-                        padding: '12px',
+                        padding: isMobile ? '10px 12px' : '12px',
                         borderRadius: '6px',
-                        marginBottom: '16px',
+                        marginBottom: isMobile ? '12px' : '16px',
+                        fontSize: isMobile ? '13px' : '14px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px'
@@ -175,19 +177,20 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '12px' : '16px' }}>
                     <div>
                         <label style={{
                             display: 'flex',
                             alignItems: 'center',
-                            marginBottom: '8px',
+                            marginBottom: '6px',
                             fontWeight: '600',
-                            color: '#374151'
+                            color: '#374151',
+                            fontSize: isMobile ? '13px' : '14px'
                         }}>
                             <FaDoorOpen style={{
                                 marginRight: '8px',
                                 color: 'rgba(105, 180, 185, 1)',
-                                fontSize: '14px'
+                                fontSize: isMobile ? '13px' : '14px'
                             }} />
                             Назва аудиторії *
                         </label>
@@ -199,36 +202,34 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                             placeholder="Наприклад: 101, Актовий зал, Лабораторія 2А"
                             style={{
                                 width: '100%',
-                                padding: '10px 12px',
+                                padding: isMobile ? '10px 12px' : '12px 14px',
                                 border: '1px solid #e5e7eb',
                                 borderRadius: '6px',
-                                fontSize: '14px',
+                                fontSize: isMobile ? '14px' : '15px',
                                 boxSizing: 'border-box',
-                                outline: 'none',
-                                transition: 'border-color 0.2s'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderColor = '#e5e7eb';
+                                outline: 'none'
                             }}
                         />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        gap: isMobile ? '12px' : '12px'
+                    }}>
                         <div style={{ flex: 1 }}>
                             <label style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                marginBottom: '8px',
+                                marginBottom: '6px',
                                 fontWeight: '600',
-                                color: '#374151'
+                                color: '#374151',
+                                fontSize: isMobile ? '13px' : '14px'
                             }}>
                                 <FaUsers style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: '14px'
+                                    fontSize: isMobile ? '13px' : '14px'
                                 }} />
                                 Місткість *
                             </label>
@@ -241,19 +242,12 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                 max="500"
                                 style={{
                                     width: '100%',
-                                    padding: '10px 12px',
+                                    padding: isMobile ? '10px 12px' : '12px 14px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
-                                    fontSize: '14px',
+                                    fontSize: isMobile ? '14px' : '15px',
                                     boxSizing: 'border-box',
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
+                                    outline: 'none'
                                 }}
                             />
                         </div>
@@ -262,14 +256,15 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                             <label style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                marginBottom: '8px',
+                                marginBottom: '6px',
                                 fontWeight: '600',
-                                color: '#374151'
+                                color: '#374151',
+                                fontSize: isMobile ? '13px' : '14px'
                             }}>
                                 <FaList style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: '14px'
+                                    fontSize: isMobile ? '13px' : '14px'
                                 }} />
                                 Тип аудиторії
                             </label>
@@ -279,19 +274,12 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                 onChange={handleChange}
                                 style={{
                                     width: '100%',
-                                    padding: '10px 12px',
+                                    padding: isMobile ? '10px 12px' : '12px 14px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '6px',
-                                    fontSize: '14px',
+                                    fontSize: isMobile ? '14px' : '15px',
                                     boxSizing: 'border-box',
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
+                                    outline: 'none'
                                 }}
                             >
                                 <option value="general">Загальна</option>
@@ -306,14 +294,15 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                         <label style={{
                             display: 'flex',
                             alignItems: 'center',
-                            marginBottom: '8px',
+                            marginBottom: '6px',
                             fontWeight: '600',
-                            color: '#374151'
+                            color: '#374151',
+                            fontSize: isMobile ? '13px' : '14px'
                         }}>
                             <FaList style={{
                                 marginRight: '8px',
                                 color: 'rgba(105, 180, 185, 1)',
-                                fontSize: '14px'
+                                fontSize: isMobile ? '13px' : '14px'
                             }} />
                             Обладнання
                         </label>
@@ -331,19 +320,12 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                     placeholder="Наприклад: проектор, комп'ютери, мікроскопи"
                                     style={{
                                         flex: 1,
-                                        padding: '10px 12px',
+                                        padding: isMobile ? '10px 12px' : '12px 14px',
                                         border: '1px solid #e5e7eb',
                                         borderRadius: '6px',
-                                        fontSize: '14px',
+                                        fontSize: isMobile ? '14px' : '15px',
                                         boxSizing: 'border-box',
-                                        outline: 'none',
-                                        transition: 'border-color 0.2s'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.target.style.borderColor = '#e5e7eb';
+                                        outline: 'none'
                                     }}
                                 />
                                 {formData.equipment.length > 1 && (
@@ -351,7 +333,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                         type="button"
                                         onClick={() => removeEquipmentField(index)}
                                         style={{
-                                            padding: '10px 12px',
+                                            padding: isMobile ? '10px 12px' : '12px 14px',
                                             backgroundColor: '#ef4444',
                                             color: 'white',
                                             border: 'none',
@@ -360,16 +342,10 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            transition: 'background-color 0.2s'
-                                        }}
-                                        onMouseOver={(e) => {
-                                            e.target.style.backgroundColor = '#dc2626';
-                                        }}
-                                        onMouseOut={(e) => {
-                                            e.target.style.backgroundColor = '#ef4444';
+                                            flexShrink: 0
                                         }}
                                     >
-                                        <FaMinus />
+                                        <FaMinus size={isMobile ? 12 : 14} />
                                     </button>
                                 )}
                             </div>
@@ -378,7 +354,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                             type="button"
                             onClick={addEquipmentField}
                             style={{
-                                padding: '8px 12px',
+                                padding: isMobile ? '8px 12px' : '10px 14px',
                                 backgroundColor: 'transparent',
                                 color: 'rgba(105, 180, 185, 1)',
                                 border: '1px solid rgba(105, 180, 185, 1)',
@@ -386,29 +362,24 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '8px',
-                                fontSize: '14px',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => {
-                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.target.style.backgroundColor = 'transparent';
+                                fontSize: isMobile ? '13px' : '14px',
+                                width: '100%'
                             }}
                         >
-                            <FaPlus />
+                            <FaPlus size={isMobile ? 12 : 14} />
                             Додати обладнання
                         </button>
                     </div>
 
-                    {/* Опис */}
                     <div>
                         <label style={{
                             display: 'block',
-                            marginBottom: '8px',
+                            marginBottom: '6px',
                             fontWeight: '600',
-                            color: '#374151'
+                            color: '#374151',
+                            fontSize: isMobile ? '13px' : '14px'
                         }}>
                             Опис (необов'язково)
                         </label>
@@ -420,38 +391,41 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                             rows="3"
                             style={{
                                 width: '100%',
-                                padding: '10px 12px',
+                                padding: isMobile ? '10px 12px' : '12px 14px',
                                 border: '1px solid #e5e7eb',
                                 borderRadius: '6px',
-                                fontSize: '14px',
+                                fontSize: isMobile ? '14px' : '15px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
-                                transition: 'border-color 0.2s',
                                 resize: 'vertical',
                                 fontFamily: 'inherit'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderColor = '#e5e7eb';
                             }}
                         />
                     </div>
 
                     {classroom && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            marginTop: '8px'
+                        }}>
                             <input
                                 type="checkbox"
                                 name="isActive"
                                 checked={formData.isActive}
                                 onChange={handleChange}
                                 id="isActive"
+                                style={{
+                                    width: '18px',
+                                    height: '18px'
+                                }}
                             />
                             <label htmlFor="isActive" style={{
                                 fontWeight: '600',
                                 color: '#374151',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                fontSize: isMobile ? '13px' : '14px'
                             }}>
                                 Аудиторія активна
                             </label>
@@ -464,64 +438,49 @@ const ClassroomModal = ({ show, onClose, onSave, classroom }) => {
                     gap: '10px',
                     marginTop: '24px',
                     paddingTop: '16px',
-                    borderTop: '1px solid #e5e7eb'
+                    borderTop: '1px solid #e5e7eb',
+                    flexDirection: isMobile ? 'column' : 'row'
                 }}>
                     <button
                         type="button"
                         onClick={onClose}
                         style={{
-                            flex: 1,
-                            padding: '12px',
+                            padding: isMobile ? '12px' : '12px',
                             backgroundColor: '#6b7280',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '14px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'background-color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#4b5563';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#6b7280';
+                            gap: '8px'
                         }}
                     >
-                        <FaTimes />
+                        <FaTimes size={isMobile ? 12 : 14} />
                         Скасувати
                     </button>
                     <button
                         type="button"
                         onClick={handleSave}
                         style={{
-                            flex: 1,
-                            padding: '12px',
+                            padding: isMobile ? '12px' : '12px',
                             backgroundColor: 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '14px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'background-color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                            gap: '8px'
                         }}
                     >
-                        <FaSave />
+                        <FaSave size={isMobile ? 12 : 14} />
                         {classroom ? 'Оновити' : 'Створити'}
                     </button>
                 </div>
