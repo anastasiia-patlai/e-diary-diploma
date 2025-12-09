@@ -61,7 +61,7 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                         </span>
                     </div>
 
-                    {/* ДОДАНО: Категорія вчителя */}
+                    {/* КАТЕГОРІЯ ВЧИТЕЛЯ */}
                     {teacher.category && (
                         <div style={{
                             fontSize: isMobile ? '12px' : '11px',

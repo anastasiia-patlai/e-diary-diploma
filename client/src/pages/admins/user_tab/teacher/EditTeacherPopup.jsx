@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus, FaCertificate } from "react-icons/fa";
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus, FaCertificate, FaUserTie } from "react-icons/fa";
 import axios from "axios";
 
 const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }) => {
@@ -9,7 +9,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         phone: "",
         dateOfBirth: "",
         positions: [""],
-        category: "" // ДОДАНО: поле категорії
+        category: "",
+        teacherType: ""
     });
     const [loading, setLoading] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(true);
@@ -42,7 +43,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                     phone: userData.phone || "",
                     dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : "",
                     positions: positionsArray.length > 0 ? positionsArray : [""],
-                    category: userData.category || "" // ДОДАНО: завантаження категорії
+                    category: userData.category || "",
+                    teacherType: userData.teacherType || ""
                 });
 
                 setFetchingUser(false);
@@ -56,7 +58,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         fetchUserData();
     }, [teacher._id, databaseName]);
 
-    // Функція для обробки зміни полів
+    // ФУНКЦІЯ ДЛЯ ОБРОБКИ ЗМІН В ПОЛЯХ ФОРМИ
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({
@@ -65,7 +67,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         });
     };
 
-    // Функція для додавання нового поля предмету
+    // ФУНКЦІЯ ДЛЯ ДОАВАННЯ НОВОГО ПОЛЯ ПРЕДМЕТУ
     const addPositionField = () => {
         setFormData(prev => ({
             ...prev,
@@ -73,7 +75,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }));
     };
 
-    // Функція для видалення поля предмету
+    // ФУНКЦІЯ ДЛЯ ВИДАЛЕНЯ ПОЛЯ ПРЕДМЕТУ
     const removePositionField = (index) => {
         if (formData.positions.length > 1) {
             setFormData(prev => ({
@@ -83,7 +85,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }
     };
 
-    // Функція для оновлення конкретного предмету
+    // ФУНКЦІЯ ДЛЯ ОНОВЛЕННЯ ПОЛЯ ПРЕДМЕТУ
     const updatePosition = (index, value) => {
         setFormData(prev => ({
             ...prev,
@@ -118,9 +120,23 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                 dateOfBirth: formData.dateOfBirth,
                 positions: filteredPositions,
                 position: filteredPositions.join(", "),
-                category: formData.category, // ДОДАНО: категорія
+                category: formData.category,
+                teacherType: formData.teacherType,
                 databaseName: databaseName
             };
+
+            // АВТОМАТИЧНО ДОДАЄМО allowedCategories НА ОСНОВІ teacherType
+            if (formData.teacherType === "young") {
+                submitData.allowedCategories = ["young"];
+            } else if (formData.teacherType === "middle") {
+                submitData.allowedCategories = ["middle"];
+            } else if (formData.teacherType === "senior") {
+                submitData.allowedCategories = ["senior"];
+            } else if (formData.teacherType === "middle-senior") {
+                submitData.allowedCategories = ["middle", "senior"];
+            } else if (formData.teacherType === "all") {
+                submitData.allowedCategories = ["young", "middle", "senior"];
+            }
 
             const response = await axios.put(
                 `http://localhost:3001/api/users/${teacher._id}`,
@@ -154,12 +170,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: isMobile ? '20px 16px' : '24px',
+                padding: isMobile ? '0px 16px 20px 16px' : '24px',
                 width: isMobile ? '100%' : '90%',
                 maxWidth: isMobile ? '100%' : '500px',
                 maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
                 overflowY: 'auto',
-                marginTop: isMobile ? '0' : '0'
+                marginTop: '0'
             }}>
                 <div style={{
                     display: 'flex',
@@ -169,7 +185,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                     position: 'sticky',
                     top: isMobile ? '0' : 'auto',
                     backgroundColor: 'white',
-                    paddingTop: isMobile ? '0' : '0',
+                    paddingTop: isMobile ? '12px' : '0',
+                    paddingBottom: isMobile ? '10px' : '0',
                     zIndex: 10
                 }}>
                     <h2 style={{
@@ -240,12 +257,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaUser style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: isMobile ? '14px' : '12px',
+                                    fontSize: '14px',
                                     flexShrink: 0
                                 }} />
                                 ПІБ *
@@ -261,7 +278,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     padding: isMobile ? '14px 16px' : '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px',
-                                    fontSize: isMobile ? '16px' : '14px',
+                                    fontSize: '16px',
                                     boxSizing: 'border-box',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
@@ -283,12 +300,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaEnvelope style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: isMobile ? '14px' : '12px',
+                                    fontSize: '14px',
                                     flexShrink: 0
                                 }} />
                                 Email *
@@ -304,7 +321,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     padding: isMobile ? '14px 16px' : '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px',
-                                    fontSize: isMobile ? '16px' : '14px',
+                                    fontSize: '16px',
                                     boxSizing: 'border-box',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
@@ -326,12 +343,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaPhone style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: isMobile ? '14px' : '12px',
+                                    fontSize: '14px',
                                     flexShrink: 0
                                 }} />
                                 Телефон *
@@ -347,7 +364,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     padding: isMobile ? '14px 16px' : '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px',
-                                    fontSize: isMobile ? '16px' : '14px',
+                                    fontSize: '16px',
                                     boxSizing: 'border-box',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
@@ -369,12 +386,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaCalendar style={{
                                     marginRight: '8px',
                                     color: 'rgba(105, 180, 185, 1)',
-                                    fontSize: isMobile ? '14px' : '12px',
+                                    fontSize: '14px',
                                     flexShrink: 0
                                 }} />
                                 Дата народження
@@ -389,7 +406,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     padding: isMobile ? '14px 16px' : '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px',
-                                    fontSize: isMobile ? '16px' : '14px',
+                                    fontSize: '16px',
                                     boxSizing: 'border-box',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
@@ -404,7 +421,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                             />
                         </div>
 
-                        {/* КАТЕГОРІЯ ВЧИТЕЛЯ - ДОДАНО */}
+                        {/* ТИП ВИКЛАДАЧА */}
                         <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -412,7 +429,58 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
+                            }}>
+                                <FaUserTie style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: isMobile ? '14px' : '12px',
+                                    flexShrink: 0
+                                }} />
+                                Тип викладача *
+                            </label>
+                            <select
+                                name="teacherType"
+                                value={formData.teacherType}
+                                onChange={handleChange}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: isMobile ? '14px 16px' : '10px 12px',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '8px',
+                                    fontSize: '16px',
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s',
+                                    backgroundColor: 'white',
+                                    height: isMobile ? '50px' : 'auto'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
+                                }}
+                            >
+                                <option value="">-- Оберіть тип --</option>
+                                <option value="young">Викладач молодших класів (1-4)</option>
+                                <option value="middle">Викладач середніх класів (5-9)</option>
+                                <option value="senior">Викладач старших класів (10-11)</option>
+                                <option value="middle-senior">Викладач середніх та старших класів</option>
+                                <option value="all">Викладач усіх класів</option>
+                            </select>
+                        </div>
+
+                        {/* КАТЕГОРІЯ КВАЛІФІКАЦІЇ */}
+                        <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: isMobile ? '10px' : '8px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaCertificate style={{
                                     marginRight: '8px',
@@ -420,7 +488,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                Категорія
+                                Категорія кваліфікації
                             </label>
                             <select
                                 name="category"
@@ -431,12 +499,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     padding: isMobile ? '14px 16px' : '10px 12px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px',
-                                    fontSize: isMobile ? '16px' : '14px',
+                                    fontSize: '16px',
                                     boxSizing: 'border-box',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
                                     backgroundColor: 'white',
-                                    height: isMobile ? '40px' : 'auto'
+                                    height: isMobile ? '50px' : 'auto'
                                 }}
                                 onFocus={(e) => {
                                     e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
@@ -463,7 +531,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 marginBottom: isMobile ? '10px' : '8px',
                                 fontWeight: '600',
                                 color: '#374151',
-                                fontSize: isMobile ? '14px' : '13px'
+                                fontSize: isMobile ? '14px' : '16px'
                             }}>
                                 <FaChalkboardTeacher style={{
                                     marginRight: '8px',
@@ -491,7 +559,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                             padding: isMobile ? '14px 16px' : '10px 12px',
                                             border: '1px solid #e5e7eb',
                                             borderRadius: '6px',
-                                            fontSize: isMobile ? '16px' : '14px',
+                                            fontSize: '16px',
                                             boxSizing: 'border-box',
                                             outline: 'none',
                                             transition: 'border-color 0.2s',

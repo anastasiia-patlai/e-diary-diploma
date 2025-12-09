@@ -15,6 +15,7 @@ function Signup({ onClose, databaseName }) {
         group: "",
         positions: [""],
         category: "",
+        teacherType: "", // ✅ ДОДАНО: тип викладача
         jobPosition: "",
     });
 
@@ -91,6 +92,11 @@ function Signup({ onClose, databaseName }) {
                     error = "Вкажіть хоча б один предмет";
                 }
                 break;
+            case "teacherType": // ✅ ДОДАНО: валідація типу викладача
+                if (formData.role === "teacher" && !value) {
+                    error = "Оберіть тип викладача";
+                }
+                break;
             case "jobPosition":
                 if (formData.role === "admin" && !value.trim()) error = "Вкажіть посаду";
                 break;
@@ -147,7 +153,21 @@ function Signup({ onClose, databaseName }) {
                 submitData.group = formData.group;
             } else if (formData.role === "teacher") {
                 submitData.positions = filteredPositions;
-                submitData.category = formData.category
+                submitData.category = formData.category;
+                submitData.teacherType = formData.teacherType; // ✅ Додаємо тип викладача
+
+                // Автоматично додаємо allowedCategories на основі teacherType
+                if (formData.teacherType === "young") {
+                    submitData.allowedCategories = ["young"];
+                } else if (formData.teacherType === "middle") {
+                    submitData.allowedCategories = ["middle"];
+                } else if (formData.teacherType === "senior") {
+                    submitData.allowedCategories = ["senior"];
+                } else if (formData.teacherType === "middle-senior") {
+                    submitData.allowedCategories = ["middle", "senior"];
+                } else if (formData.teacherType === "all") {
+                    submitData.allowedCategories = ["young", "middle", "senior"];
+                }
             } else if (formData.role === "admin") {
                 submitData.jobPosition = formData.jobPosition;
             }
@@ -167,6 +187,8 @@ function Signup({ onClose, databaseName }) {
                         confirmPassword: "",
                         group: "",
                         positions: [""],
+                        category: "",
+                        teacherType: "", // ✅ Скидаємо тип викладача
                         jobPosition: "",
                     });
                     setTouched({});
@@ -377,14 +399,47 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         )}
 
-                        {/* ВИКЛАДАЧ - КІЛЬКА ПРЕДМЕТІВ */}
+                        {/* ВИКЛАДАЧ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
+                                {/* ✅ ДОДАНО: Тип викладача */}
                                 <label className="form-label" style={{
                                     fontSize: isMobile ? '15px' : '17px',
                                     fontWeight: '500'
                                 }}>
-                                    Категорія
+                                    Тип викладача *
+                                </label>
+                                <select
+                                    name="teacherType"
+                                    className={getSelectClass("teacherType")}
+                                    value={formData.teacherType}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    style={{
+                                        fontSize: isMobile ? '14px' : '16px',
+                                        padding: isMobile ? '10px' : '12px'
+                                    }}
+                                >
+                                    <option value="">-- Оберіть тип --</option>
+                                    <option value="young">Викладач молодших класів (1-4)</option>
+                                    <option value="middle">Викладач середніх класів (5-9)</option>
+                                    <option value="senior">Викладач старших класів (10-11)</option>
+                                    <option value="middle-senior">Викладач середніх та старших класів</option>
+                                    <option value="all">Викладач усіх класів</option>
+                                </select>
+                                <div className="invalid-feedback" style={{
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}>
+                                    {errors.teacherType}
+                                </div>
+
+                                {/* Категорія кваліфікації */}
+                                <label className="form-label" style={{
+                                    fontSize: isMobile ? '15px' : '17px',
+                                    fontWeight: '500',
+                                    marginTop: '15px'
+                                }}>
+                                    Категорія кваліфікації
                                 </label>
                                 <select
                                     name="category"
@@ -410,11 +465,14 @@ function Signup({ onClose, databaseName }) {
                                 }}>
                                     {errors.category}
                                 </div>
+
+                                {/* Предмети */}
                                 <label className="form-label" style={{
                                     fontSize: isMobile ? '15px' : '17px',
-                                    fontWeight: '500'
+                                    fontWeight: '500',
+                                    marginTop: '15px'
                                 }}>
-                                    Предмети
+                                    Предмети *
                                 </label>
                                 {formData.positions.map((position, index) => (
                                     <div key={index} className="d-flex align-items-center mb-2">
@@ -455,7 +513,8 @@ function Signup({ onClose, databaseName }) {
                                         padding: isMobile ? '8px 12px' : '10px 15px',
                                         fontSize: isMobile ? '13px' : '14px',
                                         borderRadius: '6px',
-                                        width: '100%'
+                                        width: '100%',
+                                        marginTop: '8px'
                                     }}
                                     className="btn"
                                     onClick={addPositionField}

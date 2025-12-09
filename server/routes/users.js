@@ -85,7 +85,7 @@ router.get('/teachers', async (req, res) => {
 
         const User = getSchoolUserModel(databaseName);
         const teachers = await User.find({ role: 'teacher' })
-            .select('fullName email phone positions position category dateOfBirth')
+            .select('fullName email phone positions position category teacherType allowedCategories dateOfBirth') // ✅ Додано teacherType та allowedCategories
             .sort({ fullName: 1 });
         res.json(teachers);
     } catch (err) {
@@ -97,7 +97,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, category, jobPosition } = req.body;
+        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, category, teacherType, allowedCategories, jobPosition } = req.body; // ✅ Додано teacherType та allowedCategories
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -142,9 +142,35 @@ router.put('/:id', async (req, res) => {
                 updateData.position = position;
                 updateData.positions = position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
             }
+
+            // ✅ Додано обробку teacherType та allowedCategories
             if (category !== undefined) {
                 updateData.category = category;
             }
+
+            if (teacherType !== undefined) {
+                updateData.teacherType = teacherType;
+
+                // Автоматично генеруємо allowedCategories на основі teacherType, якщо не вказано явно
+                if (!allowedCategories || allowedCategories.length === 0) {
+                    if (teacherType === "young") {
+                        updateData.allowedCategories = ["young"];
+                    } else if (teacherType === "middle") {
+                        updateData.allowedCategories = ["middle"];
+                    } else if (teacherType === "senior") {
+                        updateData.allowedCategories = ["senior"];
+                    } else if (teacherType === "middle-senior") {
+                        updateData.allowedCategories = ["middle", "senior"];
+                    } else if (teacherType === "all") {
+                        updateData.allowedCategories = ["young", "middle", "senior"];
+                    }
+                }
+            }
+
+            if (allowedCategories !== undefined) {
+                updateData.allowedCategories = allowedCategories;
+            }
+
         } else if (user.role === 'admin') {
             updateData.jobPosition = jobPosition;
         }
@@ -261,7 +287,7 @@ router.get('/', async (req, res) => {
         const Group = getSchoolGroupModel(databaseName);
 
         const users = await User.find()
-            .select('fullName role email phone position group children')
+            .select('fullName role email phone position category teacherType group children')
             .populate('group', 'name')
             .populate('children', 'fullName email group');
         res.json(users);
@@ -565,7 +591,7 @@ router.get('/stats', async (req, res) => {
 
         const teachersWithSubjects = await User.find(
             { role: 'teacher' },
-            'positions position'
+            'positions position teacherType'
         );
 
         const allSubjects = teachersWithSubjects.flatMap(teacher => {
@@ -577,12 +603,22 @@ router.get('/stats', async (req, res) => {
 
         const uniqueSubjects = [...new Set(allSubjects.filter(Boolean))];
 
+        const teacherTypes = {
+            young: await User.countDocuments({ role: 'teacher', teacherType: 'young' }),
+            middle: await User.countDocuments({ role: 'teacher', teacherType: 'middle' }),
+            senior: await User.countDocuments({ role: 'teacher', teacherType: 'senior' }),
+            'middle-senior': await User.countDocuments({ role: 'teacher', teacherType: 'middle-senior' }),
+            all: await User.countDocuments({ role: 'teacher', teacherType: 'all' }),
+            undefined: await User.countDocuments({ role: 'teacher', teacherType: { $exists: false } })
+        };
+
         res.json({
             totalUsers,
             students,
             teachers,
             parents,
-            subjects: uniqueSubjects.length
+            subjects: uniqueSubjects.length,
+            teacherTypes
         });
     } catch (error) {
         console.error('Error fetching user stats:', error);
@@ -620,6 +656,111 @@ router.get('/by-role/:role', async (req, res) => {
             message: 'Помилка при отриманні користувачів',
             error: error.message
         });
+    }
+});
+
+// ОНОВИТИ ТІЛЬКО ТИП ВИКЛАДАЧА
+router.put('/teacher/:id/type', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { databaseName, teacherType } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+
+        const teacher = await User.findById(id);
+        if (!teacher || teacher.role !== 'teacher') {
+            return res.status(404).json({ error: 'Викладача не знайдено' });
+        }
+
+        // Валідація teacherType
+        const validTeacherTypes = ['young', 'middle', 'senior', 'middle-senior', 'all'];
+        if (teacherType && !validTeacherTypes.includes(teacherType)) {
+            return res.status(400).json({
+                error: 'Невірний тип викладача',
+                validTypes: validTeacherTypes
+            });
+        }
+
+        let allowedCategories = teacher.allowedCategories || [];
+
+        // Автоматично генеруємо allowedCategories на основі teacherType
+        if (teacherType === "young") {
+            allowedCategories = ["young"];
+        } else if (teacherType === "middle") {
+            allowedCategories = ["middle"];
+        } else if (teacherType === "senior") {
+            allowedCategories = ["senior"];
+        } else if (teacherType === "middle-senior") {
+            allowedCategories = ["middle", "senior"];
+        } else if (teacherType === "all") {
+            allowedCategories = ["young", "middle", "senior"];
+        }
+
+        const updatedTeacher = await User.findByIdAndUpdate(
+            id,
+            {
+                teacherType: teacherType || null,
+                allowedCategories
+            },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json({
+            message: 'Тип викладача успішно оновлено',
+            teacher: updatedTeacher
+        });
+    } catch (err) {
+        console.error('Помилка оновлення типу викладача:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// ОНОВИТИ ДОЗВОЛЕНІ КАТЕГОРІЇ ВИКЛАДАЧА
+router.put('/teacher/:id/allowed-categories', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { databaseName, allowedCategories } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const User = getSchoolUserModel(databaseName);
+
+        const teacher = await User.findById(id);
+        if (!teacher || teacher.role !== 'teacher') {
+            return res.status(404).json({ error: 'Викладача не знайдено' });
+        }
+
+        const validCategories = ['young', 'middle', 'senior'];
+        if (allowedCategories && Array.isArray(allowedCategories)) {
+            for (const category of allowedCategories) {
+                if (!validCategories.includes(category)) {
+                    return res.status(400).json({
+                        error: `Невірна категорія: ${category}`,
+                        validCategories: validCategories
+                    });
+                }
+            }
+        }
+
+        const updatedTeacher = await User.findByIdAndUpdate(
+            id,
+            { allowedCategories: allowedCategories || [] },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.json({
+            message: 'Дозволені категорії успішно оновлено',
+            teacher: updatedTeacher
+        });
+    } catch (err) {
+        console.error('Помилка оновлення дозволених категорій:', err);
+        res.status(400).json({ error: err.message });
     }
 });
 

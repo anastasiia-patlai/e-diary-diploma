@@ -11,6 +11,20 @@ const userSchema = new mongoose.Schema({
     positions: [{ type: String }],
     position: { type: String },                                         // тільки для викладачів
     category: { type: String },                                         // тільки для викладачів
+    allowedCategories: {                                                // тільки для викладачів
+        type: [String],
+        enum: ['young', 'middle', 'senior'],
+        default: []
+    },
+    specificGroups: [{                                                  // тільки для викладачів
+        group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
+        allowedSubjects: [{ type: String }]
+    }],
+    teacherType: {                                                      // тільки для викладачів
+        type: String,
+        enum: ['young', 'middle', 'senior', 'middle-senior', 'all'],
+        default: ''
+    },
     jobPosition: { type: String },                                      // тільки для адміністраторів
     children: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],  // тільки для батьків
     parents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],   // тільки для студентів

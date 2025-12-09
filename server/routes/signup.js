@@ -94,6 +94,12 @@ router.post('/signup', async (req, res) => {
                 ? positions.filter(pos => pos && pos.trim() !== "")
                 : [];
             userData.position = userData.positions.join(", ");
+            userData.category = category || '';
+            userData.teacherType = teacherType || '';
+            userData.allowedCategories = allowedCategories || [];
+
+            console.log("Додано тип викладача:", userData.teacherType);
+            console.log("Додано дозволені категорії:", userData.allowedCategories);
 
             if (category && category.trim() !== "") {
                 userData.category = category;

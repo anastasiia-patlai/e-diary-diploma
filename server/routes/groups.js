@@ -133,11 +133,33 @@ router.put('/:id/curator', async (req, res) => {
             });
         }
 
+        // Для куратора молодшої групи додаємо ТІЛЬКИ ЙОГО групу до specificGroups
+        if (group.category === 'young') {
+            // Для кураторів молодших класів: додаємо їхню групу до specificGroups
+            await User.findByIdAndUpdate(
+                curatorId,
+                {
+                    $addToSet: {
+                        specificGroups: {
+                            group: group._id,
+                            allowedSubjects: teacher.positions || [] // Може викладати всі свої предмети у цій групі
+                        }
+                    }
+                }
+            );
+        } else {
+            // Для середніх/старших: додаємо категорію до allowedCategories
+            await User.findByIdAndUpdate(
+                curatorId,
+                { $addToSet: { allowedCategories: group.category } }
+            );
+        }
+
         group.curator = curatorId;
         await group.save();
 
         const updatedGroup = await Group.findById(id)
-            .populate('curator', 'fullName email phone position')
+            .populate('curator', 'fullName email phone position allowedCategories specificGroups')
             .populate('students', 'fullName email phone dateOfBirth');
 
         res.json({
@@ -168,17 +190,50 @@ router.delete('/:id/curator', async (req, res) => {
         }
 
         const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
 
         console.log("Видалення куратора з групи ID:", id);
 
+        const group = await Group.findById(id);
+        if (!group) {
+            return res.status(404).json({ error: 'Групу не знайдено' });
+        }
+
+        const curatorId = group.curator;
+
+        // 1. Оновлюємо групу (видаляємо куратора)
         const updatedGroup = await Group.findByIdAndUpdate(
             id,
             { $set: { curator: null } },
             { new: true, runValidators: true }
         ).populate('students', 'fullName email phone dateOfBirth');
 
-        if (!updatedGroup) {
-            return res.status(404).json({ error: 'Групу не знайдено' });
+        // 2. Оновлюємо вчителя
+        if (curatorId) {
+            // Якщо група молодшої категорії, видаляємо її з specificGroups
+            if (group.category === 'young') {
+                await User.findByIdAndUpdate(
+                    curatorId,
+                    { $pull: { specificGroups: { group: group._id } } }
+                );
+                console.log(`Групу ${group.name} видалено з specificGroups викладача ${curatorId}`);
+            }
+            // Для середніх/старших категорій перевіряємо, чи потрібно видаляти категорію
+            else {
+                const otherGroupsWithSameCategory = await Group.find({
+                    curator: curatorId,
+                    category: group.category,
+                    _id: { $ne: id }
+                });
+
+                if (otherGroupsWithSameCategory.length === 0) {
+                    await User.findByIdAndUpdate(
+                        curatorId,
+                        { $pull: { allowedCategories: group.category } }
+                    );
+                    console.log(`Категорію ${group.category} видалено з дозволених для викладача ${curatorId}`);
+                }
+            }
         }
 
         console.log("Куратор успішно видалений, оновлена група:", updatedGroup);
@@ -196,6 +251,180 @@ router.delete('/:id/curator', async (req, res) => {
             error: err.message,
             code: err.code
         });
+    }
+});
+
+// ПЕРЕВІРИТИ, ЧИ МОЖЕ ВЧИТЕЛЬ ВИКЛАДАТИ В ГРУПІ
+router.post('/:teacherId/can-teach-in-group', async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const { databaseName, groupId, subject } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
+        const teacher = await User.findById(teacherId);
+        if (!teacher || teacher.role !== 'teacher') {
+            return res.status(400).json({ error: 'Користувач не є викладачем' });
+        }
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ error: 'Групу не знайдено' });
+        }
+
+        // Перевіряємо, чи вчитель взагалі викладає цей предмет
+        const teachesSubject = teacher.positions && teacher.positions.includes(subject);
+        if (!teachesSubject) {
+            return res.json({
+                canTeach: false,
+                reason: `Викладач не викладає предмет "${subject}"`,
+                teacher: {
+                    _id: teacher._id,
+                    fullName: teacher.fullName,
+                    positions: teacher.positions || []
+                }
+            });
+        }
+
+        let canTeach = false;
+        let reason = '';
+
+        // 1. Перевіряємо, чи вчитель є куратором цієї групи
+        if (group.curator && group.curator.toString() === teacherId) {
+            // Куратор може викладати у своїй групі
+            canTeach = true;
+            reason = 'Вчитель є куратором цієї групи';
+        }
+        // 2. Перевіряємо, чи є група у specificGroups (для кураторів молодших класів)
+        else if (teacher.specificGroups && teacher.specificGroups.length > 0) {
+            const canTeachInSpecificGroup = teacher.specificGroups.some(sg =>
+                sg.group.toString() === groupId &&
+                (!sg.allowedSubjects || sg.allowedSubjects.length === 0 || sg.allowedSubjects.includes(subject))
+            );
+
+            if (canTeachInSpecificGroup) {
+                canTeach = true;
+                reason = 'Група є у списку дозволених для викладача';
+            } else {
+                canTeach = false;
+                reason = 'Вчитель може викладати тільки у призначених йому групах';
+            }
+        }
+        // 3. Перевіряємо allowedCategories (для звичайних вчителів)
+        else if (teacher.allowedCategories && teacher.allowedCategories.includes(group.category)) {
+            canTeach = true;
+            reason = `Вчитель має дозвіл на викладання у категорії "${group.category}"`;
+        } else {
+            canTeach = false;
+            reason = `Вчитель не має дозволу на викладання у категорії "${group.category}"`;
+        }
+
+        res.json({
+            canTeach,
+            reason,
+            teacher: {
+                _id: teacher._id,
+                fullName: teacher.fullName,
+                allowedCategories: teacher.allowedCategories || [],
+                specificGroups: teacher.specificGroups || [],
+                isCurator: group.curator && group.curator.toString() === teacherId
+            },
+            group: {
+                _id: group._id,
+                name: group.name,
+                category: group.category,
+                gradeLevel: group.gradeLevel
+            }
+        });
+    } catch (err) {
+        console.error('Помилка перевірки:', err);
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// ОТРИМАТИ ГРУПИ, ДЕ МОЖЕ ВИКЛАДАТИ ВЧИТЕЛЬ
+router.get('/teacher/:teacherId/available-groups', async (req, res) => {
+    try {
+        const { teacherId } = req.params;
+        const { databaseName, subject } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Group = getSchoolGroupModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
+
+        const teacher = await User.findById(teacherId);
+        if (!teacher || teacher.role !== 'teacher') {
+            return res.status(400).json({ error: 'Користувач не є викладачем' });
+        }
+
+        // Отримуємо всі групи
+        const allGroups = await Group.find()
+            .populate('curator', 'fullName')
+            .sort({ name: 1 });
+
+        // Фільтруємо групи, де вчитель може викладати
+        const availableGroups = allGroups.filter(group => {
+            // Перевіряємо, чи вчитель взагалі викладає цей предмет (якщо subject вказано)
+            if (subject && (!teacher.positions || !teacher.positions.includes(subject))) {
+                return false;
+            }
+
+            // 1. Якщо вчитель - куратор цієї групи
+            if (group.curator && group.curator._id.toString() === teacherId) {
+                return true;
+            }
+
+            // 2. Перевіряємо specificGroups
+            if (teacher.specificGroups && teacher.specificGroups.length > 0) {
+                const specificGroup = teacher.specificGroups.find(sg =>
+                    sg.group.toString() === group._id.toString()
+                );
+
+                if (specificGroup) {
+                    // Перевіряємо, чи дозволений предмет (якщо subject вказано)
+                    if (subject) {
+                        return !specificGroup.allowedSubjects ||
+                            specificGroup.allowedSubjects.length === 0 ||
+                            specificGroup.allowedSubjects.includes(subject);
+                    }
+                    return true;
+                }
+            }
+
+            // 3. Перевіряємо allowedCategories
+            if (teacher.allowedCategories && teacher.allowedCategories.includes(group.category)) {
+                return true;
+            }
+
+            return false;
+        });
+
+        res.json({
+            teacher: {
+                _id: teacher._id,
+                fullName: teacher.fullName,
+                positions: teacher.positions || []
+            },
+            availableGroups: availableGroups.map(group => ({
+                _id: group._id,
+                name: group.name,
+                category: group.category,
+                gradeLevel: group.gradeLevel,
+                curator: group.curator,
+                studentCount: group.students ? group.students.length : 0
+            }))
+        });
+    } catch (err) {
+        console.error('Помилка отримання доступних груп:', err);
+        res.status(400).json({ error: err.message });
     }
 });
 
