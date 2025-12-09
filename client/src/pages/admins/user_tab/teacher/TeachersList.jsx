@@ -2,7 +2,6 @@ import React from 'react';
 import TeacherItem from './TeacherItem';
 
 const TeachersList = ({ teachers, onEditTeacher, onDeleteTeacher, isMobile }) => {
-    // Сортування викладачів за алфавітом
     const getSortedTeachers = (teachers) => {
         return [...teachers].sort((a, b) => {
             return a.fullName.localeCompare(b.fullName, 'uk');

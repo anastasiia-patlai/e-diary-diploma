@@ -85,7 +85,7 @@ router.get('/teachers', async (req, res) => {
 
         const User = getSchoolUserModel(databaseName);
         const teachers = await User.find({ role: 'teacher' })
-            .select('fullName email phone positions position dateOfBirth')
+            .select('fullName email phone positions position category dateOfBirth')
             .sort({ fullName: 1 });
         res.json(teachers);
     } catch (err) {
@@ -97,7 +97,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, jobPosition } = req.body;
+        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, category, jobPosition } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -141,6 +141,9 @@ router.put('/:id', async (req, res) => {
             } else if (position) {
                 updateData.position = position;
                 updateData.positions = position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
+            }
+            if (category !== undefined) {
+                updateData.category = category;
             }
         } else if (user.role === 'admin') {
             updateData.jobPosition = jobPosition;

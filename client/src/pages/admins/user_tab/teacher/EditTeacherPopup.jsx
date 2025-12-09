@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus } from "react-icons/fa";
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus, FaCertificate } from "react-icons/fa";
 import axios from "axios";
 
 const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }) => {
@@ -8,7 +8,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         email: "",
         phone: "",
         dateOfBirth: "",
-        positions: [""]
+        positions: [""],
+        category: "" // ДОДАНО: поле категорії
     });
     const [loading, setLoading] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(true);
@@ -40,7 +41,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                     email: userData.email || "",
                     phone: userData.phone || "",
                     dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : "",
-                    positions: positionsArray.length > 0 ? positionsArray : [""]
+                    positions: positionsArray.length > 0 ? positionsArray : [""],
+                    category: userData.category || "" // ДОДАНО: завантаження категорії
                 });
 
                 setFetchingUser(false);
@@ -116,6 +118,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                 dateOfBirth: formData.dateOfBirth,
                 positions: filteredPositions,
                 position: filteredPositions.join(", "),
+                category: formData.category, // ДОДАНО: категорія
                 databaseName: databaseName
             };
 
@@ -399,6 +402,57 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
+                        </div>
+
+                        {/* КАТЕГОРІЯ ВЧИТЕЛЯ - ДОДАНО */}
+                        <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: isMobile ? '10px' : '8px',
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '13px'
+                            }}>
+                                <FaCertificate style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: isMobile ? '14px' : '12px',
+                                    flexShrink: 0
+                                }} />
+                                Категорія
+                            </label>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                style={{
+                                    width: '100%',
+                                    padding: isMobile ? '14px 16px' : '10px 12px',
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '8px',
+                                    fontSize: isMobile ? '16px' : '14px',
+                                    boxSizing: 'border-box',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s',
+                                    backgroundColor: 'white',
+                                    height: isMobile ? '40px' : 'auto'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e5e7eb';
+                                }}
+                            >
+                                <option value="">-- Оберіть категорію --</option>
+                                <option value="Вища категорія">Вища категорія</option>
+                                <option value="Перша категорія">Перша категорія</option>
+                                <option value="Друга категорія">Друга категорія</option>
+                                <option value="Спеціаліст">Спеціаліст</option>
+                                <option value="Молодший спеціаліст">Молодший спеціаліст</option>
+                                <option value="Без категорії">Без категорії</option>
+                            </select>
                         </div>
 
                         {/* КІЛЬКА ПРЕДМЕТІВ */}

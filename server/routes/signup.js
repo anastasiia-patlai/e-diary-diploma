@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 const { getSchoolUserModel, getSchoolGroupModel } = require('../config/databaseManager');
 
 router.post('/signup', async (req, res) => {
-    console.log("=== ПОЧАТОК РЕЄСТРАЦІЇ ===");
     console.log("Отримані дані:", JSON.stringify(req.body, null, 2));
 
     const {
@@ -17,6 +16,7 @@ router.post('/signup', async (req, res) => {
         password,
         group,
         positions,
+        category,
         jobPosition
     } = req.body;
 
@@ -76,7 +76,6 @@ router.post('/signup', async (req, res) => {
             groupId = existingGroup._id;
         }
 
-        // Підготовка даних користувача
         const userData = {
             fullName,
             role,
@@ -95,6 +94,15 @@ router.post('/signup', async (req, res) => {
                 ? positions.filter(pos => pos && pos.trim() !== "")
                 : [];
             userData.position = userData.positions.join(", ");
+
+            if (category && category.trim() !== "") {
+                userData.category = category;
+                console.log("Додано категорію для викладача:", userData.category);
+            } else {
+                userData.category = "Без категорії";
+                console.log("Встановлено категорію за замовчуванням:", userData.category);
+            }
+
             console.log("Додано позиції для викладача:", userData.positions);
         } else if (role === 'admin') {
             userData.jobPosition = jobPosition || '';
@@ -125,7 +133,8 @@ router.post('/signup', async (req, res) => {
                 id: newUser._id,
                 fullName: newUser.fullName,
                 role: newUser.role,
-                email: newUser.email
+                email: newUser.email,
+                category: newUser.category
             }
         });
 

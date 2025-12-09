@@ -14,6 +14,7 @@ function Signup({ onClose, databaseName }) {
         confirmPassword: "",
         group: "",
         positions: [""],
+        category: "",
         jobPosition: "",
     });
 
@@ -146,6 +147,7 @@ function Signup({ onClose, databaseName }) {
                 submitData.group = formData.group;
             } else if (formData.role === "teacher") {
                 submitData.positions = filteredPositions;
+                submitData.category = formData.category
             } else if (formData.role === "admin") {
                 submitData.jobPosition = formData.jobPosition;
             }
@@ -378,6 +380,36 @@ function Signup({ onClose, databaseName }) {
                         {/* ВИКЛАДАЧ - КІЛЬКА ПРЕДМЕТІВ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
+                                <label className="form-label" style={{
+                                    fontSize: isMobile ? '15px' : '17px',
+                                    fontWeight: '500'
+                                }}>
+                                    Категорія
+                                </label>
+                                <select
+                                    name="category"
+                                    className={getSelectClass("category")}
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    style={{
+                                        fontSize: isMobile ? '14px' : '16px',
+                                        padding: isMobile ? '10px' : '12px'
+                                    }}
+                                >
+                                    <option value="">-- Оберіть категорію --</option>
+                                    <option value="Вища категорія">Вища категорія</option>
+                                    <option value="Перша категорія">Перша категорія</option>
+                                    <option value="Друга категорія">Друга категорія</option>
+                                    <option value="Спеціаліст">Спеціаліст</option>
+                                    <option value="Молодший спеціаліст">Молодший спеціаліст</option>
+                                    <option value="Без категорії">Без категорії</option>
+                                </select>
+                                <div className="invalid-feedback" style={{
+                                    fontSize: isMobile ? '12px' : '14px'
+                                }}>
+                                    {errors.category}
+                                </div>
                                 <label className="form-label" style={{
                                     fontSize: isMobile ? '15px' : '17px',
                                     fontWeight: '500'

@@ -60,6 +60,23 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                             {teacher.email}
                         </span>
                     </div>
+
+                    {/* ДОДАНО: Категорія вчителя */}
+                    {teacher.category && (
+                        <div style={{
+                            fontSize: isMobile ? '12px' : '11px',
+                            color: '#059669',
+                            fontWeight: '500',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            marginBottom: isMobile ? '6px' : '4px',
+                            display: 'inline-block'
+                        }}>
+                            {teacher.category}
+                        </div>
+                    )}
+
                     {teacher.phone && (
                         <div style={{
                             fontSize: isMobile ? '13px' : '12px',
