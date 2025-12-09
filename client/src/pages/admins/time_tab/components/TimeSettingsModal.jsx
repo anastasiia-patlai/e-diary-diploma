@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaPlus, FaSave, FaCalendarDay } from "react-icons/fa";
-
-import { validateTimeSlots } from "./timeValidation";
 import TimeSlotItem from "./TimeSlotItem";
 
-const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDay }) => {
+const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDay, isMobile = false }) => {
     const [timeSlots, setTimeSlots] = useState([]);
     const [error, setError] = useState("");
     const [databaseName, setDatabaseName] = useState("");
 
-    // Отримання databaseName з localStorage
     useEffect(() => {
         const getCurrentDatabase = () => {
             let dbName = localStorage.getItem('databaseName');
-
             if (!dbName) {
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
@@ -22,26 +18,9 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                         if (user.databaseName) {
                             dbName = user.databaseName;
                         }
-                    } catch (e) {
-                        console.error("Помилка парсингу user:", e);
-                    }
+                    } catch (e) { }
                 }
             }
-
-            if (!dbName) {
-                const userInfoStr = localStorage.getItem('userInfo');
-                if (userInfoStr) {
-                    try {
-                        const userInfo = JSON.parse(userInfoStr);
-                        if (userInfo.databaseName) {
-                            dbName = userInfo.databaseName;
-                        }
-                    } catch (e) {
-                        console.error("Помилка парсингу userInfo:", e);
-                    }
-                }
-            }
-
             return dbName;
         };
 
@@ -62,7 +41,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
         }
     }, [show, existingTimeSlots]);
 
-    // ДОДАТИ НОВИЙ УРОК
     const addTimeSlot = () => {
         const newOrder = timeSlots.length + 1;
         setTimeSlots([
@@ -76,7 +54,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
         ]);
     };
 
-    // ВИДАЛИТИ УРОК
     const removeTimeSlot = (index) => {
         if (timeSlots.length > 0) {
             const newTimeSlots = timeSlots.filter((_, i) => i !== index);
@@ -88,7 +65,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
         }
     };
 
-    // ОНОВИТИ ЧАС УРОКУ
     const updateTimeSlot = (index, field, value) => {
         const newTimeSlots = timeSlots.map((slot, i) =>
             i === index ? { ...slot, [field]: value } : slot
@@ -96,20 +72,15 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
         setTimeSlots(newTimeSlots);
     };
 
-    // ЗБЕРЕГТИ НАЛАШТУВАННЯ
     const handleSave = () => {
-        console.log("timeSlots перед валідацією:", timeSlots);
-
         for (let i = 0; i < timeSlots.length; i++) {
             const slot = timeSlots[i];
-            console.log(`Перевірка уроку ${i + 1}:`, slot);
-
             if (!slot.startTime || !slot.endTime) {
                 setError("Усі поля повинні бути заповнені");
                 return;
             }
             if (slot.startTime >= slot.endTime) {
-                setError(`У уроку ${i + 1} час початку повинен бути раніше за час закінчення`);
+                setError(`Урок ${i + 1}: час початку повинен бути раніше за час закінчення`);
                 return;
             }
         }
@@ -120,8 +91,6 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
             endTime: slot.endTime,
             isActive: slot.isActive !== false
         }));
-
-        console.log("ЧАСОВІ СЛОТИ ДЛЯ ЗБЕРЕЖЕННЯ:", timeSlotsToSave);
 
         onSave(timeSlotsToSave);
     };
@@ -138,41 +107,44 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
+            alignItems: isMobile ? 'flex-start' : 'center',
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '600px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                overflowY: 'auto',
+                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '20px'
+                    alignItems: 'flex-start',
+                    marginBottom: isMobile ? '16px' : '20px',
+                    gap: '12px'
                 }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                         <h2 style={{
                             margin: 0,
-                            fontSize: '20px',
+                            fontSize: isMobile ? '18px' : '20px',
                             color: '#374151',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px'
+                            gap: isMobile ? '8px' : '10px'
                         }}>
-                            <FaCalendarDay />
+                            <FaCalendarDay size={isMobile ? 16 : 18} />
                             Налаштування часу уроків
                         </h2>
                         <p style={{
-                            margin: 0,
+                            margin: isMobile ? '2px 0 0 0' : '4px 0 0 0',
                             color: '#6b7280',
-                            fontSize: '14px',
-                            marginTop: '4px'
+                            fontSize: isMobile ? '13px' : '14px'
                         }}>
                             Для дня: <strong>{currentDay.name}</strong>
                         </p>
@@ -193,15 +165,11 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
+                            fontSize: isMobile ? '18px' : '20px',
                             color: '#6b7280',
-                            transition: 'color 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                            e.target.style.color = '#374151';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.color = '#6b7280';
+                            transition: 'color 0.2s',
+                            padding: '4px',
+                            flexShrink: 0
                         }}
                     >
                         <FaTimes />
@@ -212,9 +180,10 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                     <div style={{
                         backgroundColor: '#fee2e2',
                         color: '#dc2626',
-                        padding: '12px',
+                        padding: isMobile ? '10px 12px' : '12px',
                         borderRadius: '6px',
-                        marginBottom: '16px',
+                        marginBottom: isMobile ? '12px' : '16px',
+                        fontSize: isMobile ? '13px' : '14px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px'
@@ -224,9 +193,14 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                     </div>
                 )}
 
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: isMobile ? '16px' : '20px' }}>
                     {timeSlots.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6b7280' }}>
+                        <div style={{
+                            textAlign: 'center',
+                            padding: isMobile ? '30px 20px' : '40px 20px',
+                            color: '#6b7280',
+                            fontSize: isMobile ? '14px' : '16px'
+                        }}>
                             Ще не додано жодного уроку для {currentDay.name}
                         </div>
                     ) : (
@@ -237,6 +211,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                                 index={index}
                                 onUpdate={(field, value) => updateTimeSlot(index, field, value)}
                                 onRemove={() => removeTimeSlot(index)}
+                                isMobile={isMobile}
                             />
                         ))
                     )}
@@ -247,7 +222,7 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                     onClick={addTimeSlot}
                     style={{
                         width: '100%',
-                        padding: '12px',
+                        padding: isMobile ? '10px' : '12px',
                         backgroundColor: 'transparent',
                         color: 'rgba(105, 180, 185, 1)',
                         border: '2px dashed rgba(105, 180, 185, 1)',
@@ -257,19 +232,13 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
-                        fontSize: '14px',
+                        fontSize: isMobile ? '13px' : '14px',
                         fontWeight: '600',
-                        marginBottom: '20px',
+                        marginBottom: isMobile ? '16px' : '20px',
                         transition: 'all 0.2s'
                     }}
-                    onMouseOver={(e) => {
-                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                    }}
                 >
-                    <FaPlus />
+                    <FaPlus size={isMobile ? 12 : 14} />
                     Додати урок для {currentDay.name}
                 </button>
 
@@ -278,35 +247,29 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                     gap: '10px',
                     marginTop: '24px',
                     paddingTop: '16px',
-                    borderTop: '1px solid #e5e7eb'
+                    borderTop: '1px solid #e5e7eb',
+                    flexDirection: isMobile ? 'column' : 'row'
                 }}>
                     <button
                         type="button"
                         onClick={onClose}
                         style={{
-                            flex: 1,
-                            padding: '12px',
+                            padding: isMobile ? '10px' : '12px',
                             backgroundColor: '#6b7280',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '13px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
                             transition: 'background-color 0.2s'
                         }}
-                        onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#4b5563';
-                        }}
-                        onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#6b7280';
-                        }}
                     >
-                        <FaTimes />
+                        <FaTimes size={isMobile ? 12 : 14} />
                         Скасувати
                     </button>
                     <button
@@ -314,33 +277,22 @@ const TimeSettingsModal = ({ show, onClose, onSave, existingTimeSlots, currentDa
                         onClick={handleSave}
                         disabled={!databaseName}
                         style={{
-                            flex: 1,
-                            padding: '12px',
+                            padding: isMobile ? '10px' : '12px',
                             backgroundColor: !databaseName ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
                             cursor: !databaseName ? 'not-allowed' : 'pointer',
                             fontWeight: '600',
-                            fontSize: '14px',
+                            fontSize: isMobile ? '13px' : '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
                             transition: 'background-color 0.2s'
                         }}
-                        onMouseOver={(e) => {
-                            if (databaseName) {
-                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                            }
-                        }}
-                        onMouseOut={(e) => {
-                            if (databaseName) {
-                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                            }
-                        }}
                     >
-                        <FaSave />
+                        <FaSave size={isMobile ? 12 : 14} />
                         Зберегти для {currentDay.name}
                     </button>
                 </div>
