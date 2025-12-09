@@ -5,7 +5,7 @@ import HolidayForm from './HolidayForm';
 import HolidayList from './HolidayList';
 import ConfirmationModal from '../ConfirmationModal';
 
-const HolidayManager = () => {
+const HolidayManager = ({ isMobile = false }) => {
     const [holidays, setHolidays] = useState([]);
     const [quarters, setQuarters] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -155,36 +155,45 @@ const HolidayManager = () => {
     };
 
     if (loading) {
-        return <div style={{ textAlign: 'center', padding: '40px' }}>Завантаження канікул...</div>;
+        return (
+            <div style={{
+                textAlign: 'center',
+                padding: isMobile ? '30px 20px' : '40px',
+                color: '#6b7280'
+            }}>
+                Завантаження канікул...
+            </div>
+        );
     }
 
     return (
         <div>
-            {/* {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
-                </div>
-            )} */}
-
             <div style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: isMobile ? '16px' : '20px',
+                gap: isMobile ? '12px' : '0'
             }}>
-                <h3 style={{ margin: 0 }}>Управління канікулами</h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1 }}>
+                    <h3 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '16px' : '18px',
+                        fontWeight: '600'
+                    }}>
+                        Управління канікулами
+                    </h3>
+                </div>
+                <div style={{
+                    display: 'flex',
+                    gap: isMobile ? '8px' : '10px',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
                     <button
                         onClick={loadData}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: 'transparent',
                             color: 'rgba(105, 180, 185, 1)',
                             border: '1px solid rgba(105, 180, 185, 1)',
@@ -192,17 +201,20 @@ const HolidayManager = () => {
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaSync />
-                        Оновити
+                        <FaSync size={isMobile ? 12 : 14} />
+                        {isMobile ? 'Онов.' : 'Оновити'}
                     </button>
                     <button
                         onClick={handleCreate}
                         disabled={quarters.length === 0}
                         style={{
-                            padding: '8px 16px',
+                            padding: isMobile ? '8px 12px' : '8px 16px',
                             backgroundColor: quarters.length === 0 ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
@@ -210,10 +222,13 @@ const HolidayManager = () => {
                             cursor: quarters.length === 0 ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'center',
+                            gap: '6px',
+                            fontSize: isMobile ? '13px' : '14px',
+                            flex: isMobile ? '1' : '0'
                         }}
                     >
-                        <FaPlus />
+                        <FaPlus size={isMobile ? 12 : 14} />
                         Додати канікули
                     </button>
                 </div>
@@ -223,9 +238,10 @@ const HolidayManager = () => {
                 <div style={{
                     backgroundColor: '#fef3c7',
                     color: '#d97706',
-                    padding: '12px',
+                    padding: isMobile ? '12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     Для створення канікул спочатку потрібно додати чверті
                 </div>
@@ -235,9 +251,10 @@ const HolidayManager = () => {
                 <div style={{
                     backgroundColor: '#fee2e2',
                     color: '#dc2626',
-                    padding: '12px',
+                    padding: isMobile ? '12px' : '12px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px',
+                    fontSize: isMobile ? '13px' : '14px'
                 }}>
                     {error}
                 </div>
@@ -247,6 +264,7 @@ const HolidayManager = () => {
                 holidays={holidays}
                 onEdit={handleEdit}
                 onDelete={handleDeleteClick}
+                isMobile={isMobile}
             />
 
             {showForm && (
@@ -255,6 +273,7 @@ const HolidayManager = () => {
                     quarters={quarters}
                     onClose={handleFormClose}
                     onSubmit={handleFormSubmit}
+                    isMobile={isMobile}
                 />
             )}
 
@@ -267,6 +286,7 @@ const HolidayManager = () => {
                     confirmText="Видалити"
                     cancelText="Скасувати"
                     type="danger"
+                    isMobile={isMobile}
                 />
             )}
         </div>

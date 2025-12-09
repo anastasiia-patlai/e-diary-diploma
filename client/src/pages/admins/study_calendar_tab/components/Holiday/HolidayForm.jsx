@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUmbrellaBeach } from 'react-icons/fa';
 
-const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
+const HolidayForm = ({ holiday, quarters, onClose, onSubmit, isMobile = false }) => {
     const [formData, setFormData] = useState({
         quarter: '',
         name: '',
@@ -15,7 +15,6 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
 
     useEffect(() => {
         if (quarters && quarters.length > 0) {
-            // ФІЛЬТРУЄМ ТІЛЬКИ ЧВЕРТІ З ПОВНОЮ ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ
             const validQuarters = quarters.filter(quarter =>
                 quarter.semester &&
                 quarter.semester.name &&
@@ -56,7 +55,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                 else {
                     const startDate = new Date(value);
                     if (startDate < new Date(now.getFullYear() - 5, 0, 1)) {
-                        error = 'Дата початку не може бути давніше 5 років';
+                        error = 'Дата не може бути давніше 5 років';
                     }
                 }
                 break;
@@ -66,7 +65,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                     const startDate = new Date(formData.startDate);
                     const endDate = new Date(value);
                     if (endDate <= startDate) {
-                        error = 'Дата завершення має бути після дати початку';
+                        error = 'Дата має бути після дати початку';
                     }
                 }
                 break;
@@ -116,19 +115,30 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
         }
     };
 
-    const getInputClass = (name) => {
-        if (!touched[name]) return 'form-control';
-        if (errors[name]) return 'form-control is-invalid';
-        return 'form-control is-valid';
-    };
+    const inputStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${touched[name] ? (errors[name] ? '#dc2626' : '#10b981') : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        backgroundColor: name === 'name' && !holiday ? '#f9fafb' : 'white'
+    });
 
-    const getSelectClass = (name) => {
-        if (!touched[name]) return 'form-select';
-        if (errors[name]) return 'form-select is-invalid';
-        return 'form-select is-valid';
-    };
+    const selectStyle = (name) => ({
+        width: '100%',
+        padding: isMobile ? '10px 12px' : '12px 14px',
+        border: `1px solid ${touched[name] ? (errors[name] ? '#dc2626' : '#10b981') : '#d1d5db'}`,
+        borderRadius: '6px',
+        fontSize: isMobile ? '14px' : '15px',
+        backgroundColor: 'white',
+        boxSizing: 'border-box',
+        outline: 'none',
+        transition: 'border-color 0.2s'
+    });
 
-    // ФУНКЦІЯ ДЛЯ ОТРИМАННЯ ЧВЕРТІ З ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ
     const getQuarterDisplayName = (quarter) => {
         if (!quarter.semester) {
             return `${quarter.name} (Невідомий семестр)`;
@@ -151,25 +161,34 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
+            alignItems: isMobile ? 'flex-start' : 'center',
+            zIndex: 1000,
+            padding: isMobile ? '16px' : '0',
+            overflowY: 'auto'
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '24px',
-                width: '90%',
+                padding: isMobile ? '16px' : '24px',
+                width: isMobile ? '100%' : '90%',
                 maxWidth: '500px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
+                overflowY: 'auto',
+                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '20px'
+                    marginBottom: isMobile ? '16px' : '20px'
                 }}>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{
+                        margin: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: isMobile ? '16px' : '18px'
+                    }}>
                         <FaUmbrellaBeach />
                         {holiday ? 'Редагувати канікули' : 'Додати канікули'}
                     </h3>
@@ -179,31 +198,36 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            fontSize: '20px',
-                            color: '#6b7280'
+                            fontSize: isMobile ? '18px' : '20px',
+                            color: '#6b7280',
+                            padding: '4px'
                         }}
                     >
                         <FaTimes />
                     </button>
                 </div>
 
-                {/* ПОПЕРЕДЖЕННЯ ПРО ВІДСУТНІСТЬ ЧВЕРТЕЙ З ІНФОРМАЦІЄЮ ПРО СЕМЕСТРИ */}
                 {enrichedQuarters.length === 0 && quarters.length > 0 && (
                     <div style={{
                         backgroundColor: '#fef3c7',
                         color: '#d97706',
-                        padding: '12px',
+                        padding: isMobile ? '10px 12px' : '12px',
                         borderRadius: '6px',
-                        marginBottom: '16px',
-                        fontSize: '14px'
+                        marginBottom: isMobile ? '12px' : '16px',
+                        fontSize: isMobile ? '13px' : '14px'
                     }}>
                         Не знайдено чвертей з інформацією про семестри. Спробуйте оновити дані.
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Чверть *
                         </label>
                         <select
@@ -211,7 +235,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             value={formData.quarter}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getSelectClass('quarter')}
+                            style={selectStyle('quarter')}
                             disabled={enrichedQuarters.length === 0}
                         >
                             <option value="">
@@ -219,22 +243,38 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             </option>
                             {enrichedQuarters.map(quarter => (
                                 <option key={quarter._id} value={quarter._id}>
-                                    {getQuarterDisplayName(quarter)}
+                                    {isMobile ? `${quarter.name}` : getQuarterDisplayName(quarter)}
                                 </option>
                             ))}
                         </select>
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.quarter}
-                        </div>
+                        {errors.quarter && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.quarter}
+                            </div>
+                        )}
                         {enrichedQuarters.length === 0 && quarters.length > 0 && (
-                            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
-                                Переконайтеся, що чверті мають пов'язані семестри з інформацією про рік
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                marginTop: '4px'
+                            }}>
+                                Переконайтеся, що чверті мають пов'язані семестри
                             </div>
                         )}
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Тип канікул *
                         </label>
                         <select
@@ -242,7 +282,7 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             value={formData.type}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getSelectClass('type')}
+                            style={selectStyle('type')}
                         >
                             <option value="">Оберіть тип</option>
                             <option value="Осінні">Осінні</option>
@@ -250,13 +290,25 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             <option value="Весняні">Весняні</option>
                             <option value="Літні">Літні</option>
                         </select>
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.type}
-                        </div>
+                        {errors.type && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.type}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Назва канікул *
                         </label>
                         <input
@@ -265,16 +317,28 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             value={formData.name}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('name')}
+                            style={inputStyle('name')}
                             placeholder="Наприклад: Осінні канікули"
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.name}
-                        </div>
+                        {errors.name && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.name}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '12px' : '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата початку *
                         </label>
                         <input
@@ -283,15 +347,27 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             value={formData.startDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('startDate')}
+                            style={inputStyle('startDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.startDate}
-                        </div>
+                        {errors.startDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.startDate}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                    <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '6px',
+                            fontWeight: '500',
+                            fontSize: isMobile ? '13px' : '14px'
+                        }}>
                             Дата завершення *
                         </label>
                         <input
@@ -300,26 +376,37 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             value={formData.endDate}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            className={getInputClass('endDate')}
+                            style={inputStyle('endDate')}
                         />
-                        <div className="invalid-feedback" style={{ display: 'block', fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
-                            {errors.endDate}
-                        </div>
+                        {errors.endDate && (
+                            <div style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                {errors.endDate}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{
+                        display: 'flex',
+                        gap: '10px',
+                        flexDirection: isMobile ? 'column' : 'row'
+                    }}>
                         <button
                             type="button"
                             onClick={onClose}
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: '#6b7280',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px'
                             }}
                         >
                             Скасувати
@@ -328,14 +415,14 @@ const HolidayForm = ({ holiday, quarters, onClose, onSubmit }) => {
                             type="submit"
                             disabled={enrichedQuarters.length === 0}
                             style={{
-                                flex: 1,
-                                padding: '12px',
+                                padding: isMobile ? '12px' : '12px',
                                 backgroundColor: enrichedQuarters.length === 0 ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 cursor: enrichedQuarters.length === 0 ? 'not-allowed' : 'pointer',
-                                fontWeight: '600'
+                                fontWeight: '600',
+                                fontSize: isMobile ? '14px' : '14px'
                             }}
                         >
                             {holiday ? 'Оновити' : 'Додати'}
