@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // Додайте useRef
 import {
     FaTimes,
     FaSave,
@@ -16,11 +16,12 @@ const CreateScheduleModal = ({
     show,
     onClose,
     onSave,
-    groups,
-    teachers,
-    classrooms,
-    semesters,
-    selectedSemester
+    groups = [],
+    teachers = [],
+    classrooms = [],
+    semesters = [],
+    selectedSemester,
+    schoolDatabaseName
 }) => {
     const [formData, setFormData] = useState({
         subject: "",
@@ -38,11 +39,28 @@ const CreateScheduleModal = ({
     const [availability, setAvailability] = useState({ available: true, conflicts: {} });
     const [filteredTeachers, setFilteredTeachers] = useState([]);
 
+    // Використовуємо useRef для стабільної версії databaseName
+    const databaseNameRef = useRef(schoolDatabaseName);
+
+    // Оновлюємо ref коли змінюється schoolDatabaseName
+    useEffect(() => {
+        databaseNameRef.current = schoolDatabaseName;
+    }, [schoolDatabaseName]);
+
     useEffect(() => {
         const loadDaysOfWeek = async () => {
             try {
-                const response = await axios.get("http://localhost:3001/api/days/active");
-                setDaysOfWeek(response.data);
+                const dbName = databaseNameRef.current;
+                if (!dbName) {
+                    console.error("schoolDatabaseName не вказано");
+                    setDaysOfWeek([]);
+                    return;
+                }
+
+                const response = await axios.get("http://localhost:3001/api/days/active", {
+                    params: { databaseName: dbName }
+                });
+                setDaysOfWeek(response.data || []);
             } catch (err) {
                 console.error("Error loading days of week:", err);
                 setDaysOfWeek([]);
@@ -56,7 +74,7 @@ const CreateScheduleModal = ({
                 semester: selectedSemester
             }));
         }
-    }, [show, selectedSemester]);
+    }, [show, selectedSemester]); // Видалили schoolDatabaseName з залежностей
 
     useEffect(() => {
         if (show) {
@@ -81,13 +99,15 @@ const CreateScheduleModal = ({
         if (formData.subject && teachers.length > 0) {
             const subject = formData.subject.toLowerCase();
             const filtered = teachers.filter(teacher => {
-                // Перевіряємо позиції викладача
+                if (!teacher) return false;
+
                 const positions = teacher.positions || [];
                 const position = teacher.position || "";
+                const fullName = teacher.fullName || "";
 
                 return positions.some(pos => pos.toLowerCase().includes(subject)) ||
                     position.toLowerCase().includes(subject) ||
-                    teacher.fullName.toLowerCase().includes(subject);
+                    fullName.toLowerCase().includes(subject);
             });
             setFilteredTeachers(filtered);
         } else {
@@ -97,7 +117,8 @@ const CreateScheduleModal = ({
 
     useEffect(() => {
         const loadTimeSlots = async () => {
-            if (!formData.dayOfWeek) {
+            const dbName = databaseNameRef.current;
+            if (!formData.dayOfWeek || !dbName) {
                 setTimeSlots([]);
                 return;
             }
@@ -106,12 +127,13 @@ const CreateScheduleModal = ({
                 setLoadingTimeSlots(true);
                 console.log("Завантаження часових слотів для дня:", formData.dayOfWeek);
 
-                // Використовуємо правильний URL для часових слотів
-                const response = await axios.get("http://localhost:3001/api/time-slots");
+                const response = await axios.get("http://localhost:3001/api/time-slots", {
+                    params: { databaseName: dbName }
+                });
                 console.log("Усі часові слоти:", response.data);
 
-                // Фільтруємо часові слоти за вибраним днем тижня
-                const dayTimeSlots = response.data.filter(slot => {
+                const dayTimeSlots = (response.data || []).filter(slot => {
+                    if (!slot) return false;
                     const slotDayId = slot.dayOfWeek?._id || slot.dayOfWeek?.id;
                     const selectedDayId = formData.dayOfWeek;
                     return slotDayId === selectedDayId;
@@ -124,8 +146,6 @@ const CreateScheduleModal = ({
                 setError("");
             } catch (err) {
                 console.error("Error loading time slots:", err);
-                console.error("URL запиту:", "http://localhost:3001/api/time-slots");
-                console.error("Статус помилки:", err.response?.status);
                 setTimeSlots([]);
                 setError("Помилка при завантаженні часу уроків");
             } finally {
@@ -134,11 +154,12 @@ const CreateScheduleModal = ({
         };
 
         loadTimeSlots();
-    }, [formData.dayOfWeek]);
+    }, [formData.dayOfWeek]); // Видалили schoolDatabaseName з залежностей
 
     useEffect(() => {
         const checkAvailability = async () => {
-            if (!formData.dayOfWeek || !formData.timeSlot || !formData.classroom || !formData.teacher) {
+            const dbName = databaseNameRef.current;
+            if (!formData.dayOfWeek || !formData.timeSlot || !formData.classroom || !formData.teacher || !dbName) {
                 return;
             }
 
@@ -147,11 +168,12 @@ const CreateScheduleModal = ({
                     dayOfWeekId: formData.dayOfWeek,
                     timeSlotId: formData.timeSlot,
                     classroomId: formData.classroom,
-                    teacherId: formData.teacher
+                    teacherId: formData.teacher,
+                    databaseName: dbName
                 });
 
                 const response = await axios.get(`http://localhost:3001/api/available/check-availability?${params}`);
-                setAvailability(response.data);
+                setAvailability(response.data || { available: true, conflicts: {} });
             } catch (err) {
                 console.error("Error checking availability:", err);
                 setAvailability({ available: true, conflicts: {} });
@@ -159,7 +181,7 @@ const CreateScheduleModal = ({
         };
 
         checkAvailability();
-    }, [formData.classroom, formData.teacher, formData.dayOfWeek, formData.timeSlot]);
+    }, [formData.classroom, formData.teacher, formData.dayOfWeek, formData.timeSlot]); // Видалили schoolDatabaseName з залежностей
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -176,7 +198,7 @@ const CreateScheduleModal = ({
                 return {
                     ...prev,
                     [name]: value,
-                    teacher: "" // Скидаємо вибір викладача при зміні предмета
+                    teacher: ""
                 };
             }
             return {
@@ -187,6 +209,12 @@ const CreateScheduleModal = ({
     };
 
     const handleSave = () => {
+        const dbName = databaseNameRef.current;
+        if (!dbName) {
+            setError("Не вказано базу даних школи");
+            return;
+        }
+
         if (!formData.subject || !formData.group || !formData.dayOfWeek ||
             !formData.timeSlot || !formData.teacher || !formData.classroom) {
             setError("Усі поля повинні бути заповнені");
@@ -207,18 +235,24 @@ const CreateScheduleModal = ({
         const scheduleData = {
             subject: formData.subject,
             group: formData.group,
-            dayOfWeek: selectedDay._id,
+            dayOfWeek: selectedDay._id || selectedDay.id,
             timeSlot: formData.timeSlot,
             teacher: formData.teacher,
             classroom: formData.classroom,
-            semester: selectedSemester
+            semester: selectedSemester,
+            databaseName: dbName // Додаємо databaseName до даних для збереження
         };
 
         onSave(scheduleData);
     };
 
-    const availableClassrooms = classrooms.filter(classroom => classroom.isAvailable !== false);
-    const availableTeachers = filteredTeachers.filter(teacher => teacher.isAvailable !== false);
+    const availableClassrooms = Array.isArray(classrooms)
+        ? classrooms.filter(classroom => classroom?.isAvailable !== false)
+        : [];
+
+    const availableTeachers = Array.isArray(filteredTeachers)
+        ? filteredTeachers.filter(teacher => teacher?.isAvailable !== false)
+        : [];
 
     if (!show) return null;
 
@@ -350,7 +384,8 @@ const CreateScheduleModal = ({
                             }}
                         >
                             <option value={selectedSemester}>
-                                {semesters.find(s => s._id === selectedSemester)?.name} {semesters.find(s => s._id === selectedSemester)?.year}
+                                {Array.isArray(semesters) && semesters.find(s => s?._id === selectedSemester)?.name}
+                                {Array.isArray(semesters) && semesters.find(s => s?._id === selectedSemester)?.year}
                             </option>
                         </select>
                     </div>
@@ -432,9 +467,9 @@ const CreateScheduleModal = ({
                             }}
                         >
                             <option value="">Оберіть групу</option>
-                            {groups.map(group => (
-                                <option key={group._id} value={group._id}>
-                                    {group.name}
+                            {Array.isArray(groups) && groups.map(group => (
+                                <option key={group?._id} value={group?._id}>
+                                    {group?.name}
                                 </option>
                             ))}
                         </select>
@@ -471,9 +506,9 @@ const CreateScheduleModal = ({
                             }}
                         >
                             <option value="">Оберіть день</option>
-                            {daysOfWeek.map(day => (
-                                <option key={day._id || day.id} value={day._id || day.id}>
-                                    {day.name}
+                            {Array.isArray(daysOfWeek) && daysOfWeek.map(day => (
+                                <option key={day?._id || day?.id} value={day?._id || day?.id}>
+                                    {day?.name}
                                 </option>
                             ))}
                         </select>
@@ -517,9 +552,9 @@ const CreateScheduleModal = ({
                                         timeSlots.length === 0 ? 'Немає доступних часових слотів' :
                                             'Оберіть час'}
                             </option>
-                            {timeSlots.map(slot => (
-                                <option key={slot._id} value={slot._id}>
-                                    {slot.order}. {slot.startTime} - {slot.endTime}
+                            {Array.isArray(timeSlots) && timeSlots.map(slot => (
+                                <option key={slot?._id} value={slot?._id}>
+                                    {slot?.order}. {slot?.startTime} - {slot?.endTime}
                                 </option>
                             ))}
                         </select>
@@ -583,10 +618,10 @@ const CreateScheduleModal = ({
                                 }
                             </option>
                             {availableTeachers.map(teacher => (
-                                <option key={teacher._id} value={teacher._id}>
-                                    {teacher.fullName}
-                                    {teacher.position && ` - ${teacher.position}`}
-                                    {teacher.positions && teacher.positions.length > 0 && ` (${teacher.positions.join(', ')})`}
+                                <option key={teacher?._id} value={teacher?._id}>
+                                    {teacher?.fullName}
+                                    {teacher?.position && ` - ${teacher.position}`}
+                                    {teacher?.positions && Array.isArray(teacher.positions) && teacher.positions.length > 0 && ` (${teacher.positions.join(', ')})`}
                                 </option>
                             ))}
                         </select>
@@ -633,10 +668,10 @@ const CreateScheduleModal = ({
                         >
                             <option value="">Оберіть аудиторію</option>
                             {availableClassrooms.map(classroom => (
-                                <option key={classroom._id} value={classroom._id}>
-                                    {classroom.name} ({classroom.type === 'lecture' ? 'Лекційна' :
-                                        classroom.type === 'practice' ? 'Практична' :
-                                            classroom.type === 'lab' ? 'Лабораторія' : 'Загальна'})
+                                <option key={classroom?._id} value={classroom?._id}>
+                                    {classroom?.name} ({classroom?.type === 'lecture' ? 'Лекційна' :
+                                        classroom?.type === 'practice' ? 'Практична' :
+                                            classroom?.type === 'lab' ? 'Лабораторія' : 'Загальна'})
                                 </option>
                             ))}
                         </select>

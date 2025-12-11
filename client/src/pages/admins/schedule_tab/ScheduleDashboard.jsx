@@ -413,6 +413,7 @@ const ScheduleDashboard = () => {
                 classrooms={classrooms}
                 semesters={semesters}
                 selectedSemester={selectedSemester}
+                schoolDatabaseName={databaseName}
             />
         </Container>
     );

@@ -1,9 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const Schedule = require('../models/Schedule');
-const Classroom = require('../models/Classroom');
-const User = require('../models/User');
+const { getSchoolScheduleModel, getSchoolClassroomModel, getSchoolUserModel } = require('../config/databaseManager');
 
 router.use((req, res, next) => {
     console.log('Available Resources:', req.method, req.path, req.query);
@@ -21,13 +19,19 @@ router.get('/test', (req, res) => {
 
 router.get('/classrooms', async (req, res) => {
     try {
-        const { dayOfWeekId, timeSlotId, excludeScheduleId } = req.query;
+        const { dayOfWeekId, timeSlotId, excludeScheduleId, databaseName } = req.query;
 
-        console.log('Запит на вільні аудиторії:', { dayOfWeekId, timeSlotId, excludeScheduleId });
+        console.log('Запит на вільні аудиторії:', { dayOfWeekId, timeSlotId, excludeScheduleId, databaseName });
 
         if (!dayOfWeekId || !timeSlotId) {
             return res.status(400).json({
                 message: 'Потрібні dayOfWeekId та timeSlotId'
+            });
+        }
+
+        if (!databaseName) {
+            return res.status(400).json({
+                message: 'Потрібен databaseName'
             });
         }
 
@@ -38,6 +42,10 @@ router.get('/classrooms', async (req, res) => {
                 timeSlotIdValid: mongoose.Types.ObjectId.isValid(timeSlotId)
             });
         }
+
+        // Отримуємо моделі для конкретної бази даних
+        const Schedule = getSchoolScheduleModel(databaseName);
+        const Classroom = getSchoolClassroomModel(databaseName);
 
         const occupiedQuery = {
             dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
@@ -79,13 +87,19 @@ router.get('/classrooms', async (req, res) => {
 
 router.get('/teachers', async (req, res) => {
     try {
-        const { dayOfWeekId, timeSlotId, subject, excludeScheduleId } = req.query;
+        const { dayOfWeekId, timeSlotId, subject, excludeScheduleId, databaseName } = req.query;
 
-        console.log('Запит на вільних викладачів:', { dayOfWeekId, timeSlotId, subject, excludeScheduleId });
+        console.log('Запит на вільних викладачів:', { dayOfWeekId, timeSlotId, subject, excludeScheduleId, databaseName });
 
         if (!dayOfWeekId || !timeSlotId || !subject) {
             return res.status(400).json({
                 message: 'Потрібні dayOfWeekId, timeSlotId та subject'
+            });
+        }
+
+        if (!databaseName) {
+            return res.status(400).json({
+                message: 'Потрібен databaseName'
             });
         }
 
@@ -94,6 +108,10 @@ router.get('/teachers', async (req, res) => {
                 message: 'Невірний формат ID'
             });
         }
+
+        // Отримуємо моделі для конкретної бази даних
+        const Schedule = getSchoolScheduleModel(databaseName);
+        const User = getSchoolUserModel(databaseName);
 
         const occupiedQuery = {
             dayOfWeek: new mongoose.Types.ObjectId(dayOfWeekId),
@@ -145,11 +163,20 @@ router.get('/teachers', async (req, res) => {
 
 router.get('/check-availability', async (req, res) => {
     try {
-        const { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId } = req.query;
+        const { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId, databaseName } = req.query;
 
-        console.log('Перевірка доступності:', { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId });
+        console.log('Перевірка доступності:', { dayOfWeekId, timeSlotId, classroomId, teacherId, excludeScheduleId, databaseName });
+
+        if (!databaseName) {
+            return res.status(400).json({
+                message: 'Потрібен databaseName'
+            });
+        }
 
         const conflicts = {};
+
+        // Отримуємо модель Schedule для конкретної бази даних
+        const Schedule = getSchoolScheduleModel(databaseName);
 
         if (classroomId && mongoose.Types.ObjectId.isValid(classroomId)) {
             const classroomConflict = await Schedule.findOne({

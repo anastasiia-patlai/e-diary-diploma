@@ -1,10 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const Schedule = require('../models/Schedule');
+const { getSchoolScheduleModel } = require('../config/databaseManager');
 
 router.get('/', async (req, res) => {
     try {
-        const { semester } = req.query;
+        const { semester, databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Schedule = getSchoolScheduleModel(databaseName);
+
         let query = {};
 
         if (semester) {
@@ -31,7 +38,14 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const schedule = new Schedule(req.body);
+        const { databaseName, ...scheduleData } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Schedule = getSchoolScheduleModel(databaseName);
+        const schedule = new Schedule(scheduleData);
         await schedule.save();
 
         await schedule.populate([
@@ -55,10 +69,19 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
+        const { databaseName } = req.body;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const Schedule = getSchoolScheduleModel(databaseName);
         const schedule = await Schedule.findByIdAndDelete(req.params.id);
+
         if (!schedule) {
             return res.status(404).json({ message: 'Запис розкладу не знайдено' });
         }
+
         res.json({ message: 'Запис розкладу успішно видалено' });
     } catch (error) {
         console.error('Error deleting schedule:', error);
