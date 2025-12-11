@@ -17,7 +17,9 @@ router.post('/signup', async (req, res) => {
         group,
         positions,
         category,
-        jobPosition
+        jobPosition,
+        teacherType,       // ✅ ДОДАНО: тип викладача
+        allowedCategories  // ✅ ДОДАНО: дозволені категорії
     } = req.body;
 
     try {
@@ -90,13 +92,36 @@ router.post('/signup', async (req, res) => {
             userData.group = groupId;
             console.log("Додано групу для студента:", groupId);
         } else if (role === 'teacher') {
+            // Обробка предметів
             userData.positions = positions && Array.isArray(positions)
                 ? positions.filter(pos => pos && pos.trim() !== "")
                 : [];
             userData.position = userData.positions.join(", ");
             userData.category = category || '';
+
+            // ✅ Обробка типу викладача та дозволених категорій
             userData.teacherType = teacherType || '';
-            userData.allowedCategories = allowedCategories || [];
+
+            // Якщо allowedCategories надійшло з фронтенду, використовуємо його
+            // Інакше генеруємо на основі teacherType
+            if (allowedCategories && Array.isArray(allowedCategories)) {
+                userData.allowedCategories = allowedCategories;
+            } else {
+                // Автоматично генеруємо allowedCategories на основі teacherType
+                if (teacherType === "young") {
+                    userData.allowedCategories = ["young"];
+                } else if (teacherType === "middle") {
+                    userData.allowedCategories = ["middle"];
+                } else if (teacherType === "senior") {
+                    userData.allowedCategories = ["senior"];
+                } else if (teacherType === "middle-senior") {
+                    userData.allowedCategories = ["middle", "senior"];
+                } else if (teacherType === "all") {
+                    userData.allowedCategories = ["young", "middle", "senior"];
+                } else {
+                    userData.allowedCategories = [];
+                }
+            }
 
             console.log("Додано тип викладача:", userData.teacherType);
             console.log("Додано дозволені категорії:", userData.allowedCategories);
@@ -115,7 +140,7 @@ router.post('/signup', async (req, res) => {
             console.log("Додано посаду для адміна:", userData.jobPosition);
         }
 
-        console.log("Дані для створення користувача:", userData);
+        console.log("Дані для створення користувача:", JSON.stringify(userData, null, 2));
 
         // Створення користувача
         console.log("Створення нового користувача...");
@@ -140,7 +165,8 @@ router.post('/signup', async (req, res) => {
                 fullName: newUser.fullName,
                 role: newUser.role,
                 email: newUser.email,
-                category: newUser.category
+                category: newUser.category,
+                teacherType: newUser.teacherType
             }
         });
 
