@@ -621,7 +621,7 @@ const CreateScheduleModal = ({
                                 <option key={teacher?._id} value={teacher?._id}>
                                     {teacher?.fullName}
                                     {teacher?.position && ` - ${teacher.position}`}
-                                    {teacher?.positions && Array.isArray(teacher.positions) && teacher.positions.length > 0 && ` (${teacher.positions.join(', ')})`}
+                                    {teacher?.positions && Array.isArray(teacher.positions) && teacher.positions.length > 0}
                                 </option>
                             ))}
                         </select>

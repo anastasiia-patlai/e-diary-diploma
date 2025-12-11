@@ -24,8 +24,8 @@ const ClassroomsHeader = ({ onShowCreateModal, isMobile = false }) => {
                 <div>
                     <h3 style={{
                         margin: 0,
-                        fontSize: isMobile ? '18px' : '24px',
-                        fontWeight: '600',
+                        fontSize: '26px',
+                        fontWeight: '500',
                         color: '#1f2937'
                     }}>
                         Управління аудиторіями

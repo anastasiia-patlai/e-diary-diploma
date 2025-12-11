@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Container, Alert } from "react-bootstrap";
+import { Container, Alert, Spinner } from "react-bootstrap";
+import { FaDatabase } from "react-icons/fa";
 import axios from "axios";
 
 import ScheduleHeader from "./components/ScheduleHeader";
@@ -21,6 +22,17 @@ const ScheduleDashboard = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState("");
     const [databaseName, setDatabaseName] = useState("");
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    // Перевірка ширини екрану
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Отримання databaseName з localStorage
     useEffect(() => {
@@ -61,7 +73,6 @@ const ScheduleDashboard = () => {
         const dbName = getCurrentDatabase();
         if (dbName) {
             setDatabaseName(dbName);
-            console.log("Database name встановлено:", dbName);
         } else {
             console.error("Database name не знайдено!");
             setError("Не вдалося визначити базу даних школи");
@@ -92,29 +103,21 @@ const ScheduleDashboard = () => {
         }
 
         try {
-            console.log("Завантаження семестрів...");
             const response = await axios.get("http://localhost:3001/api/study-calendar/semesters", {
                 params: { databaseName }
             });
-            console.log("Семестри отримані:", response.data);
             setSemesters(response.data);
 
             const activeSemester = response.data.find(sem => sem.isActive);
             if (activeSemester) {
-                console.log("Активний семестр:", activeSemester);
                 setSelectedSemester(activeSemester._id);
             } else if (response.data.length > 0) {
-                console.log("Перший семестр:", response.data[0]);
                 setSelectedSemester(response.data[0]._id);
             } else {
-                console.log("Семестрів не знайдено");
                 setSelectedSemester("");
             }
         } catch (err) {
             console.error("Помилка завантаження семестрів:", err);
-            console.error("URL запиту:", "http://localhost:3001/api/study-calendar/semesters");
-            console.error("Статус помилки:", err.response?.status);
-            console.error("Дані помилки:", err.response?.data);
             setSemesters([]);
             setSelectedSemester("");
         }
@@ -131,7 +134,6 @@ const ScheduleDashboard = () => {
                 params: { databaseName }
             });
             setTimeSlots(response.data);
-            console.log("Часові слоти завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження часових слотів:", err);
             setTimeSlots([]);
@@ -149,7 +151,6 @@ const ScheduleDashboard = () => {
                 params: { databaseName }
             });
             setDaysOfWeek(response.data);
-            console.log("Дні тижня завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження днів тижня:", err);
             setDaysOfWeek([]);
@@ -168,7 +169,6 @@ const ScheduleDashboard = () => {
             });
             const sortedGroups = sortGroupsByGrade(response.data);
             setGroups(sortedGroups);
-            console.log("Групи завантажені:", sortedGroups.length);
         } catch (err) {
             console.error("Помилка завантаження груп:", err);
             setGroups([]);
@@ -186,7 +186,6 @@ const ScheduleDashboard = () => {
                 params: { databaseName }
             });
             setTeachers(response.data);
-            console.log("Викладачі завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження викладачів:", err);
             setTeachers([]);
@@ -205,7 +204,6 @@ const ScheduleDashboard = () => {
             });
             const activeClassrooms = response.data.filter(classroom => classroom.isActive);
             setClassrooms(activeClassrooms);
-            console.log("Аудиторії завантажені:", activeClassrooms.length);
         } catch (err) {
             console.error("Помилка завантаження аудиторій:", err);
             setClassrooms([]);
@@ -219,7 +217,6 @@ const ScheduleDashboard = () => {
         }
 
         try {
-            console.log("Завантаження розкладу для семестру:", selectedSemester);
             const response = await axios.get(`http://localhost:3001/api/schedule`, {
                 params: {
                     semester: selectedSemester,
@@ -227,7 +224,6 @@ const ScheduleDashboard = () => {
                 }
             });
             setSchedules(response.data);
-            console.log("Розклади завантажені:", response.data.length);
         } catch (err) {
             console.error("Помилка завантаження розкладів:", err);
             setSchedules([]);
@@ -236,7 +232,6 @@ const ScheduleDashboard = () => {
 
     const loadAllData = async () => {
         if (!databaseName) {
-            console.error("Database name відсутній для завантаження даних");
             setError("Не вказано базу даних");
             setLoading(false);
             return;
@@ -245,8 +240,6 @@ const ScheduleDashboard = () => {
         try {
             setLoading(true);
             setError("");
-
-            console.log("Початок завантаження даних...");
 
             // Спочатку завантажуємо семестри
             await loadSemesters();
@@ -259,8 +252,6 @@ const ScheduleDashboard = () => {
                 loadTimeSlots(),
                 loadDaysOfWeek()
             ]);
-
-            console.log("Всі дані успішно завантажені");
 
         } catch (err) {
             console.error("Критична помилка завантаження даних:", err);
@@ -332,21 +323,31 @@ const ScheduleDashboard = () => {
         ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
         : schedules;
 
-    return (
-        <Container fluid style={{ padding: "0 0 24px 0" }}>
-            {databaseName && (
-                <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    marginBottom: '10px',
-                    padding: '5px 10px',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '4px'
-                }}>
-                    База даних: {databaseName}
+    if (loading) {
+        return (
+            <Container fluid style={{
+                padding: isMobile ? "16px" : "24px",
+                minHeight: "400px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+            }}>
+                <div style={{ textAlign: "center" }}>
+                    <Spinner animation="border" variant="primary" />
+                    <p style={{ color: "#6b7280", marginTop: "16px" }}>
+                        Завантаження розкладу...
+                    </p>
                 </div>
-            )}
+            </Container>
+        );
+    }
 
+    return (
+        <Container fluid style={{
+            padding: isMobile ? "12px" : "0 0 24px 0",
+            maxWidth: "100%",
+            overflowX: "hidden"
+        }}>
             <ScheduleHeader
                 onShowModal={() => setShowModal(true)}
                 groups={groups}
@@ -355,6 +356,7 @@ const ScheduleDashboard = () => {
                 semesters={semesters}
                 selectedSemester={selectedSemester}
                 onSemesterChange={setSelectedSemester}
+                isMobile={isMobile}
             />
 
             {error && (
@@ -364,7 +366,9 @@ const ScheduleDashboard = () => {
                         alignItems: "center",
                         gap: "8px",
                         borderRadius: "6px",
-                        marginBottom: "16px"
+                        marginBottom: "16px",
+                        fontSize: isMobile ? "14px" : "16px",
+                        padding: isMobile ? "12px" : "16px"
                     }}
                 >
                     {error}
@@ -372,13 +376,21 @@ const ScheduleDashboard = () => {
             )}
 
             {!selectedSemester && semesters.length > 0 && (
-                <Alert variant="warning" style={{ marginBottom: "16px" }}>
+                <Alert variant="warning" style={{
+                    marginBottom: "16px",
+                    fontSize: isMobile ? "14px" : "16px",
+                    padding: isMobile ? "12px" : "16px"
+                }}>
                     Оберіть семестр для перегляду розкладу
                 </Alert>
             )}
 
             {semesters.length === 0 && !loading && (
-                <Alert variant="info" style={{ marginBottom: "16px" }}>
+                <Alert variant="info" style={{
+                    marginBottom: "16px",
+                    fontSize: isMobile ? "14px" : "16px",
+                    padding: isMobile ? "12px" : "16px"
+                }}>
                     Немає доступних семестрів. Спочатку створіть семестр в розділі "Навчальний календар".
                 </Alert>
             )}
@@ -392,6 +404,7 @@ const ScheduleDashboard = () => {
                     selectedGroup={selectedGroup}
                     loading={loading}
                     onDeleteSchedule={handleDeleteSchedule}
+                    isMobile={isMobile}
                 />
             ) : (
                 <ScheduleTable
@@ -401,6 +414,7 @@ const ScheduleDashboard = () => {
                     daysOfWeek={daysOfWeek}
                     loading={loading}
                     onDeleteSchedule={handleDeleteSchedule}
+                    isMobile={isMobile}
                 />
             ))}
 
@@ -414,6 +428,7 @@ const ScheduleDashboard = () => {
                 semesters={semesters}
                 selectedSemester={selectedSemester}
                 schoolDatabaseName={databaseName}
+                isMobile={isMobile}
             />
         </Container>
     );
