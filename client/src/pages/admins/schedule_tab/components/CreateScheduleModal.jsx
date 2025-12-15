@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"; // Додайте useRef
+import React, { useState, useEffect, useRef } from "react";
 import {
     FaTimes,
     FaSave,
@@ -8,7 +8,10 @@ import {
     FaChalkboardTeacher,
     FaDoorOpen,
     FaBook,
-    FaGraduationCap
+    FaGraduationCap,
+    FaExclamationTriangle,
+    FaCheckCircle,
+    FaCalendarCheck
 } from "react-icons/fa";
 import axios from "axios";
 
@@ -32,17 +35,27 @@ const CreateScheduleModal = ({
         classroom: "",
         semester: selectedSemester || ""
     });
-    const [error, setError] = useState("");
+
+    const [errors, setErrors] = useState({
+        general: "",
+        validationErrors: [], // Помилки валідації полів
+        conflictErrors: []    // Конфлікти розкладу
+    });
+
     const [timeSlots, setTimeSlots] = useState([]);
     const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
     const [daysOfWeek, setDaysOfWeek] = useState([]);
-    const [availability, setAvailability] = useState({ available: true, conflicts: {} });
+    const [availability, setAvailability] = useState({
+        available: true,
+        checking: false,
+        conflicts: [], // Унікальні конфлікти
+        groupTimeslotConflict: null
+    });
     const [filteredTeachers, setFilteredTeachers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    // Використовуємо useRef для стабільної версії databaseName
     const databaseNameRef = useRef(schoolDatabaseName);
 
-    // Оновлюємо ref коли змінюється schoolDatabaseName
     useEffect(() => {
         databaseNameRef.current = schoolDatabaseName;
     }, [schoolDatabaseName]);
@@ -64,6 +77,10 @@ const CreateScheduleModal = ({
             } catch (err) {
                 console.error("Error loading days of week:", err);
                 setDaysOfWeek([]);
+                setErrors(prev => ({
+                    ...prev,
+                    general: "Помилка завантаження днів тижня"
+                }));
             }
         };
 
@@ -73,28 +90,38 @@ const CreateScheduleModal = ({
                 ...prev,
                 semester: selectedSemester
             }));
-        }
-    }, [show, selectedSemester]); // Видалили schoolDatabaseName з залежностей
-
-    useEffect(() => {
-        if (show) {
-            setFormData({
-                subject: "",
-                group: "",
-                dayOfWeek: "",
-                timeSlot: "",
-                teacher: "",
-                classroom: "",
-                semester: selectedSemester || ""
-            });
-            setError("");
-            setTimeSlots([]);
-            setAvailability({ available: true, conflicts: {} });
-            setFilteredTeachers([]);
+            setErrors({ general: "", validationErrors: [], conflictErrors: [] });
         }
     }, [show, selectedSemester]);
 
-    // Фільтрація викладачів за предметом
+    useEffect(() => {
+        if (show) {
+            resetForm();
+        }
+    }, [show, selectedSemester]);
+
+    const resetForm = () => {
+        setFormData({
+            subject: "",
+            group: "",
+            dayOfWeek: "",
+            timeSlot: "",
+            teacher: "",
+            classroom: "",
+            semester: selectedSemester || ""
+        });
+        setErrors({ general: "", validationErrors: [], conflictErrors: [] });
+        setTimeSlots([]);
+        setAvailability({
+            available: true,
+            checking: false,
+            conflicts: [],
+            groupTimeslotConflict: null
+        });
+        setFilteredTeachers([]);
+        setLoading(false);
+    };
+
     useEffect(() => {
         if (formData.subject && teachers.length > 0) {
             const subject = formData.subject.toLowerCase();
@@ -125,12 +152,9 @@ const CreateScheduleModal = ({
 
             try {
                 setLoadingTimeSlots(true);
-                console.log("Завантаження часових слотів для дня:", formData.dayOfWeek);
-
                 const response = await axios.get("http://localhost:3001/api/time-slots", {
                     params: { databaseName: dbName }
                 });
-                console.log("Усі часові слоти:", response.data);
 
                 const dayTimeSlots = (response.data || []).filter(slot => {
                     if (!slot) return false;
@@ -140,119 +164,338 @@ const CreateScheduleModal = ({
                 });
 
                 const availableTimeSlots = dayTimeSlots.filter(slot => slot.isAvailable !== false);
-                console.log("Відфільтровані часові слоти:", availableTimeSlots);
-
                 setTimeSlots(availableTimeSlots);
-                setError("");
+
+                if (availableTimeSlots.length === 0) {
+                    setErrors(prev => ({
+                        ...prev,
+                        validationErrors: [...prev.validationErrors, "Для цього дня не налаштовано часових слотів"]
+                    }));
+                }
             } catch (err) {
                 console.error("Error loading time slots:", err);
                 setTimeSlots([]);
-                setError("Помилка при завантаженні часу уроків");
+                setErrors(prev => ({
+                    ...prev,
+                    general: "Помилка при завантаженні часу уроків"
+                }));
             } finally {
                 setLoadingTimeSlots(false);
             }
         };
 
         loadTimeSlots();
-    }, [formData.dayOfWeek]); // Видалили schoolDatabaseName з залежностей
+    }, [formData.dayOfWeek]);
 
+    // Автоматична перевірка доступності при зміні даних
     useEffect(() => {
-        const checkAvailability = async () => {
+        const checkAllAvailability = async () => {
             const dbName = databaseNameRef.current;
-            if (!formData.dayOfWeek || !formData.timeSlot || !formData.classroom || !formData.teacher || !dbName) {
+
+            // Мінімальні умови для перевірки
+            if (!formData.dayOfWeek || !formData.timeSlot || !dbName) {
+                return;
+            }
+
+            // Перевіряємо тільки якщо є що перевіряти
+            const hasResourcesToCheck = formData.classroom || formData.teacher || formData.group;
+            if (!hasResourcesToCheck) {
                 return;
             }
 
             try {
-                const params = new URLSearchParams({
-                    dayOfWeekId: formData.dayOfWeek,
-                    timeSlotId: formData.timeSlot,
-                    classroomId: formData.classroom,
-                    teacherId: formData.teacher,
-                    databaseName: dbName
+                setAvailability(prev => ({ ...prev, checking: true }));
+
+                // Використовуємо ТІЛЬКИ ОДИН endpoint для перевірки
+                const checkData = {
+                    databaseName: dbName,
+                    group: formData.group,
+                    teacher: formData.teacher,
+                    classroom: formData.classroom,
+                    dayOfWeek: formData.dayOfWeek,
+                    timeSlot: formData.timeSlot,
+                    subject: formData.subject
+                };
+
+                // Використовуємо тільки /api/schedule/check-availability
+                const scheduleCheckResponse = await axios.post("http://localhost:3001/api/schedule/check-availability", checkData);
+
+                // Отримуємо унікальні конфлікти
+                const uniqueConflicts = scheduleCheckResponse.data.conflicts || [];
+
+                // Фільтруємо дублікати за типом
+                const filteredConflicts = [];
+                const seenTypes = new Set();
+
+                uniqueConflicts.forEach(conflict => {
+                    if (!seenTypes.has(conflict.type)) {
+                        seenTypes.add(conflict.type);
+                        filteredConflicts.push(conflict);
+                    }
                 });
 
-                const response = await axios.get(`http://localhost:3001/api/available/check-availability?${params}`);
-                setAvailability(response.data || { available: true, conflicts: {} });
+                setAvailability({
+                    available: scheduleCheckResponse.data.available,
+                    checking: false,
+                    conflicts: filteredConflicts,
+                    groupTimeslotConflict: filteredConflicts.find(c => c.type === 'GROUP_TIMESLOT_CONFLICT')
+                });
+
+                // Оновлюємо список конфліктних помилок (без дублікатів)
+                if (filteredConflicts.length > 0) {
+                    const conflictMessages = filteredConflicts.map(c => c.message);
+                    setErrors(prev => ({
+                        ...prev,
+                        conflictErrors: conflictMessages
+                    }));
+                } else {
+                    setErrors(prev => ({ ...prev, conflictErrors: [] }));
+                }
             } catch (err) {
                 console.error("Error checking availability:", err);
-                setAvailability({ available: true, conflicts: {} });
+                setAvailability({
+                    available: true,
+                    checking: false,
+                    conflicts: [],
+                    groupTimeslotConflict: null
+                });
+                setErrors(prev => ({ ...prev, conflictErrors: [] }));
             }
         };
 
-        checkAvailability();
-    }, [formData.classroom, formData.teacher, formData.dayOfWeek, formData.timeSlot]); // Видалили schoolDatabaseName з залежностей
+        // Дебаунс запиту
+        const timeoutId = setTimeout(checkAllAvailability, 500);
+        return () => clearTimeout(timeoutId);
+    }, [formData.classroom, formData.teacher, formData.group, formData.dayOfWeek, formData.timeSlot, formData.subject]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
 
         setFormData(prev => {
+            const newData = { ...prev };
+
             if (name === "dayOfWeek") {
-                return {
-                    ...prev,
-                    [name]: value,
-                    timeSlot: ""
-                };
+                newData.dayOfWeek = value;
+                newData.timeSlot = ""; // Скидаємо час при зміні дня
+            } else if (name === "subject") {
+                newData.subject = value;
+                newData.teacher = ""; // Скидаємо викладача при зміні предмета
+            } else if (name === "group") {
+                newData.group = value;
+            } else {
+                newData[name] = value;
             }
-            if (name === "subject") {
-                return {
-                    ...prev,
-                    [name]: value,
-                    teacher: ""
-                };
-            }
-            return {
-                ...prev,
-                [name]: value
-            };
+
+            return newData;
         });
+
+        // Очистити помилки при зміні поля
+        if (errors.general || errors.validationErrors.length > 0 || errors.conflictErrors.length > 0) {
+            setErrors({ general: "", validationErrors: [], conflictErrors: [] });
+        }
     };
 
-    const handleSave = () => {
+    const validateForm = () => {
+        const validationErrors = [];
+        let isValid = true;
+
+        if (!formData.subject) {
+            validationErrors.push("Вкажіть предмет");
+            isValid = false;
+        }
+        if (!formData.group) {
+            validationErrors.push("Оберіть групу");
+            isValid = false;
+        }
+        if (!formData.dayOfWeek) {
+            validationErrors.push("Оберіть день тижня");
+            isValid = false;
+        }
+        if (!formData.timeSlot) {
+            validationErrors.push("Оберіть час уроку");
+            isValid = false;
+        }
+        if (!formData.teacher) {
+            validationErrors.push("Оберіть викладача");
+            isValid = false;
+        }
+        if (!formData.classroom) {
+            validationErrors.push("Оберіть аудиторію");
+            isValid = false;
+        }
+
+        // Додаткові перевірки
+        if (formData.teacher && filteredTeachers.length === 0) {
+            validationErrors.push("Не знайдено викладачів для обраного предмета");
+            isValid = false;
+        }
+
+        setErrors(prev => ({
+            ...prev,
+            validationErrors
+        }));
+
+        return isValid;
+    };
+
+    const getAllErrors = () => {
+        const allErrors = [
+            ...errors.validationErrors,
+            ...errors.conflictErrors
+        ];
+
+        // Видаляємо дублікати
+        return [...new Set(allErrors)];
+    };
+
+    const handleSave = async () => {
         const dbName = databaseNameRef.current;
         if (!dbName) {
-            setError("Не вказано базу даних школи");
+            setErrors({
+                general: "Не вказано базу даних школи",
+                validationErrors: [],
+                conflictErrors: []
+            });
             return;
         }
 
-        if (!formData.subject || !formData.group || !formData.dayOfWeek ||
-            !formData.timeSlot || !formData.teacher || !formData.classroom) {
-            setError("Усі поля повинні бути заповнені");
+        if (!validateForm()) {
+            return;
+        }
+
+        if (availability.checking) {
+            setErrors({
+                general: "Триває перевірка доступності...",
+                validationErrors: [],
+                conflictErrors: []
+            });
             return;
         }
 
         if (!availability.available) {
-            setError("Знайдено конфлікти розкладу. Виправте їх перед збереженням.");
+            setErrors({
+                general: "Знайдено конфлікти розкладу. Виправте їх перед збереженням.",
+                validationErrors: errors.validationErrors,
+                conflictErrors: errors.conflictErrors
+            });
             return;
         }
 
-        const selectedDay = daysOfWeek.find(day => (day._id || day.id) === formData.dayOfWeek);
-        if (!selectedDay) {
-            setError("Обраний день тижня не знайдений");
-            return;
+        setLoading(true);
+
+        try {
+            const selectedDay = daysOfWeek.find(day => (day._id || day.id) === formData.dayOfWeek);
+            if (!selectedDay) {
+                setErrors({
+                    general: "Обраний день тижня не знайдений",
+                    validationErrors: [],
+                    conflictErrors: []
+                });
+                setLoading(false);
+                return;
+            }
+
+            // Створюємо дані БЕЗ _id
+            const scheduleData = {
+                subject: formData.subject,
+                group: formData.group,
+                dayOfWeek: selectedDay._id || selectedDay.id,
+                timeSlot: formData.timeSlot,
+                teacher: formData.teacher,
+                classroom: formData.classroom,
+                semester: selectedSemester,
+                databaseName: dbName
+                // НЕ додаємо _id - MongoDB згенерує його автоматично
+            };
+
+            console.log('Відправляємо дані для створення розкладу:', scheduleData);
+
+            // Викликаємо API для створення розкладу
+            const response = await axios.post("http://localhost:3001/api/schedule", scheduleData);
+
+            if (response.data && response.data.schedule) {
+                onSave(response.data.schedule);
+                onClose();
+            }
+        } catch (error) {
+            console.error("Error saving schedule:", error);
+
+            if (error.response) {
+                const errorData = error.response.data;
+
+                if (error.response.status === 409) {
+                    // Конфлікти
+                    const conflictMessages = [];
+
+                    if (errorData.conflictType === 'GROUP_TIMESLOT_CONFLICT') {
+                        conflictMessages.push(errorData.details?.message || "Група вже має урок в цей час");
+                    } else if (errorData.details?.message) {
+                        conflictMessages.push(errorData.details.message);
+                    } else if (errorData.message) {
+                        conflictMessages.push(errorData.message);
+                    }
+
+                    setErrors({
+                        general: "Конфлікт розкладу",
+                        validationErrors: [],
+                        conflictErrors: [...new Set(conflictMessages)]
+                    });
+                } else if (error.response.status === 400) {
+                    // Помилки валідації, включаючи duplicate _id
+                    if (errorData.error === 'DUPLICATE_ID_ERROR') {
+                        setErrors({
+                            general: "Технічна помилка: спроба створити запис з уже існуючим ID",
+                            validationErrors: ["Будь ласка, спробуйте ще раз. Система автоматично згенерує новий ID."],
+                            conflictErrors: []
+                        });
+                    } else {
+                        const validationErrors = [];
+
+                        if (errorData.missingFields) {
+                            validationErrors.push(...errorData.missingFields.map(field => `Відсутнє поле: ${field}`));
+                        }
+                        if (errorData.message) {
+                            validationErrors.push(errorData.message);
+                        }
+
+                        setErrors({
+                            general: "Помилка валідації",
+                            validationErrors: [...new Set(validationErrors)],
+                            conflictErrors: []
+                        });
+                    }
+                } else {
+                    setErrors({
+                        general: "Помилка сервера при створенні розкладу",
+                        validationErrors: [],
+                        conflictErrors: [errorData.message || error.message]
+                    });
+                }
+            } else {
+                setErrors({
+                    general: "Помилка мережі",
+                    validationErrors: [],
+                    conflictErrors: ["Не вдалося з'єднатися з сервером"]
+                });
+            }
+        } finally {
+            setLoading(false);
         }
-
-        const scheduleData = {
-            subject: formData.subject,
-            group: formData.group,
-            dayOfWeek: selectedDay._id || selectedDay.id,
-            timeSlot: formData.timeSlot,
-            teacher: formData.teacher,
-            classroom: formData.classroom,
-            semester: selectedSemester,
-            databaseName: dbName // Додаємо databaseName до даних для збереження
-        };
-
-        onSave(scheduleData);
     };
 
     const availableClassrooms = Array.isArray(classrooms)
-        ? classrooms.filter(classroom => classroom?.isAvailable !== false)
+        ? classrooms.filter(classroom => classroom?.isAvailable !== false && classroom?.isActive !== false)
         : [];
 
     const availableTeachers = Array.isArray(filteredTeachers)
         ? filteredTeachers.filter(teacher => teacher?.isAvailable !== false)
         : [];
+
+    // Отримати інформацію про обраний часовий слот
+    const selectedTimeSlotInfo = timeSlots.find(slot => slot._id === formData.timeSlot);
+
+    // Отримати всі унікальні помилки
+    const allErrors = getAllErrors();
 
     if (!show) return null;
 
@@ -297,26 +540,29 @@ const CreateScheduleModal = ({
                     </h2>
                     <button
                         onClick={onClose}
+                        disabled={loading}
                         style={{
                             background: 'none',
                             border: 'none',
-                            cursor: 'pointer',
+                            cursor: loading ? 'not-allowed' : 'pointer',
                             fontSize: '20px',
                             color: '#6b7280',
-                            transition: 'color 0.2s'
+                            transition: 'color 0.2s',
+                            opacity: loading ? 0.5 : 1
                         }}
                         onMouseOver={(e) => {
-                            e.target.style.color = '#374151';
+                            if (!loading) e.target.style.color = '#374151';
                         }}
                         onMouseOut={(e) => {
-                            e.target.style.color = '#6b7280';
+                            if (!loading) e.target.style.color = '#6b7280';
                         }}
                     >
                         <FaTimes />
                     </button>
                 </div>
 
-                {error && (
+                {/* Секція загальних помилок */}
+                {errors.general && (
                     <div style={{
                         backgroundColor: '#fee2e2',
                         color: '#dc2626',
@@ -327,32 +573,69 @@ const CreateScheduleModal = ({
                         alignItems: 'center',
                         gap: '8px'
                     }}>
-                        <FaTimes />
-                        {error}
+                        <FaExclamationTriangle />
+                        <strong>{errors.general}</strong>
                     </div>
                 )}
 
-                {!availability.available && (
+                {/* Секція всіх помилок (включаючи конфлікти) */}
+                {allErrors.length > 0 && (
                     <div style={{
                         backgroundColor: '#fef3c7',
+                        border: '1px solid #f59e0b',
                         color: '#92400e',
                         padding: '12px',
                         borderRadius: '6px',
                         marginBottom: '16px'
                     }}>
-                        <strong>Конфлікти розкладу:</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <FaExclamationTriangle />
+                            <strong>Знайдено помилки:</strong>
+                        </div>
                         <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-                            {availability.conflicts.classroom && (
-                                <li>Аудиторія зайнята</li>
-                            )}
-                            {availability.conflicts.teacher && (
-                                <li>Викладач зайнятий</li>
-                            )}
+                            {allErrors.map((error, index) => (
+                                <li key={index}>{error}</li>
+                            ))}
                         </ul>
                     </div>
                 )}
 
+                {/* Статус перевірки доступності */}
+                {availability.checking && (
+                    <div style={{
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        <FaClock /> Перевірка доступності ресурсів...
+                    </div>
+                )}
+
+                {/* Статус доступності */}
+                {!availability.checking && availability.available && availability.conflicts.length === 0 &&
+                    formData.dayOfWeek && formData.timeSlot &&
+                    (formData.classroom || formData.teacher || formData.group) && (
+                        <div style={{
+                            backgroundColor: '#d1fae5',
+                            color: '#065f46',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            <FaCheckCircle /> Всі ресурси доступні
+                        </div>
+                    )}
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Поля форми */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -414,7 +697,8 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("предмет")) ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
@@ -425,7 +709,8 @@ const CreateScheduleModal = ({
                                 e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderColor = '#e5e7eb';
+                                e.target.style.borderColor = errors.validationErrors.some(e => e.includes("предмет")) ?
+                                    '#dc2626' : '#e5e7eb';
                             }}
                         />
                     </div>
@@ -452,18 +737,23 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("груп")) ||
+                                    availability.conflicts.some(c => c.type === 'GROUP_TIMESLOT_CONFLICT') ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
-                                transition: 'border-color 0.2s'
+                                transition: 'border-color 0.2s',
+                                backgroundColor: availability.conflicts.some(c => c.type === 'GROUP_TIMESLOT_CONFLICT') ? '#fef2f2' : 'white'
                             }}
                             onFocus={(e) => {
                                 e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderColor = '#e5e7eb';
+                                e.target.style.borderColor = errors.validationErrors.some(e => e.includes("груп")) ||
+                                    availability.conflicts.some(c => c.type === 'GROUP_TIMESLOT_CONFLICT') ?
+                                    '#dc2626' : '#e5e7eb';
                             }}
                         >
                             <option value="">Оберіть групу</option>
@@ -473,6 +763,15 @@ const CreateScheduleModal = ({
                                 </option>
                             ))}
                         </select>
+                        {availability.conflicts.some(c => c.type === 'GROUP_TIMESLOT_CONFLICT') && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                ⚠️ Група вже має урок в цей час
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -497,7 +796,8 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("день тижня")) ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
@@ -537,7 +837,8 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("час уроку") || e.includes("час")) ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
@@ -558,13 +859,13 @@ const CreateScheduleModal = ({
                                 </option>
                             ))}
                         </select>
-                        {formData.dayOfWeek && timeSlots.length === 0 && !loadingTimeSlots && (
+                        {formData.timeSlot && selectedTimeSlotInfo && (
                             <div style={{
                                 fontSize: '12px',
-                                color: '#dc2626',
+                                color: '#059669',
                                 marginTop: '4px'
                             }}>
-                                Для цього дня не налаштовано розклад дзвінків
+                                Обрано: Урок {selectedTimeSlotInfo.order} ({selectedTimeSlotInfo.startTime} - {selectedTimeSlotInfo.endTime})
                             </div>
                         )}
                     </div>
@@ -602,13 +903,16 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("викладач")) ||
+                                    availability.conflicts.some(c => c.type === 'TEACHER_BUSY') ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
                                 transition: 'border-color 0.2s',
-                                opacity: availableTeachers.length === 0 ? 0.6 : 1
+                                opacity: availableTeachers.length === 0 ? 0.6 : 1,
+                                backgroundColor: availability.conflicts.some(c => c.type === 'TEACHER_BUSY') ? '#fef2f2' : 'white'
                             }}
                         >
                             <option value="">
@@ -621,17 +925,16 @@ const CreateScheduleModal = ({
                                 <option key={teacher?._id} value={teacher?._id}>
                                     {teacher?.fullName}
                                     {teacher?.position && ` - ${teacher.position}`}
-                                    {teacher?.positions && Array.isArray(teacher.positions) && teacher.positions.length > 0}
                                 </option>
                             ))}
                         </select>
-                        {formData.subject && availableTeachers.length === 0 && (
+                        {availability.conflicts.some(c => c.type === 'TEACHER_BUSY') && (
                             <div style={{
                                 fontSize: '12px',
                                 color: '#dc2626',
                                 marginTop: '4px'
                             }}>
-                                Не знайдено викладачів для предмета "{formData.subject}"
+                                ⚠️ Викладач вже веде урок в цей час
                             </div>
                         )}
                     </div>
@@ -658,12 +961,15 @@ const CreateScheduleModal = ({
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #e5e7eb',
+                                border: errors.validationErrors.some(e => e.includes("аудиторію") || e.includes("аудиторія")) ||
+                                    availability.conflicts.some(c => c.type === 'CLASSROOM_BUSY') ?
+                                    '1px solid #dc2626' : '1px solid #e5e7eb',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 boxSizing: 'border-box',
                                 outline: 'none',
-                                transition: 'border-color 0.2s'
+                                transition: 'border-color 0.2s',
+                                backgroundColor: availability.conflicts.some(c => c.type === 'CLASSROOM_BUSY') ? '#fef2f2' : 'white'
                             }}
                         >
                             <option value="">Оберіть аудиторію</option>
@@ -675,6 +981,15 @@ const CreateScheduleModal = ({
                                 </option>
                             ))}
                         </select>
+                        {availability.conflicts.some(c => c.type === 'CLASSROOM_BUSY') && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#dc2626',
+                                marginTop: '4px'
+                            }}>
+                                ⚠️ Аудиторія вже зайнята в цей час
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -688,6 +1003,7 @@ const CreateScheduleModal = ({
                     <button
                         type="button"
                         onClick={onClose}
+                        disabled={loading}
                         style={{
                             flex: 1,
                             padding: '12px',
@@ -695,20 +1011,21 @@ const CreateScheduleModal = ({
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: 'pointer',
+                            cursor: loading ? 'not-allowed' : 'pointer',
                             fontWeight: '600',
                             fontSize: '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            transition: 'background-color 0.2s'
+                            transition: 'background-color 0.2s',
+                            opacity: loading ? 0.5 : 1
                         }}
                         onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#4b5563';
+                            if (!loading) e.target.style.backgroundColor = '#4b5563';
                         }}
                         onMouseOut={(e) => {
-                            e.target.style.backgroundColor = '#6b7280';
+                            if (!loading) e.target.style.backgroundColor = '#6b7280';
                         }}
                     >
                         <FaTimes />
@@ -717,44 +1034,53 @@ const CreateScheduleModal = ({
                     <button
                         type="button"
                         onClick={handleSave}
-                        disabled={!formData.subject || !formData.group || !formData.dayOfWeek ||
-                            !formData.timeSlot || !formData.teacher || !formData.classroom ||
-                            !availability.available}
+                        disabled={loading || availability.checking || !availability.available || availability.conflicts.length > 0}
                         style={{
                             flex: 1,
                             padding: '12px',
-                            backgroundColor: (!formData.subject || !formData.group || !formData.dayOfWeek ||
-                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
-                                !availability.available) ? '#d1d5db' : 'rgba(105, 180, 185, 1)',
+                            backgroundColor: (loading || availability.checking || !availability.available || availability.conflicts.length > 0) ?
+                                '#d1d5db' : 'rgba(105, 180, 185, 1)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '6px',
-                            cursor: (!formData.subject || !formData.group || !formData.dayOfWeek ||
-                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
-                                !availability.available) ? 'not-allowed' : 'pointer',
+                            cursor: (loading || availability.checking || !availability.available || availability.conflicts.length > 0) ?
+                                'not-allowed' : 'pointer',
                             fontWeight: '600',
                             fontSize: '14px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            transition: 'background-color 0.2s'
+                            transition: 'background-color 0.2s',
+                            opacity: loading ? 0.5 : 1
                         }}
                         onMouseOver={(e) => {
-                            if (!formData.subject || !formData.group || !formData.dayOfWeek ||
-                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
-                                !availability.available) return;
+                            if (loading || availability.checking || !availability.available || availability.conflicts.length > 0) return;
                             e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
                         }}
                         onMouseOut={(e) => {
-                            if (!formData.subject || !formData.group || !formData.dayOfWeek ||
-                                !formData.timeSlot || !formData.teacher || !formData.classroom ||
-                                !availability.available) return;
+                            if (loading || availability.checking || !availability.available || availability.conflicts.length > 0) return;
                             e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                         }}
                     >
-                        <FaSave />
-                        Створити
+                        {loading ? (
+                            <>
+                                <div className="spinner" style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderTopColor: 'white',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }} />
+                                Створення...
+                            </>
+                        ) : (
+                            <>
+                                <FaSave />
+                                Створити
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

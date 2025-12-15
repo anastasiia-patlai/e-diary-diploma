@@ -689,6 +689,7 @@ const GroupScheduleTable = ({
                 teachers={safeTeachers}
                 onSave={handleSaveSchedule}
                 loading={saveLoading}
+                databaseName
             />
         </>
     );
