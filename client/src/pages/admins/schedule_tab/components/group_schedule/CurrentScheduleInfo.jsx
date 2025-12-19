@@ -1,5 +1,6 @@
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
+import { FaChalkboardTeacher, FaUsers, FaCalendarDay, FaClock, FaBook, FaDoorOpen } from 'react-icons/fa';
 
 const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
     return (
@@ -13,71 +14,272 @@ const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
             <h6 style={{
                 fontWeight: '600',
                 color: '#374151',
-                marginBottom: '12px'
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '16px'
             }}>
+                <FaBook size={16} />
                 Поточне заняття:
             </h6>
-            <Row>
-                <Col md={6}>
-                    <div style={{ marginBottom: '8px' }}>
-                        <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280'
-                        }}>
-                            Предмет:
-                        </span>
+
+            {/* ПЕРШИЙ РЯД - предмет та група з роздільною лінією */}
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                marginBottom: '10px',
+                paddingBottom: '10px',
+                borderBottom: '2px solid rgba(105, 180, 185, 0.3)'
+            }}>
+                <Row className="g-4">
+                    {/* ЛІВИЙ СТОВПЧИК - Предмет */}
+                    <Col xs={6}>
                         <div style={{
-                            fontWeight: '500',
-                            color: '#374151'
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px'
                         }}>
-                            {schedule.subject}
+                            <div style={{
+                                color: 'rgba(105, 180, 185, 1)',
+                                flexShrink: 0,
+                                marginTop: '2px'
+                            }}>
+                                <FaBook size={16} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: '#6b7280',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '6px'
+                                }}>
+                                    Предмет
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: '16px',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {schedule.subject || 'Не вказано'}
+                                </div>
+                            </div>
+                        </div>
+                    </Col>
+
+                    {/* ПРАВИЙ СТОВПЧИК - Група */}
+                    <Col xs={6}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px'
+                        }}>
+                            <div style={{
+                                color: 'rgba(105, 180, 185, 1)',
+                                flexShrink: 0,
+                                marginTop: '2px'
+                            }}>
+                                <FaUsers size={16} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: '#6b7280',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '6px'
+                                }}>
+                                    Група
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: '16px',
+                                    lineHeight: '1.4',
+                                    marginBottom: '2px'
+                                }}>
+                                    {schedule.group?.name || 'Не вказано'}
+                                </div>
+                                {schedule.group?.gradeLevel && (
+                                    <div style={{
+                                        fontSize: '13px',
+                                        color: '#6b7280',
+                                        fontWeight: '500'
+                                    }}>
+                                        Клас: {schedule.group.gradeLevel}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Col>
+                </Row>
+            </div>
+
+            {/* ДРУГИЙ РЯД - інша інформація */}
+            <Row className="g-4">
+                {/* ЛІВИЙ СТОВПЧИК */}
+                <Col xs={6}>
+                    {/* Викладач */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        marginBottom: '16px'
+                    }}>
+                        <div style={{
+                            color: 'rgba(105, 180, 185, 1)',
+                            flexShrink: 0,
+                            marginTop: '2px'
+                        }}>
+                            <FaChalkboardTeacher size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '4px'
+                            }}>
+                                Викладач
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: '14px',
+                                lineHeight: '1.4'
+                            }}>
+                                {schedule.teacher?.fullName || 'Не вказано'}
+                            </div>
                         </div>
                     </div>
-                    <div style={{ marginBottom: '8px' }}>
-                        <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280'
-                        }}>
-                            Група:
-                        </span>
+
+                    {/* День тижня */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                    }}>
                         <div style={{
-                            fontWeight: '500',
-                            color: '#374151'
+                            color: 'rgba(105, 180, 185, 1)',
+                            flexShrink: 0,
+                            marginTop: '2px'
                         }}>
-                            {schedule.group?.name}
+                            <FaCalendarDay size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '4px'
+                            }}>
+                                День
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: '14px',
+                                lineHeight: '1.4'
+                            }}>
+                                {schedule.dayOfWeek?.name || 'Не вказано'}
+                            </div>
                         </div>
                     </div>
                 </Col>
-                <Col md={6}>
-                    <div style={{ marginBottom: '8px' }}>
-                        <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280'
-                        }}>
-                            День:
-                        </span>
+
+                {/* ПРАВИЙ СТОВПЧИК */}
+                <Col xs={6}>
+                    {/* Час заняття */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        marginBottom: '16px'
+                    }}>
                         <div style={{
-                            fontWeight: '500',
-                            color: '#374151'
+                            color: 'rgba(105, 180, 185, 1)',
+                            flexShrink: 0,
+                            marginTop: '2px'
                         }}>
-                            {schedule.dayOfWeek?.name}
+                            <FaClock size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '4px'
+                            }}>
+                                Час
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: '14px',
+                                lineHeight: '1.4'
+                            }}>
+                                {schedule.timeSlot ? formatTimeSlot(schedule.timeSlot) : 'Не вказано'}
+                            </div>
                         </div>
                     </div>
-                    <div style={{ marginBottom: '8px' }}>
-                        <span style={{
-                            fontSize: '12px',
-                            color: '#6b7280'
-                        }}>
-                            Поточний час:
-                        </span>
+
+                    {/* Аудиторія */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px'
+                    }}>
                         <div style={{
-                            fontWeight: '500',
-                            color: '#374151'
+                            color: 'rgba(105, 180, 185, 1)',
+                            flexShrink: 0,
+                            marginTop: '2px'
                         }}>
-                            {schedule.timeSlot ?
-                                formatTimeSlot(schedule.timeSlot)
-                                : 'Не вказано'
-                            }
+                            <FaDoorOpen size={14} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                fontWeight: '600',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '4px'
+                            }}>
+                                Аудиторія
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: '14px',
+                                lineHeight: '1.4',
+                                marginBottom: '2px'
+                            }}>
+                                {schedule.classroom?.name || 'Не вказано'}
+                            </div>
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px'
+                            }}>
+                                {schedule.classroom?.building && (
+                                    <span>Корпус: {schedule.classroom.building}</span>
+                                )}
+                                {schedule.classroom?.capacity && (
+                                    <span>{schedule.classroom.capacity} місць</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </Col>
