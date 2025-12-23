@@ -1,5 +1,5 @@
 import React from "react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaSync } from "react-icons/fa";
 
 const ScheduleHeader = ({
     onShowModal,
@@ -9,6 +9,7 @@ const ScheduleHeader = ({
     semesters,
     selectedSemester,
     onSemesterChange,
+    onRefresh,
     isMobile = false
 }) => {
     return (
@@ -37,7 +38,7 @@ const ScheduleHeader = ({
                     color: '#6b7280',
                     fontSize: isMobile ? '12px' : '14px'
                 }}>
-                    Управління розкладом для груп
+                    Управління розкладом для групи
                 </p>
             </div>
 
@@ -111,17 +112,58 @@ const ScheduleHeader = ({
                     </div>
                 )}
 
-                {/* Кнопка додавання */}
-                <div style={{ width: isMobile ? '100%' : 'auto' }}>
+                {/* Контейнер для кнопок в стовпчик */}
+                <div style={{
+                    width: isMobile ? '100%' : 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: isMobile ? '8px' : '8px',
+                    minWidth: isMobile ? 'auto' : '140px'
+                }}>
+                    {/* Кнопка оновлення */}
+                    <button
+                        onClick={onRefresh}
+                        style={{
+                            width: '100%',
+                            backgroundColor: selectedSemester ? 'rgba(105, 180, 185, 1)' : '#d1d5db', color: 'white',
+                            padding: isMobile ? '10px 12px' : '8px 16px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            fontSize: isMobile ? '14px' : '14px',
+                            fontWeight: '600',
+                            transition: 'background-color 0.3s ease',
+                            whiteSpace: 'nowrap'
+                        }}
+                        onMouseOver={(e) => {
+                            if (selectedSemester) {
+                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.8)';
+                            }
+                        }}
+                        onMouseOut={(e) => {
+                            if (selectedSemester) {
+                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                            }
+                        }}
+                    >
+                        <FaSync />
+                        Оновити
+                    </button>
+
+                    {/* Кнопка додавання */}
                     <button
                         onClick={onShowModal}
                         disabled={!selectedSemester}
                         style={{
-                            width: isMobile ? '100%' : 'auto',
+                            width: '100%',
                             backgroundColor: selectedSemester ? 'rgba(105, 180, 185, 1)' : '#d1d5db',
                             color: 'white',
-                            padding: isMobile ? '12px 16px' : '10px 20px',
-                            borderRadius: '8px',
+                            padding: isMobile ? '10px 12px' : '8px 16px',
+                            borderRadius: '6px',
                             border: 'none',
                             cursor: selectedSemester ? 'pointer' : 'not-allowed',
                             display: 'flex',

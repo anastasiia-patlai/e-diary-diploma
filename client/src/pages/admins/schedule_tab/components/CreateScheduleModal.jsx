@@ -494,7 +494,7 @@ const CreateScheduleModal = ({
     // Отримати інформацію про обраний часовий слот
     const selectedTimeSlotInfo = timeSlots.find(slot => slot._id === formData.timeSlot);
 
-    // Отримати всі унікальні помилки
+    // ОТРИМАТИ ВСІ УНІКАЛЬНІ ПОМИЛКИ
     const allErrors = getAllErrors();
 
     if (!show) return null;

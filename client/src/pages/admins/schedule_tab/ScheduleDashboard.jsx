@@ -24,7 +24,10 @@ const ScheduleDashboard = () => {
     const [databaseName, setDatabaseName] = useState("");
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-    // Перевірка ширини екрану
+    const filteredSchedules = selectedGroup
+        ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
+        : schedules;
+
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 768);
@@ -217,15 +220,42 @@ const ScheduleDashboard = () => {
         }
 
         try {
+            console.log(`Запит розкладів для семестру: ${selectedSemester}`);
+
             const response = await axios.get(`http://localhost:3001/api/schedule`, {
                 params: {
                     semester: selectedSemester,
                     databaseName
+                },
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
                 }
             });
-            setSchedules(response.data);
+
+            console.log(`Отримано ${response.data.length} розкладів`);
+
+            // Перевірка на дублікати
+            const uniqueSchedules = [];
+            const seenKeys = new Set();
+
+            response.data.forEach(schedule => {
+                const dayOfWeekId = schedule.dayOfWeek?._id || schedule.dayOfWeek;
+                const timeSlotId = schedule.timeSlot?._id || schedule.timeSlot;
+                const key = `${schedule.group?._id}-${dayOfWeekId}-${timeSlotId}`;
+
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    uniqueSchedules.push(schedule);
+                } else {
+                    console.warn("Знайдено дублікат розкладу:", schedule);
+                }
+            });
+
+            setSchedules(uniqueSchedules);
+
         } catch (err) {
-            console.error("Помилка завантаження розкладів:", err);
+            console.error('Помилка завантаження розкладів:', err);
             setSchedules([]);
         }
     };
@@ -275,6 +305,17 @@ const ScheduleDashboard = () => {
         }
     }, [selectedSemester, databaseName]);
 
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log("Кількість розкладів:", schedules.length);
+
+            if (selectedGroup) {
+                const groupSchedules = schedules.filter(s => s.group?._id === selectedGroup);
+                console.log(`Розкладів для групи ${selectedGroup}:`, groupSchedules.length);
+            }
+        }
+    }, [schedules, selectedGroup]);
+
     const handleCreateSchedule = async (scheduleData) => {
         if (!databaseName) {
             setError("Не вказано базу даних");
@@ -283,20 +324,113 @@ const ScheduleDashboard = () => {
 
         try {
             setLoading(true);
+            console.log("Створення розкладу з даними:", scheduleData);
+
+            // Перевірка локального стану перед відправкою
+            const existingInState = schedules.find(schedule => {
+                const scheduleDayOfWeek = schedule.dayOfWeek?._id || schedule.dayOfWeek;
+                const scheduleTimeSlot = schedule.timeSlot?._id || schedule.timeSlot;
+
+                return schedule.group?._id === scheduleData.group &&
+                    String(scheduleDayOfWeek) === String(scheduleData.dayOfWeek) &&
+                    String(scheduleTimeSlot) === String(scheduleData.timeSlot);
+            });
+
+            if (existingInState) {
+                setError(`Помилка: Ця група вже має урок в цей час у локальному стані. Предмет: ${existingInState.subject || "Без назви"}`);
+                setLoading(false);
+                return;
+            }
+
             const response = await axios.post("http://localhost:3001/api/schedule", {
                 ...scheduleData,
                 semester: selectedSemester,
                 databaseName
             });
-            await loadSchedules();
+
+            console.log("Успішно створено розклад:", response.data);
+
+            // Повідомлення про успіх перед оновленням даних
+            alert("Розклад успішно створено!");
+
             setShowModal(false);
             setError("");
+
+            // Після повідомлення про успіх - оновити дані
+            if (response.data.schedule) {
+                // Додати новий розклад до локального стану
+                setSchedules(prev => [...prev, response.data.schedule]);
+            }
+
+            // Завантажити повні оновлені дані через 300мс
+            setTimeout(() => {
+                loadSchedules();
+            }, 300);
+
         } catch (err) {
-            setError(err.response?.data?.message || "Помилка при створенні розкладу");
+            console.error("Помилка створення розкладу:", err.response?.data || err.message);
+
+            if (err.response?.status === 409) {
+                const conflictData = err.response.data;
+
+                let errorMessage = "Конфлікт розкладу!\\n\\n";
+
+                if (conflictData.conflictType === 'GROUP_TIMESLOT_CONFLICT') {
+                    const details = conflictData.details;
+                    errorMessage += "Група вже має урок в цей час.\\n\\n";
+                    errorMessage += "Деталі конфлікту:\\n";
+                    errorMessage += "Предмет: " + (details.existingLesson?.subject || 'Не вказано') + "\\n";
+                    errorMessage += "Викладач: " + (details.existingLesson?.teacher || 'Не вказано') + "\\n";
+
+                    if (details.existingLesson?.timeRange) {
+                        errorMessage += "Час: " + details.existingLesson.timeRange + "\\n";
+                    }
+                } else {
+                    errorMessage += conflictData.message || "Невідомий конфлікт";
+                }
+
+                setError(errorMessage);
+
+                // Примусово оновити дані після конфлікту
+                setTimeout(() => {
+                    loadSchedules();
+                }, 300);
+            } else {
+                setError(err.response?.data?.message || err.message || "Помилка при створенні розкладу");
+            }
         } finally {
             setLoading(false);
         }
     };
+
+    const checkForDuplicates = () => {
+        const duplicates = [];
+        const seen = new Set();
+
+        schedules.forEach(schedule => {
+            if (!schedule.group?._id || !schedule.dayOfWeek || !schedule.timeSlot) return;
+
+            const dayOfWeekId = schedule.dayOfWeek?._id || schedule.dayOfWeek;
+            const timeSlotId = schedule.timeSlot?._id || schedule.timeSlot;
+
+            const key = `${schedule.group._id}-${dayOfWeekId}-${timeSlotId}`;
+            if (seen.has(key)) {
+                duplicates.push(schedule);
+            } else {
+                seen.add(key);
+            }
+        });
+
+        if (duplicates.length > 0) {
+            console.error("Знайдено дублікати розкладів:", duplicates);
+        }
+
+        return duplicates;
+    };
+
+    useEffect(() => {
+        checkForDuplicates();
+    }, [schedules]);
 
     const handleDeleteSchedule = async (id) => {
         if (!window.confirm("Ви впевнені, що хочете видалити це заняття?")) {
@@ -318,10 +452,6 @@ const ScheduleDashboard = () => {
             setError(err.response?.data?.message || "Помилка при видаленні заняття");
         }
     };
-
-    const filteredSchedules = selectedGroup
-        ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
-        : schedules;
 
     if (loading) {
         return (
@@ -362,13 +492,11 @@ const ScheduleDashboard = () => {
             {error && (
                 <Alert variant="danger" dismissible onClose={() => setError("")}
                     style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
                         borderRadius: "6px",
                         marginBottom: "16px",
                         fontSize: isMobile ? "14px" : "16px",
-                        padding: isMobile ? "12px" : "16px"
+                        padding: isMobile ? "12px" : "16px",
+                        whiteSpace: 'pre-line'
                     }}
                 >
                     {error}

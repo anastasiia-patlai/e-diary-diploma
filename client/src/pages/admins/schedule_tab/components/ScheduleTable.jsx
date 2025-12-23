@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Row, Col, Card, Table, Spinner } from "react-bootstrap";
 import { FaCalendarAlt, FaExclamationTriangle, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { FaChalkboardTeacher, FaDoorOpen, FaBook, FaTrash, FaEdit } from "react-icons/fa";
+import ScheduleCell from "./ScheduleCell";
 import EditScheduleModal from "./group_schedule/EditScheduleModal";
 
 const ScheduleTable = ({
@@ -17,8 +18,8 @@ const ScheduleTable = ({
 }) => {
     const [currentDayIndex, setCurrentDayIndex] = useState(0);
     const [selectedDay, setSelectedDay] = useState(null);
-    const [showEditModal, setShowEditModal] = useState(false); // Додаємо стан для модального вікна
-    const [selectedSchedule, setSelectedSchedule] = useState(null); // Додаємо стан для обраного розкладу
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState(null);
 
     const getAllUniqueTimeSlots = () => {
         const safeTimeSlots = Array.isArray(timeSlots) ? timeSlots : [];
@@ -414,7 +415,7 @@ const ScheduleTable = ({
                                                                                         color: "rgba(105, 180, 185, 1)",
                                                                                         fontSize: "14px"
                                                                                     }}>
-                                                                                        {schedule.subject}
+                                                                                        {schedule.subject || schedule.subject?.name || "Без назви"}
                                                                                     </span>
                                                                                 </div>
                                                                                 <div style={{
@@ -425,7 +426,7 @@ const ScheduleTable = ({
                                                                                     color: "#6b7280"
                                                                                 }}>
                                                                                     <FaChalkboardTeacher style={{ fontSize: "12px", color: "#6b7280" }} />
-                                                                                    {schedule.teacher?.fullName}
+                                                                                    {schedule.teacher?.fullName || "Викладач не вказаний"}
                                                                                 </div>
                                                                                 <div style={{
                                                                                     display: "flex",
@@ -435,7 +436,7 @@ const ScheduleTable = ({
                                                                                     color: "#6b7280"
                                                                                 }}>
                                                                                     <FaDoorOpen style={{ fontSize: "12px", color: "#6b7280" }} />
-                                                                                    {schedule.classroom?.name}
+                                                                                    {schedule.classroom?.name || "Аудиторія не вказана"}
                                                                                 </div>
                                                                             </div>
                                                                         ) : (
