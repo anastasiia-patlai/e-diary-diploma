@@ -489,7 +489,7 @@ const ScheduleDashboard = () => {
                 isMobile={isMobile}
             />
 
-            {error && (
+            {/* {error && (
                 <Alert variant="danger" dismissible onClose={() => setError("")}
                     style={{
                         borderRadius: "6px",
@@ -501,7 +501,7 @@ const ScheduleDashboard = () => {
                 >
                     {error}
                 </Alert>
-            )}
+            )} */}
 
             {!selectedSemester && semesters.length > 0 && (
                 <Alert variant="warning" style={{
