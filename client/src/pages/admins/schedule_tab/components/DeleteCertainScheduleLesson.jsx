@@ -22,8 +22,6 @@ const DeleteCertainScheduleLesson = ({
     // Функції для обробки різних форматів даних
     const getSubject = () => {
         if (!schedule) return 'Не вказано';
-
-        // Різні можливі шляхи до назви предмету
         if (schedule.subject?.name) return schedule.subject.name;
         if (schedule.subject) return schedule.subject;
         if (schedule.teacher?.position) return schedule.teacher.position;
@@ -32,7 +30,6 @@ const DeleteCertainScheduleLesson = ({
 
     const getGroupName = () => {
         if (!schedule) return 'Не вказано';
-
         if (schedule.group?.name) return schedule.group.name;
         if (schedule.groupName) return schedule.groupName;
         return 'Не вказано';
@@ -40,8 +37,6 @@ const DeleteCertainScheduleLesson = ({
 
     const getDayName = () => {
         if (!schedule) return 'Не вказано';
-
-        // Різні формати даних про день
         if (schedule.dayOfWeek?.name) return schedule.dayOfWeek.name;
         if (schedule.dayOfWeekName) return schedule.dayOfWeekName;
         if (schedule.day) return schedule.day;
@@ -50,7 +45,6 @@ const DeleteCertainScheduleLesson = ({
 
     const getTimeSlot = () => {
         if (!schedule) return 'Не вказано';
-
         if (schedule.timeSlot) {
             if (schedule.timeSlot.order && schedule.timeSlot.startTime && schedule.timeSlot.endTime) {
                 return `${schedule.timeSlot.order}. ${schedule.timeSlot.startTime} - ${schedule.timeSlot.endTime}`;
@@ -64,7 +58,6 @@ const DeleteCertainScheduleLesson = ({
 
     const getTeacherName = () => {
         if (!schedule) return 'Не вказано';
-
         if (schedule.teacher?.fullName) return schedule.teacher.fullName;
         if (schedule.teacherName) return schedule.teacherName;
         return 'Не вказано';
@@ -72,7 +65,6 @@ const DeleteCertainScheduleLesson = ({
 
     const getClassroomName = () => {
         if (!schedule) return 'Не вказано';
-
         if (schedule.classroom?.name) return schedule.classroom.name;
         if (schedule.classroomName) return schedule.classroomName;
         return 'Не вказано';
@@ -98,7 +90,7 @@ const DeleteCertainScheduleLesson = ({
                 borderRadius: '12px',
                 padding: isMobile ? '16px' : '24px',
                 width: '90%',
-                maxWidth: isMobile ? '95%' : '450px',
+                maxWidth: isMobile ? '95%' : '550px',
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
@@ -170,7 +162,7 @@ const DeleteCertainScheduleLesson = ({
                     </p>
                 </div>
 
-                {/* Інформація про заняття */}
+                {/* Інформація про заняття у два стовпчики */}
                 <div style={{
                     backgroundColor: '#f9fafb',
                     border: '1px solid #e5e7eb',
@@ -179,7 +171,7 @@ const DeleteCertainScheduleLesson = ({
                     marginBottom: '20px'
                 }}>
                     <h3 style={{
-                        margin: '0 0 10px 0',
+                        margin: '0 0 15px 0',
                         fontSize: isMobile ? '15px' : '16px',
                         color: '#374151'
                     }}>
@@ -187,109 +179,123 @@ const DeleteCertainScheduleLesson = ({
                     </h3>
 
                     <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: isMobile ? '8px' : '10px'
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                        gap: isMobile ? '12px' : '16px'
                     }}>
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                Предмет:
+                        {/* Лівий стовпчик */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: isMobile ? '10px' : '12px'
+                        }}>
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    Предмет:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getSubject()}
+                                </div>
                             </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getSubject()}
+
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    Група:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getGroupName()}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    День:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getDayName()}
+                                </div>
                             </div>
                         </div>
 
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                Група:
+                        {/* Правий стовпчик */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: isMobile ? '10px' : '12px'
+                        }}>
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    Час:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getTimeSlot()}
+                                </div>
                             </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getGroupName()}
-                            </div>
-                        </div>
 
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                День:
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    Викладач:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getTeacherName()}
+                                </div>
                             </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getDayName()}
-                            </div>
-                        </div>
 
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                Час:
-                            </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getTimeSlot()}
-                            </div>
-                        </div>
-
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                Викладач:
-                            </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getTeacherName()}
-                            </div>
-                        </div>
-
-                        <div>
-                            <div style={{
-                                fontSize: isMobile ? '12px' : '13px',
-                                color: '#6b7280',
-                                marginBottom: '2px'
-                            }}>
-                                Аудиторія:
-                            </div>
-                            <div style={{
-                                fontWeight: '600',
-                                color: '#374151',
-                                fontSize: isMobile ? '14px' : '15px'
-                            }}>
-                                {getClassroomName()}
+                            <div>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280',
+                                    marginBottom: '4px'
+                                }}>
+                                    Аудиторія:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '14px' : '15px'
+                                }}>
+                                    {getClassroomName()}
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -27,6 +27,10 @@ const ScheduleDashboard = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedScheduleToDelete, setSelectedScheduleToDelete] = useState(null);
 
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState("");
+    const [notificationType, setNotificationType] = useState("success");
+
     const filteredSchedules = selectedGroup
         ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
         : schedules;
@@ -39,6 +43,16 @@ const ScheduleDashboard = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const showSystemNotification = (message, type = "success") => {
+        setNotificationMessage(message);
+        setNotificationType(type);
+        setShowNotification(true);
+
+        setTimeout(() => {
+            setShowNotification(false);
+        }, 5000);
+    };
 
     // Отримання databaseName з localStorage
     useEffect(() => {
@@ -82,6 +96,7 @@ const ScheduleDashboard = () => {
         } else {
             console.error("Database name не знайдено!");
             setError("Не вдалося визначити базу даних школи");
+            showSystemNotification("Не вдалося визначити базу даних школи", "danger");
             setLoading(false);
         }
     }, []);
@@ -322,6 +337,7 @@ const ScheduleDashboard = () => {
     const handleCreateSchedule = async (scheduleData) => {
         if (!databaseName) {
             setError("Не вказано базу даних");
+            showSystemNotification("Не вказано базу даних", "danger");
             return;
         }
 
@@ -339,7 +355,9 @@ const ScheduleDashboard = () => {
             });
 
             if (existingInState) {
-                setError(`Помилка: Ця група вже має урок в цей час у локальному стані. Предмет: ${existingInState.subject || "Без назви"}`);
+                const errorMsg = `Помилка: Ця група вже має урок в цей час. Предмет: ${existingInState.subject || "Без назви"}`;
+                setError(errorMsg);
+                showSystemNotification(errorMsg, "danger");
                 setLoading(false);
                 return;
             }
@@ -352,7 +370,7 @@ const ScheduleDashboard = () => {
 
             console.log("Успішно створено розклад:", response.data);
 
-            alert("Розклад успішно створено!");
+            showSystemNotification("Розклад успішно створено!", "success");
 
             setShowModal(false);
             setError("");
@@ -370,30 +388,29 @@ const ScheduleDashboard = () => {
 
             if (err.response?.status === 409) {
                 const conflictData = err.response.data;
-
-                let errorMessage = "Конфлікт розкладу!\\n\\n";
+                let errorMessage = "Конфлікт розкладу! ";
 
                 if (conflictData.conflictType === 'GROUP_TIMESLOT_CONFLICT') {
                     const details = conflictData.details;
-                    errorMessage += "Група вже має урок в цей час.\\n\\n";
-                    errorMessage += "Деталі конфлікту:\\n";
-                    errorMessage += "Предмет: " + (details.existingLesson?.subject || 'Не вказано') + "\\n";
-                    errorMessage += "Викладач: " + (details.existingLesson?.teacher || 'Не вказано') + "\\n";
+                    errorMessage += "Група вже має урок в цей час.";
 
-                    if (details.existingLesson?.timeRange) {
-                        errorMessage += "Час: " + details.existingLesson.timeRange + "\\n";
+                    if (details.existingLesson?.subject) {
+                        errorMessage += ` Предмет: ${details.existingLesson.subject}`;
                     }
                 } else {
                     errorMessage += conflictData.message || "Невідомий конфлікт";
                 }
 
                 setError(errorMessage);
+                showSystemNotification(errorMessage, "danger");
 
                 setTimeout(() => {
                     loadSchedules();
                 }, 300);
             } else {
-                setError(err.response?.data?.message || err.message || "Помилка при створенні розкладу");
+                const errorMsg = err.response?.data?.message || err.message || "Помилка при створенні розкладу";
+                setError(errorMsg);
+                showSystemNotification(errorMsg, "danger");
             }
         } finally {
             setLoading(false);
@@ -432,6 +449,7 @@ const ScheduleDashboard = () => {
     const handleDeleteSchedule = async (id) => {
         if (!databaseName) {
             setError("Не вказано базу даних");
+            showSystemNotification("Не вказано базу даних", "danger");
             return;
         }
 
@@ -441,7 +459,7 @@ const ScheduleDashboard = () => {
                 data: { databaseName }
             });
 
-            alert("Заняття успішно видалено!");
+            showSystemNotification("Заняття успішно видалено!", "success");
 
             setShowDeleteModal(false);
             setSelectedScheduleToDelete(null);
@@ -451,7 +469,7 @@ const ScheduleDashboard = () => {
         } catch (err) {
             const errorMsg = err.response?.data?.message || "Помилка при видаленні заняття";
             setError(errorMsg);
-            alert(errorMsg);
+            showSystemNotification(errorMsg, "danger");
         } finally {
             setLoading(false);
         }
@@ -488,6 +506,7 @@ const ScheduleDashboard = () => {
             maxWidth: "100%",
             overflowX: "hidden"
         }}>
+
             <ScheduleHeader
                 onShowModal={() => setShowModal(true)}
                 groups={groups}
@@ -499,6 +518,31 @@ const ScheduleDashboard = () => {
                 isMobile={isMobile}
             />
 
+            {/* СИСТЕМНІ СПОВІЩЕННЯ над таблицею */}
+            {/* {showNotification && (
+                <Alert
+                    variant={notificationType === 'success' ? 'success' :
+                        notificationType === 'danger' ? 'danger' :
+                            notificationType === 'warning' ? 'warning' : 'info'}
+                    onClose={() => setShowNotification(false)}
+                    dismissible
+                    style={{
+                        borderRadius: "6px",
+                        marginBottom: "16px",
+                        fontSize: isMobile ? "14px" : "16px",
+                        padding: isMobile ? "12px" : "16px",
+                        whiteSpace: 'pre-line',
+                        animation: 'slideDown 0.3s ease-out'
+                    }}
+                >
+                    <Alert.Heading>
+                        {notificationType === 'success' ? 'Успіх' :
+                            notificationType === 'danger' ? 'Помилка' :
+                                notificationType === 'warning' ? 'Попередження' : 'Інформація'}
+                    </Alert.Heading>
+                    {notificationMessage}
+                </Alert>
+            )} */}
             {/* {error && (
                 <Alert variant="danger" dismissible onClose={() => setError("")}
                     style={{
