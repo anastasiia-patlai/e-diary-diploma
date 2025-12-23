@@ -1,0 +1,391 @@
+import React from "react";
+import { FaTimes, FaExclamationTriangle, FaTrash } from "react-icons/fa";
+
+const DeleteCertainScheduleLesson = ({
+    show,
+    onClose,
+    onDelete,
+    schedule,
+    loading = false,
+    isMobile = false
+}) => {
+    const handleDelete = () => {
+        if (schedule?._id) {
+            onDelete(schedule._id);
+        }
+    };
+
+    const handleClose = () => {
+        onClose();
+    };
+
+    // Функції для обробки різних форматів даних
+    const getSubject = () => {
+        if (!schedule) return 'Не вказано';
+
+        // Різні можливі шляхи до назви предмету
+        if (schedule.subject?.name) return schedule.subject.name;
+        if (schedule.subject) return schedule.subject;
+        if (schedule.teacher?.position) return schedule.teacher.position;
+        return 'Не вказано';
+    };
+
+    const getGroupName = () => {
+        if (!schedule) return 'Не вказано';
+
+        if (schedule.group?.name) return schedule.group.name;
+        if (schedule.groupName) return schedule.groupName;
+        return 'Не вказано';
+    };
+
+    const getDayName = () => {
+        if (!schedule) return 'Не вказано';
+
+        // Різні формати даних про день
+        if (schedule.dayOfWeek?.name) return schedule.dayOfWeek.name;
+        if (schedule.dayOfWeekName) return schedule.dayOfWeekName;
+        if (schedule.day) return schedule.day;
+        return 'Не вказано';
+    };
+
+    const getTimeSlot = () => {
+        if (!schedule) return 'Не вказано';
+
+        if (schedule.timeSlot) {
+            if (schedule.timeSlot.order && schedule.timeSlot.startTime && schedule.timeSlot.endTime) {
+                return `${schedule.timeSlot.order}. ${schedule.timeSlot.startTime} - ${schedule.timeSlot.endTime}`;
+            }
+            if (schedule.timeSlot.startTime && schedule.timeSlot.endTime) {
+                return `${schedule.timeSlot.startTime} - ${schedule.timeSlot.endTime}`;
+            }
+        }
+        return 'Не вказано';
+    };
+
+    const getTeacherName = () => {
+        if (!schedule) return 'Не вказано';
+
+        if (schedule.teacher?.fullName) return schedule.teacher.fullName;
+        if (schedule.teacherName) return schedule.teacherName;
+        return 'Не вказано';
+    };
+
+    const getClassroomName = () => {
+        if (!schedule) return 'Не вказано';
+
+        if (schedule.classroom?.name) return schedule.classroom.name;
+        if (schedule.classroomName) return schedule.classroomName;
+        return 'Не вказано';
+    };
+
+    if (!show || !schedule) return null;
+
+    return (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999
+        }}>
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: isMobile ? '16px' : '24px',
+                width: '90%',
+                maxWidth: isMobile ? '95%' : '450px',
+                maxHeight: '90vh',
+                overflowY: 'auto'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '16px'
+                }}>
+                    <h2 style={{
+                        margin: 0,
+                        fontSize: isMobile ? '18px' : '20px',
+                        color: '#374151',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                    }}>
+                        <FaExclamationTriangle style={{ color: '#dc2626' }} />
+                        Видалення заняття
+                    </h2>
+                    <button
+                        onClick={handleClose}
+                        disabled={loading}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: '20px',
+                            color: '#6b7280',
+                            transition: 'color 0.2s',
+                            opacity: loading ? 0.5 : 1
+                        }}
+                        onMouseOver={(e) => {
+                            if (!loading) e.target.style.color = '#374151';
+                        }}
+                        onMouseOut={(e) => {
+                            if (!loading) e.target.style.color = '#6b7280';
+                        }}
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
+
+                <div style={{
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginBottom: '16px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginBottom: '8px'
+                    }}>
+                        <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '16px' }} />
+                        <span style={{ fontWeight: '600', color: '#dc2626', fontSize: isMobile ? '14px' : '15px' }}>
+                            Ця дія незворотня
+                        </span>
+                    </div>
+                    <p style={{
+                        margin: 0,
+                        color: '#7f1d1d',
+                        fontSize: isMobile ? '13px' : '14px',
+                        lineHeight: '1.4'
+                    }}>
+                        Ви збираєтеся видалити заняття з розкладу.
+                    </p>
+                </div>
+
+                {/* Інформація про заняття */}
+                <div style={{
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: isMobile ? '12px' : '16px',
+                    marginBottom: '20px'
+                }}>
+                    <h3 style={{
+                        margin: '0 0 10px 0',
+                        fontSize: isMobile ? '15px' : '16px',
+                        color: '#374151'
+                    }}>
+                        Деталі заняття:
+                    </h3>
+
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: isMobile ? '8px' : '10px'
+                    }}>
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                Предмет:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getSubject()}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                Група:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getGroupName()}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                День:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getDayName()}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                Час:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getTimeSlot()}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                Викладач:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getTeacherName()}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: isMobile ? '12px' : '13px',
+                                color: '#6b7280',
+                                marginBottom: '2px'
+                            }}>
+                                Аудиторія:
+                            </div>
+                            <div style={{
+                                fontWeight: '600',
+                                color: '#374151',
+                                fontSize: isMobile ? '14px' : '15px'
+                            }}>
+                                {getClassroomName()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Кнопки дій */}
+                <div style={{
+                    display: 'flex',
+                    gap: isMobile ? '8px' : '12px',
+                    marginTop: '20px',
+                    paddingTop: '16px',
+                    borderTop: '1px solid #e5e7eb'
+                }}>
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        disabled={loading}
+                        style={{
+                            flex: 1,
+                            padding: isMobile ? '10px' : '12px',
+                            backgroundColor: '#6b7280',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: isMobile ? '13px' : '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'background-color 0.2s',
+                            opacity: loading ? 0.5 : 1
+                        }}
+                        onMouseOver={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#4b5563';
+                        }}
+                        onMouseOut={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#6b7280';
+                        }}
+                    >
+                        <FaTimes />
+                        Скасувати
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={loading}
+                        style={{
+                            flex: 1,
+                            padding: isMobile ? '10px' : '12px',
+                            backgroundColor: loading ? '#d1d5db' : '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: isMobile ? '13px' : '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'background-color 0.2s',
+                            opacity: loading ? 0.5 : 1
+                        }}
+                        onMouseOver={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#b91c1c';
+                        }}
+                        onMouseOut={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#dc2626';
+                        }}
+                    >
+                        {loading ? (
+                            <>
+                                <div className="spinner" style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderTopColor: 'white',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }} />
+                                Видалення...
+                            </>
+                        ) : (
+                            <>
+                                <FaTrash />
+                                Видалити
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default DeleteCertainScheduleLesson;

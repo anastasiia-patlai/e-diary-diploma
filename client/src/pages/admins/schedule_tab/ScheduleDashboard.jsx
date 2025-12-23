@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Alert, Spinner } from "react-bootstrap";
+import { Container, Alert, Spinner, Toast, ToastContainer } from "react-bootstrap";
 import { FaDatabase } from "react-icons/fa";
 import axios from "axios";
 
@@ -7,6 +7,7 @@ import ScheduleHeader from "./components/ScheduleHeader";
 import ScheduleTable from "./components/ScheduleTable";
 import GroupScheduleTable from "./components/group_schedule/GroupScheduleTable";
 import CreateScheduleModal from "./components/CreateScheduleModal";
+import DeleteCertainScheduleLesson from "./components/DeleteCertainScheduleLesson";
 
 const ScheduleDashboard = () => {
     const [schedules, setSchedules] = useState([]);
@@ -23,6 +24,8 @@ const ScheduleDashboard = () => {
     const [selectedGroup, setSelectedGroup] = useState("");
     const [databaseName, setDatabaseName] = useState("");
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedScheduleToDelete, setSelectedScheduleToDelete] = useState(null);
 
     const filteredSchedules = selectedGroup
         ? schedules.filter(schedule => schedule.group?._id === selectedGroup)
@@ -326,7 +329,6 @@ const ScheduleDashboard = () => {
             setLoading(true);
             console.log("Створення розкладу з даними:", scheduleData);
 
-            // Перевірка локального стану перед відправкою
             const existingInState = schedules.find(schedule => {
                 const scheduleDayOfWeek = schedule.dayOfWeek?._id || schedule.dayOfWeek;
                 const scheduleTimeSlot = schedule.timeSlot?._id || schedule.timeSlot;
@@ -350,19 +352,15 @@ const ScheduleDashboard = () => {
 
             console.log("Успішно створено розклад:", response.data);
 
-            // Повідомлення про успіх перед оновленням даних
             alert("Розклад успішно створено!");
 
             setShowModal(false);
             setError("");
 
-            // Після повідомлення про успіх - оновити дані
             if (response.data.schedule) {
-                // Додати новий розклад до локального стану
                 setSchedules(prev => [...prev, response.data.schedule]);
             }
 
-            // Завантажити повні оновлені дані через 300мс
             setTimeout(() => {
                 loadSchedules();
             }, 300);
@@ -391,7 +389,6 @@ const ScheduleDashboard = () => {
 
                 setError(errorMessage);
 
-                // Примусово оновити дані після конфлікту
                 setTimeout(() => {
                     loadSchedules();
                 }, 300);
@@ -433,24 +430,37 @@ const ScheduleDashboard = () => {
     }, [schedules]);
 
     const handleDeleteSchedule = async (id) => {
-        if (!window.confirm("Ви впевнені, що хочете видалити це заняття?")) {
-            return;
-        }
-
         if (!databaseName) {
             setError("Не вказано базу даних");
             return;
         }
 
         try {
+            setLoading(true);
             await axios.delete(`http://localhost:3001/api/schedule/${id}`, {
                 data: { databaseName }
             });
+
+            alert("Заняття успішно видалено!");
+
+            setShowDeleteModal(false);
+            setSelectedScheduleToDelete(null);
+
             await loadSchedules();
             setError("");
         } catch (err) {
-            setError(err.response?.data?.message || "Помилка при видаленні заняття");
+            const errorMsg = err.response?.data?.message || "Помилка при видаленні заняття";
+            setError(errorMsg);
+            alert(errorMsg);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const openDeleteModal = (schedule) => {
+        console.log('Відкриваємо модалку видалення для розкладу:', schedule);
+        setSelectedScheduleToDelete(schedule);
+        setShowDeleteModal(true);
     };
 
     if (loading) {
@@ -531,7 +541,7 @@ const ScheduleDashboard = () => {
                     daysOfWeek={daysOfWeek}
                     selectedGroup={selectedGroup}
                     loading={loading}
-                    onDeleteSchedule={handleDeleteSchedule}
+                    onDeleteSchedule={openDeleteModal}
                     isMobile={isMobile}
                 />
             ) : (
@@ -541,7 +551,7 @@ const ScheduleDashboard = () => {
                     timeSlots={timeSlots}
                     daysOfWeek={daysOfWeek}
                     loading={loading}
-                    onDeleteSchedule={handleDeleteSchedule}
+                    onDeleteSchedule={openDeleteModal}
                     isMobile={isMobile}
                 />
             ))}
@@ -556,6 +566,18 @@ const ScheduleDashboard = () => {
                 semesters={semesters}
                 selectedSemester={selectedSemester}
                 schoolDatabaseName={databaseName}
+                isMobile={isMobile}
+            />
+
+            <DeleteCertainScheduleLesson
+                show={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false);
+                    setSelectedScheduleToDelete(null);
+                }}
+                onDelete={handleDeleteSchedule}
+                schedule={selectedScheduleToDelete}
+                loading={loading}
                 isMobile={isMobile}
             />
         </Container>

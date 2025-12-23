@@ -635,23 +635,22 @@ const GroupScheduleTable = ({
                                                                                 Редаг.
                                                                             </button>
                                                                             <button
-                                                                                onClick={() => onDeleteSchedule(schedule._id)}
+                                                                                onClick={() => onDeleteSchedule(schedule)}
                                                                                 style={{
-                                                                                    padding: "8px 12px",
-                                                                                    fontSize: "14px",
+                                                                                    padding: "4px 8px",
+                                                                                    fontSize: "10px",
                                                                                     backgroundColor: "#ef4444",
                                                                                     color: "white",
                                                                                     border: "none",
-                                                                                    borderRadius: "6px",
+                                                                                    borderRadius: "4px",
                                                                                     cursor: "pointer",
-                                                                                    fontWeight: "500",
                                                                                     display: "flex",
                                                                                     alignItems: "center",
                                                                                     gap: "4px"
                                                                                 }}
                                                                             >
-                                                                                <FaTrash size={12} />
-                                                                                Видел.
+                                                                                <FaTrash size={8} />
+                                                                                Видал.
                                                                             </button>
                                                                         </div>
                                                                     </div>

@@ -376,8 +376,18 @@ const ScheduleTable = ({
                                                                                         Редаг.
                                                                                     </button>
                                                                                     <button
-                                                                                        onClick={() => onDeleteSchedule && onDeleteSchedule(schedule._id)}
-                                                                                        style={{
+                                                                                        onClick={() => {
+                                                                                            console.log('Мобільна версія - передаємо розклад для видалення:', schedule);
+                                                                                            console.log('День тижня:', schedule?.dayOfWeek);
+                                                                                            console.log('Час:', schedule?.timeSlot);
+                                                                                            console.log('Група:', schedule?.group);
+                                                                                            console.log('Викладач:', schedule?.teacher);
+                                                                                            console.log('Аудиторія:', schedule?.classroom);
+
+                                                                                            if (onDeleteSchedule) {
+                                                                                                onDeleteSchedule(schedule);
+                                                                                            }
+                                                                                        }} style={{
                                                                                             padding: "6px 10px",
                                                                                             fontSize: "12px",
                                                                                             backgroundColor: "#ef4444",
@@ -700,7 +710,18 @@ const ScheduleTable = ({
                                                                                         Редаг.
                                                                                     </button>
                                                                                     <button
-                                                                                        onClick={() => onDeleteSchedule(schedule._id)}
+                                                                                        onClick={() => {
+                                                                                            console.log('Десктопна версія - передаємо розклад для видалення:', schedule);
+                                                                                            console.log('День тижня:', schedule?.dayOfWeek);
+                                                                                            console.log('Час:', schedule?.timeSlot);
+                                                                                            console.log('Група:', schedule?.group);
+                                                                                            console.log('Викладач:', schedule?.teacher);
+                                                                                            console.log('Аудиторія:', schedule?.classroom);
+
+                                                                                            if (onDeleteSchedule) {
+                                                                                                onDeleteSchedule(schedule);
+                                                                                            }
+                                                                                        }}
                                                                                         style={{
                                                                                             padding: "4px 8px",
                                                                                             fontSize: "10px",
@@ -715,7 +736,7 @@ const ScheduleTable = ({
                                                                                         }}
                                                                                     >
                                                                                         <FaTrash size={8} />
-                                                                                        Видел.
+                                                                                        Видал.
                                                                                     </button>
                                                                                 </div>
                                                                             </div>
