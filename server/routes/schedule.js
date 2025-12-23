@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose'); // Додано mongoose для ObjectId
+const mongoose = require('mongoose');
 const router = express.Router();
 const { getSchoolScheduleModel, getSchoolGroupModel } = require('../config/databaseManager');
 
@@ -87,31 +87,31 @@ router.post('/', async (req, res) => {
         }
 
         // 1. ПЕРЕВІРКА: Чи не має група вже уроку в цей час (головна перевірка)
-        const groupTimeSlotConflict = await Schedule.findOne({
-            group: scheduleData.group,
-            dayOfWeek: scheduleData.dayOfWeek,
-            timeSlot: scheduleData.timeSlot
-        })
-            .populate('teacher', 'fullName')
-            .populate('timeSlot', 'order startTime endTime');
+        // const groupTimeSlotConflict = await Schedule.findOne({
+        //     group: scheduleData.group,
+        //     dayOfWeek: scheduleData.dayOfWeek,
+        //     timeSlot: scheduleData.timeSlot
+        // })
+        //     .populate('teacher', 'fullName')
+        //     .populate('timeSlot', 'order startTime endTime');
 
-        if (groupTimeSlotConflict) {
-            return res.status(409).json({
-                message: 'Конфлікт розкладу: Група вже має урок в цей час',
-                conflictType: 'GROUP_TIMESLOT_CONFLICT',
-                details: {
-                    existingLesson: {
-                        subject: groupTimeSlotConflict.subject,
-                        teacher: groupTimeSlotConflict.teacher?.fullName,
-                        classroom: groupTimeSlotConflict.classroom,
-                        timeSlot: groupTimeSlotConflict.timeSlot?.order,
-                        timeRange: groupTimeSlotConflict.timeSlot ?
-                            `${groupTimeSlotConflict.timeSlot.startTime} - ${groupTimeSlotConflict.timeSlot.endTime}` : null
-                    },
-                    message: `Група вже має урок з ${groupTimeSlotConflict.subject} в цей час`
-                }
-            });
-        }
+        // if (groupTimeSlotConflict) {
+        //     return res.status(409).json({
+        //         message: 'Конфлікт розкладу: Група вже має урок в цей час',
+        //         conflictType: 'GROUP_TIMESLOT_CONFLICT',
+        //         details: {
+        //             existingLesson: {
+        //                 subject: groupTimeSlotConflict.subject,
+        //                 teacher: groupTimeSlotConflict.teacher?.fullName,
+        //                 classroom: groupTimeSlotConflict.classroom,
+        //                 timeSlot: groupTimeSlotConflict.timeSlot?.order,
+        //                 timeRange: groupTimeSlotConflict.timeSlot ?
+        //                     `${groupTimeSlotConflict.timeSlot.startTime} - ${groupTimeSlotConflict.timeSlot.endTime}` : null
+        //             },
+        //             message: `Група вже має урок з ${groupTimeSlotConflict.subject} в цей час`
+        //         }
+        //     });
+        // }
 
         // 2. Перевірка: Чи не зайнятий викладач в цей час
         const teacherConflict = await Schedule.findOne({
@@ -124,7 +124,7 @@ router.post('/', async (req, res) => {
 
         if (teacherConflict) {
             return res.status(409).json({
-                message: 'Конфлікт розкладу для викладача',
+                // message: 'Конфлікт розкладу для викладача',
                 conflictType: 'TEACHER_BUSY',
                 details: {
                     existingLesson: {
@@ -166,32 +166,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // 4. Перевірка: Чи не має група іншого уроку з таким самим предметом у цей день
-        const subjectConflict = await Schedule.findOne({
-            group: scheduleData.group,
-            dayOfWeek: scheduleData.dayOfWeek,
-            subject: scheduleData.subject
-        })
-            .populate('timeSlot', 'order startTime endTime');
-
-        if (subjectConflict) {
-            return res.status(409).json({
-                message: 'Конфлікт предмету для групи',
-                conflictType: 'DUPLICATE_SUBJECT',
-                details: {
-                    existingLesson: {
-                        timeSlot: subjectConflict.timeSlot?.order,
-                        timeRange: subjectConflict.timeSlot ?
-                            `${subjectConflict.timeSlot.startTime} - ${subjectConflict.timeSlot.endTime}` : null,
-                        teacher: subjectConflict.teacher,
-                        classroom: subjectConflict.classroom
-                    },
-                    message: `Група вже має урок з предметом "${scheduleData.subject}" в цей день`
-                }
-            });
-        }
-
-        // 5. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день
+        // 4. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день
         const teacherDaySchedule = await Schedule.find({
             teacher: scheduleData.teacher,
             dayOfWeek: scheduleData.dayOfWeek
@@ -217,7 +192,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // 6. Перевірка: Чи не перевищує група максимальну кількість уроків на день
+        // 5. Перевірка: Чи не перевищує група максимальну кількість уроків на день
         const groupDaySchedule = await Schedule.find({
             group: scheduleData.group,
             dayOfWeek: scheduleData.dayOfWeek
@@ -264,7 +239,6 @@ router.post('/', async (req, res) => {
         console.error('Error creating schedule:', error);
 
         if (error.code === 11000) {
-            // MongoDB duplicate key error
             if (error.keyPattern && error.keyPattern._id) {
                 return res.status(400).json({
                     message: 'Помилка: спроба створити запис з уже існуючим ID',
@@ -275,7 +249,6 @@ router.post('/', async (req, res) => {
                     }
                 });
             } else {
-                // Конфлікт унікального індексу (group + dayOfWeek + timeSlot)
                 return res.status(409).json({
                     message: 'Конфлікт розкладу: група вже має урок в цей час',
                     error: 'DUPLICATE_TIMESLOT_FOR_GROUP',
@@ -333,7 +306,6 @@ router.put('/:id', async (req, res) => {
         const timeSlot = updateData.timeSlot || existingSchedule.timeSlot;
         const teacher = updateData.teacher || existingSchedule.teacher;
         const classroom = updateData.classroom || existingSchedule.classroom;
-        const subject = updateData.subject || existingSchedule.subject;
 
         // 1. Перевірка конфлікту для групи
         const groupConflict = await Schedule.findOne({
@@ -378,23 +350,6 @@ router.put('/:id', async (req, res) => {
                 message: 'Аудиторія вже зайнята в цей час',
                 conflictType: 'CLASSROOM_BUSY'
             });
-        }
-
-        // 4. Перевірка дублювання предмету (якщо змінився день або предмет)
-        if ((updateData.dayOfWeek || updateData.subject) && group && dayOfWeek && subject) {
-            const subjectConflict = await Schedule.findOne({
-                group: group,
-                dayOfWeek: dayOfWeek,
-                subject: subject,
-                _id: { $ne: id }
-            });
-
-            if (subjectConflict) {
-                return res.status(409).json({
-                    message: 'Група вже має урок з цим предметом у цей день',
-                    conflictType: 'DUPLICATE_SUBJECT'
-                });
-            }
         }
 
         // Оновлення запису
@@ -573,35 +528,7 @@ router.post('/check-availability', async (req, res) => {
             }
         }
 
-        // 4. Перевірка дублювання предмету для групи в той самий день
-        if (checkData.group && checkData.dayOfWeek && checkData.subject) {
-            const query = {
-                group: checkData.group,
-                dayOfWeek: checkData.dayOfWeek,
-                subject: checkData.subject
-            };
-
-            if (checkData.excludeId) {
-                query._id = { $ne: checkData.excludeId };
-            }
-
-            const subjectConflict = await Schedule.findOne(query)
-                .populate('timeSlot', 'order startTime endTime');
-
-            if (subjectConflict) {
-                conflicts.push({
-                    type: 'DUPLICATE_SUBJECT',
-                    message: `Група вже має урок з предметом "${checkData.subject}" у цей день`,
-                    details: {
-                        existingTimeSlot: subjectConflict.timeSlot?.order,
-                        timeRange: subjectConflict.timeSlot ?
-                            `${subjectConflict.timeSlot.startTime} - ${subjectConflict.timeSlot.endTime}` : null
-                    }
-                });
-            }
-        }
-
-        // 5. Перевірка ліміту уроків на день для групи
+        // 4. Перевірка ліміту уроків на день для групи
         if (checkData.group && checkData.dayOfWeek) {
             const query = {
                 group: checkData.group,
@@ -627,7 +554,7 @@ router.post('/check-availability', async (req, res) => {
             }
         }
 
-        // 6. Перевірка ліміту уроків на день для викладача
+        // 5. Перевірка ліміту уроків на день для викладача
         if (checkData.teacher && checkData.dayOfWeek) {
             const query = {
                 teacher: checkData.teacher,

@@ -12,6 +12,6 @@ const scheduleSchema = new mongoose.Schema({
     timestamps: true
 });
 
-scheduleSchema.index({ group: 1, dayOfWeek: 1, timeSlot: 1 }, { unique: true });
+// scheduleSchema.index({ group: 1, dayOfWeek: 1, timeSlot: 1 }, { unique: true });
 
 module.exports = mongoose.model('Schedule', scheduleSchema);
