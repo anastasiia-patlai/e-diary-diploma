@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose'); // Додано mongoose для ObjectId
 const router = express.Router();
 const { getSchoolScheduleModel, getSchoolGroupModel } = require('../config/databaseManager');
 
@@ -92,7 +93,6 @@ router.post('/', async (req, res) => {
             timeSlot: scheduleData.timeSlot
         })
             .populate('teacher', 'fullName')
-            .populate('subject', 'name')
             .populate('timeSlot', 'order startTime endTime');
 
         if (groupTimeSlotConflict) {
@@ -296,7 +296,7 @@ router.post('/', async (req, res) => {
             });
         }
 
-        res.status(400).json({
+        res.status(500).json({
             message: 'Помилка при створенні розкладу',
             error: error.message
         });
@@ -327,8 +327,75 @@ router.put('/:id', async (req, res) => {
             delete updateData._id;
         }
 
-        // Виконати перевірки на конфлікти...
-        // ... (залишаємо перевірки без змін)
+        // Перевірки на конфлікти при оновленні
+        const group = updateData.group || existingSchedule.group;
+        const dayOfWeek = updateData.dayOfWeek || existingSchedule.dayOfWeek;
+        const timeSlot = updateData.timeSlot || existingSchedule.timeSlot;
+        const teacher = updateData.teacher || existingSchedule.teacher;
+        const classroom = updateData.classroom || existingSchedule.classroom;
+        const subject = updateData.subject || existingSchedule.subject;
+
+        // 1. Перевірка конфлікту для групи
+        const groupConflict = await Schedule.findOne({
+            group: group,
+            dayOfWeek: dayOfWeek,
+            timeSlot: timeSlot,
+            _id: { $ne: id }
+        });
+
+        if (groupConflict) {
+            return res.status(409).json({
+                message: 'Конфлікт розкладу: Група вже має урок в цей час',
+                conflictType: 'GROUP_TIMESLOT_CONFLICT'
+            });
+        }
+
+        // 2. Перевірка викладача
+        const teacherConflict = await Schedule.findOne({
+            teacher: teacher,
+            dayOfWeek: dayOfWeek,
+            timeSlot: timeSlot,
+            _id: { $ne: id }
+        });
+
+        if (teacherConflict) {
+            return res.status(409).json({
+                message: 'Викладач вже веде урок в цей час',
+                conflictType: 'TEACHER_BUSY'
+            });
+        }
+
+        // 3. Перевірка аудиторії
+        const classroomConflict = await Schedule.findOne({
+            classroom: classroom,
+            dayOfWeek: dayOfWeek,
+            timeSlot: timeSlot,
+            _id: { $ne: id }
+        });
+
+        if (classroomConflict) {
+            return res.status(409).json({
+                message: 'Аудиторія вже зайнята в цей час',
+                conflictType: 'CLASSROOM_BUSY'
+            });
+        }
+
+        // 4. Перевірка дублювання предмету (якщо змінився день або предмет)
+        if ((updateData.dayOfWeek || updateData.subject) && group && dayOfWeek && subject) {
+            const subjectConflict = await Schedule.findOne({
+                group: group,
+                dayOfWeek: dayOfWeek,
+                subject: subject,
+                _id: { $ne: id }
+            });
+
+            if (subjectConflict) {
+                return res.status(409).json({
+                    message: 'Група вже має урок з цим предметом у цей день',
+                    conflictType: 'DUPLICATE_SUBJECT'
+                });
+            }
+        }
 
         // Оновлення запису
         const updatedSchedule = await Schedule.findByIdAndUpdate(
@@ -369,7 +436,7 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        res.status(400).json({
+        res.status(500).json({
             message: 'Помилка при оновленні розкладу',
             error: error.message
         });
@@ -420,14 +487,18 @@ router.post('/check-availability', async (req, res) => {
 
         // 1. Головна перевірка: чи не має група вже уроку в цей час
         if (checkData.group && checkData.dayOfWeek && checkData.timeSlot) {
-            const groupConflict = await Schedule.findOne({
+            const query = {
                 group: checkData.group,
                 dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            })
+                timeSlot: checkData.timeSlot
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const groupConflict = await Schedule.findOne(query)
                 .populate('teacher', 'fullName')
-                .populate('subject', 'name')
                 .populate('timeSlot', 'order startTime endTime');
 
             if (groupConflict) {
@@ -446,12 +517,17 @@ router.post('/check-availability', async (req, res) => {
 
         // 2. Перевірка викладача
         if (checkData.teacher && checkData.dayOfWeek && checkData.timeSlot) {
-            const teacherConflict = await Schedule.findOne({
+            const query = {
                 teacher: checkData.teacher,
                 dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            })
+                timeSlot: checkData.timeSlot
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const teacherConflict = await Schedule.findOne(query)
                 .populate('group', 'name')
                 .populate('timeSlot', 'startTime endTime');
 
@@ -470,12 +546,17 @@ router.post('/check-availability', async (req, res) => {
 
         // 3. Перевірка аудиторії
         if (checkData.classroom && checkData.dayOfWeek && checkData.timeSlot) {
-            const classroomConflict = await Schedule.findOne({
+            const query = {
                 classroom: checkData.classroom,
                 dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            })
+                timeSlot: checkData.timeSlot
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const classroomConflict = await Schedule.findOne(query)
                 .populate('group', 'name')
                 .populate('timeSlot', 'startTime endTime');
 
@@ -494,12 +575,17 @@ router.post('/check-availability', async (req, res) => {
 
         // 4. Перевірка дублювання предмету для групи в той самий день
         if (checkData.group && checkData.dayOfWeek && checkData.subject) {
-            const subjectConflict = await Schedule.findOne({
+            const query = {
                 group: checkData.group,
                 dayOfWeek: checkData.dayOfWeek,
-                subject: checkData.subject,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            })
+                subject: checkData.subject
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const subjectConflict = await Schedule.findOne(query)
                 .populate('timeSlot', 'order startTime endTime');
 
             if (subjectConflict) {
@@ -517,11 +603,16 @@ router.post('/check-availability', async (req, res) => {
 
         // 5. Перевірка ліміту уроків на день для групи
         if (checkData.group && checkData.dayOfWeek) {
-            const groupDaySchedule = await Schedule.find({
+            const query = {
                 group: checkData.group,
-                dayOfWeek: checkData.dayOfWeek,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            });
+                dayOfWeek: checkData.dayOfWeek
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const groupDaySchedule = await Schedule.find(query);
 
             const MAX_LESSONS_PER_DAY = 10;
             if (groupDaySchedule.length >= MAX_LESSONS_PER_DAY) {
@@ -538,11 +629,16 @@ router.post('/check-availability', async (req, res) => {
 
         // 6. Перевірка ліміту уроків на день для викладача
         if (checkData.teacher && checkData.dayOfWeek) {
-            const teacherDaySchedule = await Schedule.find({
+            const query = {
                 teacher: checkData.teacher,
-                dayOfWeek: checkData.dayOfWeek,
-                _id: checkData.excludeId ? { $ne: checkData.excludeId } : { $exists: true }
-            });
+                dayOfWeek: checkData.dayOfWeek
+            };
+
+            if (checkData.excludeId) {
+                query._id = { $ne: checkData.excludeId };
+            }
+
+            const teacherDaySchedule = await Schedule.find(query);
 
             const MAX_LESSONS_PER_DAY = 10;
             if (teacherDaySchedule.length >= MAX_LESSONS_PER_DAY) {
@@ -675,7 +771,6 @@ router.get('/check-group-timeslot', async (req, res) => {
 
         const existingSchedule = await Schedule.findOne(query)
             .populate('teacher', 'fullName')
-            .populate('subject', 'name')
             .populate('timeSlot', 'order startTime endTime');
 
         res.json({

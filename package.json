@@ -3,5 +3,8 @@
     "bootstrap": "^5.3.8",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-icons": "^1.11.6"
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.11"
   }
 }
