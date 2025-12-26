@@ -3,7 +3,7 @@ import { Row, Col, Card, Table, Spinner } from "react-bootstrap";
 import { FaCalendarAlt, FaExclamationTriangle, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { FaChalkboardTeacher, FaDoorOpen, FaBook, FaTrash, FaEdit } from "react-icons/fa";
 import ScheduleCell from "./ScheduleCell";
-import EditScheduleModal from "./group_schedule/EditScheduleModal";
+import EditScheduleModal from "./edit_component/EditScheduleModal";
 
 const ScheduleTable = ({
     schedules,
@@ -14,7 +14,8 @@ const ScheduleTable = ({
     onDeleteSchedule,
     classrooms = [],
     teachers = [],
-    isMobile = false
+    isMobile = false,
+    databaseName
 }) => {
     const [currentDayIndex, setCurrentDayIndex] = useState(0);
     const [selectedDay, setSelectedDay] = useState(null);
@@ -72,9 +73,11 @@ const ScheduleTable = ({
     };
 
     const navigateDay = (direction) => {
+        const safeDays = Array.isArray(daysOfWeek) ? daysOfWeek : [];
+
         setCurrentDayIndex(prev => {
             if (direction === 'prev' && prev > 0) return prev - 1;
-            if (direction === 'next' && prev < safeDaysOfWeek.length - 1) return prev + 1;
+            if (direction === 'next' && prev < safeDays.length - 1) return prev + 1;
             return prev;
         });
     };
@@ -493,11 +496,13 @@ const ScheduleTable = ({
                     show={showEditModal}
                     onHide={() => setShowEditModal(false)}
                     schedule={selectedSchedule}
+                    daysOfWeek={safeDaysOfWeek}
                     classrooms={safeClassrooms}
-                    timeSlots={allUniqueTimeSlots}
+                    timeSlots={timeSlots}
                     teachers={safeTeachers}
                     onSave={handleSaveSchedule}
-                    loading={false} // Можна додати стан завантаження якщо потрібно
+                    loading={false}
+                    databaseName={databaseName}
                 />
             </>
         );
@@ -769,11 +774,13 @@ const ScheduleTable = ({
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}
                 schedule={selectedSchedule}
+                daysOfWeek={safeDaysOfWeek}
                 classrooms={safeClassrooms}
-                timeSlots={allUniqueTimeSlots}
+                timeSlots={timeSlots}
                 teachers={safeTeachers}
                 onSave={handleSaveSchedule}
                 loading={false}
+                databaseName={databaseName}
             />
         </>
     );

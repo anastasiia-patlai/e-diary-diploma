@@ -5,7 +5,7 @@ import axios from "axios";
 
 import ScheduleHeader from "./components/ScheduleHeader";
 import ScheduleTable from "./components/ScheduleTable";
-import GroupScheduleTable from "./components/group_schedule/GroupScheduleTable";
+import GroupScheduleTable from "./group_schedule/GroupScheduleTable";
 import CreateScheduleModal from "./components/CreateScheduleModal";
 import DeleteCertainScheduleLesson from "./components/DeleteCertainScheduleLesson";
 
@@ -586,7 +586,10 @@ const ScheduleDashboard = () => {
                     selectedGroup={selectedGroup}
                     loading={loading}
                     onDeleteSchedule={openDeleteModal}
+                    classrooms={classrooms}
+                    teachers={teachers}
                     isMobile={isMobile}
+                    databaseName={databaseName}
                 />
             ) : (
                 <ScheduleTable
@@ -596,7 +599,10 @@ const ScheduleDashboard = () => {
                     daysOfWeek={daysOfWeek}
                     loading={loading}
                     onDeleteSchedule={openDeleteModal}
+                    classrooms={classrooms}
+                    teachers={teachers}
                     isMobile={isMobile}
+                    databaseName={databaseName}
                 />
             ))}
 

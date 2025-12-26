@@ -306,19 +306,31 @@ router.put('/:id', async (req, res) => {
         const timeSlot = updateData.timeSlot || existingSchedule.timeSlot;
         const teacher = updateData.teacher || existingSchedule.teacher;
         const classroom = updateData.classroom || existingSchedule.classroom;
+        const subject = updateData.subject || existingSchedule.subject;
 
-        // 1. Перевірка конфлікту для групи
+        // 1. Перевірка конфлікту для групи (головна перевірка)
         const groupConflict = await Schedule.findOne({
             group: group,
             dayOfWeek: dayOfWeek,
             timeSlot: timeSlot,
             _id: { $ne: id }
-        });
+        }).populate('teacher', 'fullName').populate('timeSlot', 'order startTime endTime');
 
         if (groupConflict) {
             return res.status(409).json({
                 message: 'Конфлікт розкладу: Група вже має урок в цей час',
-                conflictType: 'GROUP_TIMESLOT_CONFLICT'
+                conflictType: 'GROUP_TIMESLOT_CONFLICT',
+                details: {
+                    existingLesson: {
+                        subject: groupConflict.subject,
+                        teacher: groupConflict.teacher?.fullName,
+                        classroom: groupConflict.classroom,
+                        timeSlot: groupConflict.timeSlot?.order,
+                        timeRange: groupConflict.timeSlot ?
+                            `${groupConflict.timeSlot.startTime} - ${groupConflict.timeSlot.endTime}` : null
+                    },
+                    message: `Група вже має урок з ${groupConflict.subject} в цей час`
+                }
             });
         }
 
@@ -328,12 +340,22 @@ router.put('/:id', async (req, res) => {
             dayOfWeek: dayOfWeek,
             timeSlot: timeSlot,
             _id: { $ne: id }
-        });
+        }).populate('group', 'name').populate('timeSlot', 'order startTime endTime');
 
         if (teacherConflict) {
             return res.status(409).json({
-                message: 'Викладач вже веде урок в цей час',
-                conflictType: 'TEACHER_BUSY'
+                message: 'Конфлікт розкладу для викладача',
+                conflictType: 'TEACHER_BUSY',
+                details: {
+                    existingLesson: {
+                        subject: teacherConflict.subject,
+                        group: teacherConflict.group?.name,
+                        classroom: teacherConflict.classroom,
+                        timeRange: teacherConflict.timeSlot ?
+                            `${teacherConflict.timeSlot.startTime} - ${teacherConflict.timeSlot.endTime}` : null
+                    },
+                    message: `Викладач вже веде урок в групі ${teacherConflict.group?.name} в цей час`
+                }
             });
         }
 
@@ -343,12 +365,75 @@ router.put('/:id', async (req, res) => {
             dayOfWeek: dayOfWeek,
             timeSlot: timeSlot,
             _id: { $ne: id }
-        });
+        }).populate('group', 'name').populate('teacher', 'fullName').populate('timeSlot', 'order startTime endTime');
 
         if (classroomConflict) {
             return res.status(409).json({
-                message: 'Аудиторія вже зайнята в цей час',
-                conflictType: 'CLASSROOM_BUSY'
+                message: 'Конфлікт розкладу для аудиторії',
+                conflictType: 'CLASSROOM_BUSY',
+                details: {
+                    existingLesson: {
+                        subject: classroomConflict.subject,
+                        group: classroomConflict.group?.name,
+                        teacher: classroomConflict.teacher?.fullName,
+                        timeRange: classroomConflict.timeSlot ?
+                            `${classroomConflict.timeSlot.startTime} - ${classroomConflict.timeSlot.endTime}` : null
+                    },
+                    message: `Аудиторія вже зайнята групою ${classroomConflict.group?.name} в цей час`
+                }
+            });
+        }
+
+        // 4. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день
+        const teacherDaySchedule = await Schedule.find({
+            teacher: teacher,
+            dayOfWeek: dayOfWeek,
+            _id: { $ne: id }
+        })
+            .populate('timeSlot', 'order startTime endTime')
+            .sort({ 'timeSlot.order': 1 });
+
+        const MAX_LESSONS_PER_DAY = 10;
+        if (teacherDaySchedule.length >= MAX_LESSONS_PER_DAY) {
+            const timeSlots = teacherDaySchedule.map(s =>
+                s.timeSlot ? `${s.timeSlot.startTime}-${s.timeSlot.endTime}` : 'N/A'
+            );
+
+            return res.status(409).json({
+                message: 'Перевищено ліміт уроків для викладача',
+                conflictType: 'TEACHER_LIMIT',
+                details: {
+                    currentLessons: teacherDaySchedule.length,
+                    maxLessons: MAX_LESSONS_PER_DAY,
+                    timeSlots: timeSlots,
+                    message: `Викладач вже має ${teacherDaySchedule.length} уроків у цей день: ${timeSlots.join(', ')}`
+                }
+            });
+        }
+
+        // 5. Перевірка: Чи не перевищує група максимальну кількість уроків на день
+        const groupDaySchedule = await Schedule.find({
+            group: group,
+            dayOfWeek: dayOfWeek,
+            _id: { $ne: id }
+        })
+            .populate('timeSlot', 'order startTime endTime')
+            .sort({ 'timeSlot.order': 1 });
+
+        if (groupDaySchedule.length >= MAX_LESSONS_PER_DAY) {
+            const timeSlots = groupDaySchedule.map(s =>
+                s.timeSlot ? `${s.timeSlot.startTime}-${s.timeSlot.endTime}` : 'N/A'
+            );
+
+            return res.status(409).json({
+                message: 'Перевищено ліміт уроків для групи',
+                conflictType: 'GROUP_LIMIT',
+                details: {
+                    currentLessons: groupDaySchedule.length,
+                    maxLessons: MAX_LESSONS_PER_DAY,
+                    timeSlots: timeSlots,
+                    message: `Група вже має ${groupDaySchedule.length} уроків у цей день: ${timeSlots.join(', ')}`
+                }
             });
         }
 
@@ -360,8 +445,8 @@ router.put('/:id', async (req, res) => {
         ).populate([
             { path: 'teacher', select: 'fullName email position positions' },
             { path: 'group', select: 'name category gradeLevel' },
-            { path: 'classroom', select: 'name type capacity' },
-            { path: 'dayOfWeek', select: 'name order' },
+            { path: 'classroom', select: 'name type capacity building' },
+            { path: 'dayOfWeek', select: 'name order nameShort' },
             { path: 'timeSlot', select: 'order startTime endTime' },
             { path: 'semester', select: 'name year' }
         ]);
@@ -388,6 +473,14 @@ router.put('/:id', async (req, res) => {
             return res.status(409).json({
                 message: 'Конфлікт розкладу: група вже має урок в цей час',
                 error: 'DUPLICATE_TIMESLOT_FOR_GROUP'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                message: 'Помилка валідації даних',
+                error: error.message,
+                errors: error.errors
             });
         }
 
