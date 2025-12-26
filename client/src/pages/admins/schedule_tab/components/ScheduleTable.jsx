@@ -12,6 +12,7 @@ const ScheduleTable = ({
     daysOfWeek,
     loading,
     onDeleteSchedule,
+    onUpdateSchedule,
     classrooms = [],
     teachers = [],
     isMobile = false,
@@ -96,10 +97,12 @@ const ScheduleTable = ({
     // Функція для збереження змін
     const handleSaveSchedule = async (updatedSchedule) => {
         console.log('Збереження оновленого розкладу:', updatedSchedule);
-        // Тут повинен бути ваш API виклик для оновлення розкладу
-        // Наприклад: await updateScheduleAPI(updatedSchedule);
+
+        if (onUpdateSchedule) {
+            await onUpdateSchedule(updatedSchedule);
+        }
+
         setShowEditModal(false);
-        // Можливо, потрібно оновити дані на сторінці
     };
 
     if (loading) {

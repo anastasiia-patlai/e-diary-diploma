@@ -446,6 +446,24 @@ const ScheduleDashboard = () => {
         checkForDuplicates();
     }, [schedules]);
 
+    const handleUpdateSchedule = async (updatedSchedule) => {
+        try {
+            console.log("Оновлення розкладу:", updatedSchedule);
+
+            setSchedules(prevSchedules =>
+                prevSchedules.map(schedule =>
+                    schedule._id === updatedSchedule._id ? updatedSchedule : schedule
+                )
+            );
+
+            showSystemNotification("Розклад успішно оновлено!", "success");
+
+        } catch (error) {
+            console.error("Помилка оновлення розкладу:", error);
+            showSystemNotification("Помилка при оновленні розкладу", "danger");
+        }
+    };
+
     const handleDeleteSchedule = async (id) => {
         if (!databaseName) {
             setError("Не вказано базу даних");
@@ -515,6 +533,7 @@ const ScheduleDashboard = () => {
                 semesters={semesters}
                 selectedSemester={selectedSemester}
                 onSemesterChange={setSelectedSemester}
+                onRefresh={loadSchedules}
                 isMobile={isMobile}
             />
 
@@ -586,6 +605,7 @@ const ScheduleDashboard = () => {
                     selectedGroup={selectedGroup}
                     loading={loading}
                     onDeleteSchedule={openDeleteModal}
+                    onUpdateSchedule={handleUpdateSchedule}
                     classrooms={classrooms}
                     teachers={teachers}
                     isMobile={isMobile}
@@ -599,6 +619,7 @@ const ScheduleDashboard = () => {
                     daysOfWeek={daysOfWeek}
                     loading={loading}
                     onDeleteSchedule={openDeleteModal}
+                    onUpdateSchedule={handleUpdateSchedule}
                     classrooms={classrooms}
                     teachers={teachers}
                     isMobile={isMobile}

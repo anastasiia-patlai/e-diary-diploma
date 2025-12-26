@@ -11,6 +11,7 @@ const GroupScheduleTable = ({
     selectedGroup,
     loading,
     onDeleteSchedule,
+    onUpdateSchedule,
     classrooms,
     teachers,
     isMobile = false,
@@ -85,15 +86,13 @@ const GroupScheduleTable = ({
     };
 
     const handleSaveSchedule = async (updatedSchedule) => {
-        setSaveLoading(true);
-        try {
-            console.log('💾 Оновлений розклад:', updatedSchedule);
-            setShowEditModal(false);
-        } catch (error) {
-            console.error('❌ Помилка при оновленні розкладу:', error);
-        } finally {
-            setSaveLoading(false);
+        console.log('Збереження оновленого розкладу у GroupScheduleTable:', updatedSchedule);
+
+        if (onUpdateSchedule) {
+            await onUpdateSchedule(updatedSchedule);
         }
+
+        setShowEditModal(false);
     };
 
     if (loading) {
