@@ -11,6 +11,37 @@ const CuratorStatistics = ({
     isMobile,
     isTablet
 }) => {
+    // Визначаємо, чи це повний десктоп (не мобільний, не планшет)
+    const isFullDesktop = !isMobile && !isTablet;
+
+    // Визначаємо розміри блоків для різних пристроїв
+    const getBlockStyles = () => {
+        if (isMobile) {
+            // Мобільна версія: 2 блоки в рядок
+            return {
+                flexBasis: 'calc(50% - 5px)',
+                minWidth: 'calc(50% - 5px)',
+                maxWidth: 'calc(50% - 5px)'
+            };
+        } else if (isTablet) {
+            // Планшетна версія: також 2 блоки в рядок (або можна 4 в ряд)
+            return {
+                flexBasis: 'calc(50% - 8px)',
+                minWidth: 'calc(50% - 8px)',
+                maxWidth: 'calc(50% - 8px)'
+            };
+        } else {
+            // Десктопна версія: 4 блоки в один рядок
+            return {
+                flexBasis: 'calc(25% - 12px)',
+                minWidth: 'calc(25% - 12px)',
+                maxWidth: 'calc(25% - 12px)'
+            };
+        }
+    };
+
+    const blockStyles = getBlockStyles();
+
     return (
         <>
             <div style={{
@@ -56,10 +87,11 @@ const CuratorStatistics = ({
             <div style={{
                 display: 'flex',
                 flexDirection: 'row',
-                flexWrap: 'wrap',
+                flexWrap: isFullDesktop ? 'nowrap' : 'wrap',
                 gap: isMobile ? '10px' : '15px',
                 marginBottom: isMobile ? '16px' : '20px',
-                justifyContent: 'space-between'
+                justifyContent: isFullDesktop ? 'space-between' : 'flex-start',
+                overflowX: isFullDesktop ? 'visible' : 'hidden'
             }}>
                 {/* БЛОК 1: ВСЬОГО ГРУП */}
                 <div style={{
@@ -67,10 +99,9 @@ const CuratorStatistics = ({
                     backgroundColor: 'rgba(105, 180, 185, 0.1)',
                     borderRadius: '8px',
                     border: '1px solid rgba(105, 180, 185, 0.3)',
-                    flex: '0 0 calc(50% - 8px)',
+                    flex: isFullDesktop ? '1' : '0 0 auto',
                     boxSizing: 'border-box',
-                    minWidth: isMobile ? 'calc(50% - 5px)' : 'calc(50% - 8px)',
-                    maxWidth: 'calc(50% - 8px)'
+                    ...blockStyles
                 }}>
                     <div style={{
                         fontWeight: '600',
@@ -95,10 +126,9 @@ const CuratorStatistics = ({
                     backgroundColor: 'rgba(34, 197, 94, 0.1)',
                     borderRadius: '8px',
                     border: '1px solid rgba(34, 197, 94, 0.3)',
-                    flex: '0 0 calc(50% - 8px)',
+                    flex: isFullDesktop ? '1' : '0 0 auto',
                     boxSizing: 'border-box',
-                    minWidth: isMobile ? 'calc(50% - 5px)' : 'calc(50% - 8px)',
-                    maxWidth: 'calc(50% - 8px)'
+                    ...blockStyles
                 }}>
                     <div style={{
                         fontWeight: '600',
@@ -123,10 +153,9 @@ const CuratorStatistics = ({
                     backgroundColor: 'rgba(251, 146, 60, 0.1)',
                     borderRadius: '8px',
                     border: '1px solid rgba(251, 146, 60, 0.3)',
-                    flex: '0 0 calc(50% - 8px)',
+                    flex: isFullDesktop ? '1' : '0 0 auto',
                     boxSizing: 'border-box',
-                    minWidth: isMobile ? 'calc(50% - 5px)' : 'calc(50% - 8px)',
-                    maxWidth: 'calc(50% - 8px)'
+                    ...blockStyles
                 }}>
                     <div style={{
                         fontWeight: '600',
@@ -151,10 +180,9 @@ const CuratorStatistics = ({
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     borderRadius: '8px',
                     border: '1px solid rgba(59, 130, 246, 0.3)',
-                    flex: '0 0 calc(50% - 8px)',
+                    flex: isFullDesktop ? '1' : '0 0 auto',
                     boxSizing: 'border-box',
-                    minWidth: isMobile ? 'calc(50% - 5px)' : 'calc(50% - 8px)',
-                    maxWidth: 'calc(50% - 8px)'
+                    ...blockStyles
                 }}>
                     <div style={{
                         fontWeight: '600',
