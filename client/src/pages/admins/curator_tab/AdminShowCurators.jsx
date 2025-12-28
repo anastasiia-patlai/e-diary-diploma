@@ -86,7 +86,7 @@ const AdminShowCurators = () => {
         try {
             setLoading(true);
             const response = await axios.get("http://localhost:3001/api/groups", {
-                params: { databaseName }
+                params: { databaseName, includeCategory: true }
             });
             setGroups(response.data);
             setError("");

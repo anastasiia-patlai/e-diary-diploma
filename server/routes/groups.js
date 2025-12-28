@@ -108,7 +108,6 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// ДОДАТИ КУРАТОРА ДО ГРУПИ
 router.put('/:id/curator', async (req, res) => {
     try {
         const { id } = req.params;
@@ -126,6 +125,25 @@ router.put('/:id/curator', async (req, res) => {
             return res.status(404).json({ error: 'Групу не знайдено' });
         }
 
+        // ПЕРЕВІРКА: чи є у групи категорія
+        // Якщо немає, встановлюємо автоматично на основі номера групи
+        if (!group.category || group.category.trim() === '') {
+            const gradeMatch = group.name.match(/\d+/);
+            if (gradeMatch) {
+                const gradeLevel = parseInt(gradeMatch[0]);
+                if (gradeLevel >= 1 && gradeLevel <= 4) {
+                    group.category = 'young';
+                } else if (gradeLevel >= 5 && gradeLevel <= 9) {
+                    group.category = 'middle';
+                } else if (gradeLevel >= 10 && gradeLevel <= 11) {
+                    group.category = 'senior';
+                } else {
+                    group.category = 'middle'; // значення за замовчуванням
+                }
+                console.log(`Автоматично встановлено категорію "${group.category}" для групи ${group.name}`);
+            }
+        }
+
         const teacher = await User.findById(curatorId);
         if (!teacher || teacher.role !== 'teacher') {
             return res.status(400).json({ error: 'Куратором може бути тільки викладач' });
@@ -138,16 +156,12 @@ router.put('/:id/curator', async (req, res) => {
             });
         }
 
-        // ПЕРЕВІРКА: чи є у групи категорія
-        const hasCategory = group.category && group.category.trim() !== '';
-
-        // Додаємо куратора ТІЛЬКИ до групи, без автоматичного додавання до allowedCategories чи specificGroups
-        // Це зменшить кількість помилок валідації
+        // ЗБЕРЕЖЕННЯ З КАТЕГОРІЄЮ
         group.curator = curatorId;
         await group.save();
 
         // Для зворотної сумісності: додаємо категорію тільки якщо вона існує
-        if (hasCategory) {
+        if (group.category) {
             if (group.category === 'young') {
                 // Для молодших класів: додаємо групу до specificGroups
                 await User.findByIdAndUpdate(
@@ -173,12 +187,12 @@ router.put('/:id/curator', async (req, res) => {
         const updatedGroup = await Group.findById(id)
             .populate('curator', 'fullName email phone position allowedCategories specificGroups')
             .populate('students', 'fullName email phone dateOfBirth')
-            .populate('subgroups.students', 'fullName email phone dateOfBirth'); // Додаємо популяцію
+            .populate('subgroups.students', 'fullName email phone dateOfBirth');
 
         res.json({
             message: 'Куратора успішно додано',
             group: updatedGroup,
-            note: hasCategory ? `Куратор доданий з категорією: ${group.category}` : 'Куратор доданий без категорії'
+            note: group.category ? `Куратор доданий з категорією: ${group.category}` : 'Куратор доданий без категорії'
         });
     } catch (err) {
         console.error('Помилка додавання куратора:', err);
