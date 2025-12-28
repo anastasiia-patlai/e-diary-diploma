@@ -1,15 +1,25 @@
 import React from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import StudentsList from './StudentsList';
+import { FaChevronDown, FaChevronUp, FaCog } from 'react-icons/fa';
+import StudentsList from '../StudentsList';
+import SubgroupItem from './subgroup/SubgroupItem';
+import ConfigureSubgroupsButton from './subgroup/ConfigureSubgroupsButton';
 
-const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent, isMobile }) => {
+const GroupItem = ({
+    group,
+    isExpanded,
+    onToggle,
+    onEditStudent,
+    onDeleteStudent,
+    isMobile,
+    databaseName,
+    onUpdateGroups
+}) => {
     // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ ТИПУ ЗАКЛАДУ
     const getInstitutionType = () => {
         // ОТРИМУЄМО ІНФОРМАЦІЮ ПРО ШКОЛУ З ЛОКАЛЬНОГО СХОВИЩА
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         const schoolName = userInfo.schoolName || '';
         const databaseName = userInfo.databaseName || '';
-
         const institutionType = group.institutionType || userInfo.institutionType;
 
         if (institutionType) {
@@ -114,6 +124,19 @@ const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent
         `Учнів: ${group.students?.length || 0}` :
         `Студентів: ${group.students?.length || 0}`;
 
+    const toggleSubgroup = (subgroupId) => {
+        setExpandedSubgroups(prev => ({
+            ...prev,
+            [subgroupId]: !prev[subgroupId]
+        }));
+    };
+
+    const handleSubgroupsConfigured = () => {
+        if (onUpdateGroups) {
+            onUpdateGroups();
+        }
+    };
+
     return (
         <div style={{
             border: '1px solid #e5e7eb',
@@ -157,9 +180,7 @@ const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent
                         alignItems: 'center',
                         gap: isMobile ? '8px' : '10px'
                     }}>
-                        <span style={{
-                            fontSize: isMobile ? '16px' : '18px'
-                        }}>
+                        <span style={{ fontSize: isMobile ? '16px' : '18px' }}>
                             {institutionInfo.icon}
                         </span>
                         <span style={{
@@ -169,6 +190,18 @@ const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent
                         }}>
                             {group.name}
                         </span>
+                        {group.hasSubgroups && (
+                            <span style={{
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                fontSize: isMobile ? '11px' : '10px',
+                                padding: '2px 6px',
+                                borderRadius: '10px',
+                                fontWeight: '600'
+                            }}>
+                                {group.subgroupSettings?.numberOfSubgroups || 1} підгруп
+                            </span>
+                        )}
                     </div>
 
                     <div style={{
@@ -226,6 +259,12 @@ const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent
                     marginLeft: isMobile ? '8px' : '0',
                     flexShrink: 0
                 }}>
+                    <ConfigureSubgroupsButton
+                        group={group}
+                        databaseName={databaseName}
+                        isMobile={isMobile}
+                        onSubgroupsConfigured={handleSubgroupsConfigured}
+                    />
                     {isExpanded ?
                         <FaChevronUp size={isMobile ? 16 : 18} /> :
                         <FaChevronDown size={isMobile ? 16 : 18} />
@@ -234,13 +273,61 @@ const GroupItem = ({ group, isExpanded, onToggle, onEditStudent, onDeleteStudent
             </div>
 
             {isExpanded && (
-                <StudentsList
-                    group={group}
-                    onEditStudent={onEditStudent}
-                    onDeleteStudent={onDeleteStudent}
-                    isMobile={isMobile}
-                    isClass={isClassType}
-                />
+                <div style={{
+                    backgroundColor: 'white',
+                    borderTop: '1px solid #e5e7eb'
+                }}>
+                    {group.hasSubgroups && group.subgroups && group.subgroups.length > 0 ? (
+                        <div style={{ padding: isMobile ? '12px' : '20px' }}>
+                            <div style={{
+                                marginBottom: '16px',
+                                paddingBottom: '12px',
+                                borderBottom: '1px solid #e5e7eb'
+                            }}>
+                                <h4 style={{
+                                    margin: 0,
+                                    fontSize: isMobile ? '16px' : '18px',
+                                    color: '#374151',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <FaCog />
+                                    Підгрупи ({group.subgroups.length})
+                                </h4>
+                            </div>
+
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: isMobile ? '12px' : '15px'
+                            }}>
+                                {group.subgroups.map((subgroup, index) => (
+                                    <SubgroupItem
+                                        key={subgroup._id}
+                                        subgroup={subgroup}
+                                        group={group}
+                                        index={index}
+                                        isExpanded={expandedSubgroups[subgroup._id]}
+                                        onToggle={() => toggleSubgroup(subgroup._id)}
+                                        onEditStudent={onEditStudent}
+                                        onDeleteStudent={onDeleteStudent}
+                                        isMobile={isMobile}
+                                        isClass={isClassType}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <StudentsList
+                            group={group}
+                            onEditStudent={onEditStudent}
+                            onDeleteStudent={onDeleteStudent}
+                            isMobile={isMobile}
+                            isClass={isClassType}
+                        />
+                    )}
+                </div>
             )}
         </div>
     );

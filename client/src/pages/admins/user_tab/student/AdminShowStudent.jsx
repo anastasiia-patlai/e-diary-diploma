@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import StudentHeader from "./StudentHeader";
-import GroupsList from "./GroupsList";
+import GroupsList from "./group/GroupsList";
 import EditStudentPopup from "./EditStudentPopup";
 import DeleteStudentPopup from "./DeleteStudentPopup";
 
@@ -164,6 +164,7 @@ const AdminShowStudent = ({ isMobile }) => {
                 isMobile={isMobile}
             />
 
+            {/* ПЕРЕДАЄМО databaseName ДО GroupsList */}
             <GroupsList
                 groups={groups}
                 expandedGroups={expandedGroups}
@@ -171,6 +172,8 @@ const AdminShowStudent = ({ isMobile }) => {
                 onEditStudent={handleEditStudent}
                 onDeleteStudent={handleDeleteStudent}
                 isMobile={isMobile}
+                databaseName={databaseName}
+                onUpdateGroups={fetchGroups}
             />
 
             {/* ПОПАП РЕДАГУВАННЯ */}

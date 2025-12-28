@@ -62,10 +62,7 @@ async function createDatabase(databaseName, schoolData) {
             ? `${process.env.MONGODB_URI}/${databaseName}`
             : `mongodb://localhost:27017/${databaseName}`;
 
-        const schoolConnection = mongoose.createConnection(schoolDbURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        const schoolConnection = mongoose.createConnection(schoolDbURI);
 
         await new Promise((resolve, reject) => {
             schoolConnection.on('connected', resolve);
@@ -175,10 +172,7 @@ function getSchoolDBConnection(databaseName) {
             ? `${process.env.MONGODB_URI}/${databaseName}`
             : `mongodb://localhost:27017/${databaseName}`;
 
-        connection = mongoose.createConnection(schoolDbURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        connection = mongoose.createConnection(schoolDbURI);
 
         connection.model('User', userSchema);
         connection.model('Group', groupSchema);

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getSchoolGroupModel, getSchoolUserModel } = require('../config/databaseManager');
+const subgroupsRouter = require('./subgroups');
+
+router.use('/subgroups', subgroupsRouter);
 
 router.post('/', async (req, res) => {
     try {
@@ -37,7 +40,8 @@ router.get('/', async (req, res) => {
 
         const groups = await Group.find()
             .populate('curator', 'fullName email')
-            .populate('students', 'fullName email');
+            .populate('students', 'fullName email')
+            .populate('subgroups.students', 'fullName email'); // Додаємо популяцію студентів у підгрупах
         res.json(groups);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -57,7 +61,8 @@ router.get('/:id', async (req, res) => {
 
         const group = await Group.findById(req.params.id)
             .populate('curator', 'fullName email')
-            .populate('students', 'fullName email');
+            .populate('students', 'fullName email')
+            .populate('subgroups.students', 'fullName email'); // Додаємо популяцію студентів у підгрупах
         if (!group) return res.status(404).json({ error: 'Група не знайдена' });
         res.json(group);
     } catch (err) {
@@ -133,41 +138,60 @@ router.put('/:id/curator', async (req, res) => {
             });
         }
 
-        // Для куратора молодшої групи додаємо ТІЛЬКИ ЙОГО групу до specificGroups
-        if (group.category === 'young') {
-            // Для кураторів молодших класів: додаємо їхню групу до specificGroups
-            await User.findByIdAndUpdate(
-                curatorId,
-                {
-                    $addToSet: {
-                        specificGroups: {
-                            group: group._id,
-                            allowedSubjects: teacher.positions || [] // Може викладати всі свої предмети у цій групі
-                        }
-                    }
-                }
-            );
-        } else {
-            // Для середніх/старших: додаємо категорію до allowedCategories
-            await User.findByIdAndUpdate(
-                curatorId,
-                { $addToSet: { allowedCategories: group.category } }
-            );
-        }
+        // ПЕРЕВІРКА: чи є у групи категорія
+        const hasCategory = group.category && group.category.trim() !== '';
 
+        // Додаємо куратора ТІЛЬКИ до групи, без автоматичного додавання до allowedCategories чи specificGroups
+        // Це зменшить кількість помилок валідації
         group.curator = curatorId;
         await group.save();
 
+        // Для зворотної сумісності: додаємо категорію тільки якщо вона існує
+        if (hasCategory) {
+            if (group.category === 'young') {
+                // Для молодших класів: додаємо групу до specificGroups
+                await User.findByIdAndUpdate(
+                    curatorId,
+                    {
+                        $addToSet: {
+                            specificGroups: {
+                                group: group._id,
+                                allowedSubjects: teacher.positions || []
+                            }
+                        }
+                    }
+                );
+            } else {
+                // Для середніх/старших: додаємо категорію до allowedCategories
+                await User.findByIdAndUpdate(
+                    curatorId,
+                    { $addToSet: { allowedCategories: group.category } }
+                );
+            }
+        }
+
         const updatedGroup = await Group.findById(id)
             .populate('curator', 'fullName email phone position allowedCategories specificGroups')
-            .populate('students', 'fullName email phone dateOfBirth');
+            .populate('students', 'fullName email phone dateOfBirth')
+            .populate('subgroups.students', 'fullName email phone dateOfBirth'); // Додаємо популяцію
 
         res.json({
             message: 'Куратора успішно додано',
-            group: updatedGroup
+            group: updatedGroup,
+            note: hasCategory ? `Куратор доданий з категорією: ${group.category}` : 'Куратор доданий без категорії'
         });
     } catch (err) {
         console.error('Помилка додавання куратора:', err);
+
+        // Більш інформативні повідомлення про помилки валідації
+        if (err.name === 'ValidationError') {
+            const validationErrors = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({
+                error: 'Помилка валідації',
+                details: validationErrors,
+                message: 'Будь ласка, перевірте дані групи'
+            });
+        }
 
         if (err.code === 11000) {
             return res.status(400).json({
@@ -175,7 +199,10 @@ router.put('/:id/curator', async (req, res) => {
             });
         }
 
-        res.status(400).json({ error: err.message });
+        res.status(400).json({
+            error: err.message,
+            type: err.name
+        });
     }
 });
 
@@ -206,7 +233,8 @@ router.delete('/:id/curator', async (req, res) => {
             id,
             { $set: { curator: null } },
             { new: true, runValidators: true }
-        ).populate('students', 'fullName email phone dateOfBirth');
+        ).populate('students', 'fullName email phone dateOfBirth')
+            .populate('subgroups.students', 'fullName email phone dateOfBirth'); // Додаємо популяцію
 
         // 2. Оновлюємо вчителя
         if (curatorId) {

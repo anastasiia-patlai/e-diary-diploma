@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+// ПІДГРУПА
+const subgroupSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    order: { type: Number, default: 1 }
+}, { _id: true });
+
+// ГРУПА
 const groupSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     category: {
@@ -9,7 +17,13 @@ const groupSchema = new mongoose.Schema({
     },
     curator: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    gradeLevel: { type: Number }
+    gradeLevel: { type: Number },
+    hasSubgroups: { type: Boolean, default: false },
+    subgroups: [subgroupSchema],
+    subgroupSettings: {
+        numberOfSubgroups: { type: Number, min: 1, max: 3, default: 1 },
+        autoDistributed: { type: Boolean, default: false }
+    }
 }, { timestamps: true });
 
 groupSchema.pre('save', function (next) {

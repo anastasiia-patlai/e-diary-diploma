@@ -1,7 +1,16 @@
 import React from 'react';
 import GroupItem from './GroupItem';
 
-const GroupsList = ({ groups, expandedGroups, onToggleGroup, onEditStudent, onDeleteStudent, isMobile }) => {
+const GroupsList = ({
+    groups,
+    expandedGroups,
+    onToggleGroup,
+    onEditStudent,
+    onDeleteStudent,
+    isMobile,
+    databaseName,
+    onUpdateGroups
+}) => {
     if (groups.length === 0) {
         return (
             <div style={{
@@ -38,6 +47,8 @@ const GroupsList = ({ groups, expandedGroups, onToggleGroup, onEditStudent, onDe
                     onEditStudent={onEditStudent}
                     onDeleteStudent={onDeleteStudent}
                     isMobile={isMobile}
+                    databaseName={databaseName}
+                    onUpdateGroups={onUpdateGroups}
                 />
             ))}
         </div>
