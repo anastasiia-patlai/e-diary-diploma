@@ -35,7 +35,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#10b981',
+                        color: 'rgba(105, 180, 185, 1)',
                         fontWeight: '600'
                     }}>
                         {index + 1}

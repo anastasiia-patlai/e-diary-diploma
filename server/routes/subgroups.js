@@ -28,6 +28,24 @@ router.post('/create-subgroups', async (req, res) => {
             return res.status(404).json({ error: 'Групу не знайдено' });
         }
 
+        // Перевіряємо, чи є категорія у групи, якщо ні - встановлюємо автоматично
+        if (!group.category || group.category.trim() === '') {
+            const gradeMatch = group.name.match(/\d+/);
+            if (gradeMatch) {
+                const gradeLevel = parseInt(gradeMatch[0]);
+                if (gradeLevel >= 1 && gradeLevel <= 4) {
+                    group.category = 'young';
+                } else if (gradeLevel >= 5 && gradeLevel <= 9) {
+                    group.category = 'middle';
+                } else if (gradeLevel >= 10 && gradeLevel <= 11) {
+                    group.category = 'senior';
+                } else {
+                    group.category = 'middle'; // значення за замовчуванням
+                }
+                console.log(`Автоматично встановлено категорію "${group.category}" для групи ${group.name}`);
+            }
+        }
+
         const students = group.students || [];
         const totalStudents = students.length;
 
@@ -65,6 +83,7 @@ router.post('/create-subgroups', async (req, res) => {
             autoDistributed: true
         };
 
+        // Зберігаємо групу з категорією
         await group.save();
 
         // Отримуємо оновлену групу з популяцією
@@ -85,6 +104,17 @@ router.post('/create-subgroups', async (req, res) => {
         });
     } catch (err) {
         console.error('Помилка створення підгруп:', err);
+
+        // Детальна обробка помилок валідації
+        if (err.name === 'ValidationError') {
+            const validationErrors = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({
+                error: 'Помилка валідації',
+                details: validationErrors,
+                message: 'Будь ласка, перевірте дані групи'
+            });
+        }
+
         res.status(500).json({ error: err.message });
     }
 });

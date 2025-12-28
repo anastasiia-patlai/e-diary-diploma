@@ -21,7 +21,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                 throw new Error('Не вказано базу даних');
             }
 
-            const response = await fetch('http://localhost:3001/api/groups/create-subgroups', {
+            const response = await fetch('http://localhost:3001/api/groups/subgroups/create-subgroups', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

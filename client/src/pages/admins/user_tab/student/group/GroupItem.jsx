@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaChevronDown, FaChevronUp, FaCog } from 'react-icons/fa';
 import StudentsList from '../StudentsList';
 import SubgroupItem from './subgroup/SubgroupItem';
@@ -14,6 +14,15 @@ const GroupItem = ({
     databaseName,
     onUpdateGroups
 }) => {
+    const [expandedSubgroups, setExpandedSubgroups] = useState({});
+
+    const toggleSubgroup = (subgroupId) => {
+        setExpandedSubgroups(prev => ({
+            ...prev,
+            [subgroupId]: !prev[subgroupId]
+        }));
+    };
+
     // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ ТИПУ ЗАКЛАДУ
     const getInstitutionType = () => {
         // ОТРИМУЄМО ІНФОРМАЦІЮ ПРО ШКОЛУ З ЛОКАЛЬНОГО СХОВИЩА
@@ -124,13 +133,6 @@ const GroupItem = ({
         `Учнів: ${group.students?.length || 0}` :
         `Студентів: ${group.students?.length || 0}`;
 
-    const toggleSubgroup = (subgroupId) => {
-        setExpandedSubgroups(prev => ({
-            ...prev,
-            [subgroupId]: !prev[subgroupId]
-        }));
-    };
-
     const handleSubgroupsConfigured = () => {
         if (onUpdateGroups) {
             onUpdateGroups();
@@ -192,7 +194,7 @@ const GroupItem = ({
                         </span>
                         {group.hasSubgroups && (
                             <span style={{
-                                backgroundColor: '#10b981',
+                                backgroundColor: 'rgba(105, 180, 185, 1)',
                                 color: 'white',
                                 fontSize: isMobile ? '11px' : '10px',
                                 padding: '2px 6px',
