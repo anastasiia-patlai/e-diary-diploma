@@ -18,12 +18,21 @@ router.post('/signup', async (req, res) => {
         positions,
         category,
         jobPosition,
-        teacherType,       // ✅ ДОДАНО: тип викладача
-        allowedCategories  // ✅ ДОДАНО: дозволені категорії
+        teacherType,
+        allowedCategories
     } = req.body;
 
+    // ДОДАЙТЕ ПЕРЕВІРКУ КОЖНОГО ПОЛЯ
+    console.log("Перевірка полів:");
+    console.log("- fullName:", fullName, "| Тип:", typeof fullName);
+    console.log("- role:", role, "| Тип:", typeof role);
+    console.log("- phone:", phone, "| Тип:", typeof phone);
+    console.log("- email:", email, "| Тип:", typeof email);
+    console.log("- password:", password ? "присутній" : "відсутній");
+    console.log("- teacherType:", teacherType, "| Для ролі:", role);
+
     try {
-        // Перевірка наявності databaseName
+        // ПЕРЕВІРКА НАЯВНОСТІ databaseName
         if (!databaseName) {
             console.log("Відсутнє поле databaseName");
             return res.status(400).json({
@@ -33,11 +42,11 @@ router.post('/signup', async (req, res) => {
 
         console.log("Підключення до бази даних:", databaseName);
 
-        // Отримуємо моделі для конкретної школи
+        // ОТРИМУЄМО МОЖДЕЛІ ДЛЯ КОНРКЕТНОЇ ШКОЛИ
         const User = getSchoolUserModel(databaseName);
         const Group = getSchoolGroupModel(databaseName);
 
-        // Перевірка обов'язкових полів
+        // ПЕРЕВІРКА ОБОВ'ЯЗКОВИХ ПОЛІВ
         if (!fullName || !role || !phone || !email || !password) {
             console.log("Відсутні обов'язкові поля");
             return res.status(400).json({
@@ -64,7 +73,7 @@ router.post('/signup', async (req, res) => {
 
         let groupId = null;
 
-        // Обробка групи для студентів
+        // ОБРОБКА ГРУПИ ДЛЯ УЧНІВ/СТУДЕНТІВ
         if (role === 'student' && group) {
             console.log("Обробка групи для студента:", group);
             let existingGroup = await Group.findOne({ name: group });
@@ -87,40 +96,40 @@ router.post('/signup', async (req, res) => {
             password: hashedPassword
         };
 
-        // Додаткові поля за роллю
+        // ДОДАТКОВІ ПОЛЯ ЗА РОЛЛЮ
         if (role === 'student') {
             userData.group = groupId;
             console.log("Додано групу для студента:", groupId);
         } else if (role === 'teacher') {
-            // Обробка предметів
+            // ОБРОБКА ПАРАМЕТРІВ 
             userData.positions = positions && Array.isArray(positions)
                 ? positions.filter(pos => pos && pos.trim() !== "")
                 : [];
             userData.position = userData.positions.join(", ");
             userData.category = category || '';
 
-            // ✅ Обробка типу викладача та дозволених категорій
-            userData.teacherType = teacherType || '';
+            // ОБОВ'ЯЗКОВА ПЕРЕВІРКА teacherType ДЛЯ ВЧИТЕЛЯ
+            if (!teacherType) {
+                return res.status(400).json({
+                    error: 'Для викладача обов\'язково вказати тип викладача'
+                });
+            }
 
-            // Якщо allowedCategories надійшло з фронтенду, використовуємо його
-            // Інакше генеруємо на основі teacherType
-            if (allowedCategories && Array.isArray(allowedCategories)) {
-                userData.allowedCategories = allowedCategories;
+            userData.teacherType = teacherType;
+
+            // АВТОМАТИЧНО ГЕНЕРУЄМО allowedCategories НА ОСНОВІ teacherType
+            if (teacherType === "young") {
+                userData.allowedCategories = ["young"];
+            } else if (teacherType === "middle") {
+                userData.allowedCategories = ["middle"];
+            } else if (teacherType === "senior") {
+                userData.allowedCategories = ["senior"];
+            } else if (teacherType === "middle-senior") {
+                userData.allowedCategories = ["middle", "senior"];
+            } else if (teacherType === "all") {
+                userData.allowedCategories = ["young", "middle", "senior"];
             } else {
-                // Автоматично генеруємо allowedCategories на основі teacherType
-                if (teacherType === "young") {
-                    userData.allowedCategories = ["young"];
-                } else if (teacherType === "middle") {
-                    userData.allowedCategories = ["middle"];
-                } else if (teacherType === "senior") {
-                    userData.allowedCategories = ["senior"];
-                } else if (teacherType === "middle-senior") {
-                    userData.allowedCategories = ["middle", "senior"];
-                } else if (teacherType === "all") {
-                    userData.allowedCategories = ["young", "middle", "senior"];
-                } else {
-                    userData.allowedCategories = [];
-                }
+                userData.allowedCategories = [];
             }
 
             console.log("Додано тип викладача:", userData.teacherType);
@@ -142,13 +151,13 @@ router.post('/signup', async (req, res) => {
 
         console.log("Дані для створення користувача:", JSON.stringify(userData, null, 2));
 
-        // Створення користувача
+        // СТВОРЕННЯ КОРИСТУВАЧА
         console.log("Створення нового користувача...");
         const newUser = new User(userData);
         await newUser.save();
         console.log("Користувач успішно створений:", newUser._id);
 
-        // Оновлення групи для студентів
+        // ОНОВЛЕННЯ ГРУПИ ДЛЯ УЧНІВ/СТУДЕНТІВ
         if (role === 'student' && groupId) {
             console.log("Оновлення групи з студентом...");
             await Group.findByIdAndUpdate(
@@ -176,7 +185,7 @@ router.post('/signup', async (req, res) => {
         console.error("Повідомлення:", err.message);
         console.error("Стек:", err.stack);
 
-        // Детальна обробка різних типів помилок
+        // ДЕТАЛЬНА ОБРОБКА ПОМИЛОК
         if (err.name === 'ValidationError') {
             const errors = Object.values(err.errors).map(error => ({
                 field: error.path,
@@ -212,7 +221,7 @@ router.post('/signup', async (req, res) => {
             });
         }
 
-        // Загальна помилка сервера
+        // ЗАГАЛЬНА ПОМИЛКА СЕРВЕРА
         console.error("Неочікувана помилка:", err);
         res.status(500).json({
             error: 'Внутрішня помилка сервера',

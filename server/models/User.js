@@ -20,9 +20,9 @@ const userSchema = new mongoose.Schema({
         group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
         allowedSubjects: [{ type: String }]
     }],
-    teacherType: {                                                      // тільки для викладачів
+    teacherType: {
         type: String,
-        enum: ['young', 'middle', 'senior', 'middle-senior', 'all'],
+        enum: ['young', 'middle', 'senior', 'middle-senior', 'all', ''],
         default: ''
     },
     jobPosition: { type: String },                                      // тільки для адміністраторів

@@ -139,6 +139,7 @@ function Signup({ onClose, databaseName }) {
                 ? formData.positions.filter(pos => pos.trim() !== "")
                 : [];
 
+            // БАЗОВІ ДАНІ
             const submitData = {
                 databaseName: databaseName,
                 fullName: formData.fullName,
@@ -149,14 +150,15 @@ function Signup({ onClose, databaseName }) {
                 password: formData.password
             };
 
+            // ДОДАТКОВІ ПОЛЯ ЗА РОЛЛЮ
             if (formData.role === "student") {
                 submitData.group = formData.group;
             } else if (formData.role === "teacher") {
                 submitData.positions = filteredPositions;
                 submitData.category = formData.category;
-                submitData.teacherType = formData.teacherType; // ✅ Додаємо тип викладача
+                submitData.teacherType = formData.teacherType;
 
-                // Автоматично додаємо allowedCategories на основі teacherType
+                // Автоматично додаємо allowedCategories
                 if (formData.teacherType === "young") {
                     submitData.allowedCategories = ["young"];
                 } else if (formData.teacherType === "middle") {
@@ -170,6 +172,12 @@ function Signup({ onClose, databaseName }) {
                 }
             } else if (formData.role === "admin") {
                 submitData.jobPosition = formData.jobPosition;
+            }
+
+            // ВИДАЛИТИ teacherType ДЛЯ ВСІХ, КРІМ ВИКЛАДАЧІВ
+            if (formData.role !== "teacher") {
+                delete submitData.teacherType;
+                delete submitData.allowedCategories;
             }
 
             console.log("Відправляємо дані:", submitData);
@@ -205,10 +213,14 @@ function Signup({ onClose, databaseName }) {
                         console.error("Статус помилки:", err.response.status);
                         console.error("Дані помилки:", err.response.data);
 
-                        if (err.response.data && err.response.data.error) {
+                        // ДЕТАЛЬНЕ ВИВЕДЕННЯ ПОМИЛОК ВАЛІДАЦІЇ
+                        if (err.response.data && err.response.data.details) {
+                            const errorMessages = err.response.data.details
+                                .map(detail => `${detail.field}: ${detail.message}`)
+                                .join('\n');
+                            alert(`Помилки валідації:\n${errorMessages}`);
+                        } else if (err.response.data && err.response.data.error) {
                             alert("Помилка реєстрації: " + err.response.data.error);
-                        } else if (err.response.data && err.response.data.details) {
-                            alert("Помилка валідації: " + JSON.stringify(err.response.data.details));
                         } else {
                             alert("Сталася помилка під час реєстрації (код: " + err.response.status + ")");
                         }
@@ -402,7 +414,6 @@ function Signup({ onClose, databaseName }) {
                         {/* ВИКЛАДАЧ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
-                                {/* ✅ ДОДАНО: Тип викладача */}
                                 <label className="form-label" style={{
                                     fontSize: isMobile ? '15px' : '17px',
                                     fontWeight: '500'
