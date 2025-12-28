@@ -237,7 +237,7 @@ const GroupItem = ({
                             {studentsCountText}
                         </span>
 
-                        <span style={{
+                        {/* <span style={{
                             fontSize: isMobile ? '12px' : '13px',
                             color: institutionInfo.textColor,
                             backgroundColor: institutionInfo.color,
@@ -248,7 +248,7 @@ const GroupItem = ({
                             fontWeight: '500'
                         }}>
                             {institutionInfo.label} - {institutionInfo.groupLabel}
-                        </span>
+                        </span> */}
                     </div>
                 </div>
 

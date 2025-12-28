@@ -75,7 +75,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                     padding: '0 0 0 0 ',
                     margin: '10px 0 10px 0',
                     color: '#6b7280',
-                    fontSize: isMobile ? '16px' : '18px',
+                    fontSize: isMobile ? '12px' : '14px',
                     lineHeight: '1.4'
                 }}>
                     Оберіть, кого видалити з інформації дитини:
@@ -98,7 +98,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                                 border: 'none',
                                 borderRadius: '8px',
                                 cursor: 'pointer',
-                                fontSize: isMobile ? '16px' : '18px',
+                                fontSize: isMobile ? '14px' : '16px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: isMobile ? '12px' : '15px',
@@ -124,7 +124,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                                 <div style={{
                                     fontWeight: '600',
                                     marginBottom: isMobile ? '4px' : '6px',
-                                    fontSize: isMobile ? '16px' : '18px',
+                                    fontSize: isMobile ? '14px' : '16px',
                                     lineHeight: '1.4',
                                     wordBreak: 'break-word',
                                     letterSpacing: '0.3px'

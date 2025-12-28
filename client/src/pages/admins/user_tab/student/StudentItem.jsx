@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaUser, FaEnvelope } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaEdit, FaTrash } from 'react-icons/fa';
 
 const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
     return (
@@ -86,7 +86,8 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         transition: isMobile ? 'none' : 'background-color 0.2s',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        gap: '6px'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
@@ -99,6 +100,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         }
                     }}
                 >
+                    <FaEdit size={isMobile ? 14 : 12} />
                     Редагувати
                 </button>
                 <button
@@ -120,7 +122,8 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         transition: isMobile ? 'none' : 'background-color 0.2s',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        gap: '6px'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
@@ -133,6 +136,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                         }
                     }}
                 >
+                    <FaTrash size={isMobile ? 14 : 12} />
                     Видалити
                 </button>
             </div>

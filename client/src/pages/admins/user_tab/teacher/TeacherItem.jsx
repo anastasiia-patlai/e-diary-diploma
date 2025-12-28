@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaUser, FaEnvelope } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaEdit, FaTrash } from "react-icons/fa";
 
 const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
     return (
@@ -104,14 +104,15 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                         border: 'none',
                         borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '13px' : '11px',
+                        fontSize: '13px',
                         flex: 1,
                         minHeight: '32px',
                         height: '32px',
                         transition: isMobile ? 'none' : 'background-color 0.2s',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        gap: '6px'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
@@ -124,6 +125,7 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                         }
                     }}
                 >
+                    <FaEdit size={isMobile ? 14 : 12} />
                     Редагувати
                 </button>
                 <button
@@ -138,14 +140,15 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                         border: 'none',
                         borderRadius: isMobile ? '6px' : '4px',
                         cursor: 'pointer',
-                        fontSize: isMobile ? '13px' : '11px',
+                        fontSize: '13px',
                         flex: 1,
                         minHeight: '32px',
                         height: '32px',
                         transition: isMobile ? 'none' : 'background-color 0.2s',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        gap: '6px'
                     }}
                     onMouseOver={(e) => {
                         if (!isMobile) {
@@ -158,6 +161,7 @@ const TeacherItem = ({ teacher, onEdit, onDelete, isMobile }) => {
                         }
                     }}
                 >
+                    <FaTrash size={isMobile ? 14 : 12} />
                     Видалити
                 </button>
             </div>
