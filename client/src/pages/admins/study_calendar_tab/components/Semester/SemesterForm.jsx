@@ -142,7 +142,6 @@ const SemesterForm = ({ semester, onClose, onSubmit, isMobile = false }) => {
                 maxWidth: '500px',
                 maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
                 overflowY: 'auto',
-                marginTop: isMobile ? '0' : 'auto'
             }}>
                 <div style={{
                     display: 'flex',
