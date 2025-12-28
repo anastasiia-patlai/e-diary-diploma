@@ -60,7 +60,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                     alignItems: 'center',
                     gap: '6px',
                     padding: isMobile ? '8px 12px' : '6px 10px',
-                    backgroundColor: '#10b981',
+                    backgroundColor: 'rgba(105, 180, 185, 1)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
@@ -70,17 +70,19 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                 }}
                 onMouseOver={(e) => {
                     if (!isMobile) {
-                        e.currentTarget.style.backgroundColor = '#059669';
+                        e.currentTarget.style.backgroundColor = 'rgba(85, 160, 165, 1)';
                     }
                 }}
                 onMouseOut={(e) => {
                     if (!isMobile) {
-                        e.currentTarget.style.backgroundColor = '#10b981';
+                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                     }
                 }}
             >
-                <FaCog size={isMobile ? 14 : 12} />
-                <span>{isMobile ? 'Підгрупи' : 'Налаштувати підгрупи'}</span>
+                <FaCog size={isMobile ? 14 : 16} />
+                <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                    {isMobile ? 'Підгрупи' : 'Налаштувати підгрупи'}
+                </span>
             </button>
 
             {showPopup && (
