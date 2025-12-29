@@ -6,15 +6,19 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
     const [numberOfSubgroups, setNumberOfSubgroups] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const handleConfigure = () => {
         setShowPopup(true);
+        setError('');
+        setSuccessMessage('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
             if (!databaseName) {
@@ -39,15 +43,27 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                 throw new Error(data.error || 'Помилка при створенні підгруп');
             }
 
-            alert(data.message);
-            setShowPopup(false);
-            if (onSubgroupsConfigured) {
-                onSubgroupsConfigured();
-            }
+            // Відображаємо системне повідомлення замість alert
+            setSuccessMessage(data.message || 'Підгрупи успішно створені');
+
+            // Автоматично закриваємо поп-ап через 2 секунди після успіху
+            setTimeout(() => {
+                setShowPopup(false);
+                if (onSubgroupsConfigured) {
+                    onSubgroupsConfigured();
+                }
+            }, 2000);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        setShowPopup(false);
+        if (onSubgroupsConfigured && successMessage) {
+            onSubgroupsConfigured();
         }
     };
 
@@ -115,13 +131,15 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                 Налаштування підгруп
                             </h3>
                             <button
-                                onClick={() => setShowPopup(false)}
+                                onClick={handleClose}
+                                disabled={loading}
                                 style={{
                                     background: 'none',
                                     border: 'none',
-                                    cursor: 'pointer',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
                                     fontSize: '20px',
-                                    color: '#6b7280'
+                                    color: '#6b7280',
+                                    opacity: loading ? 0.5 : 1
                                 }}
                             >
                                 ×
@@ -134,9 +152,51 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                 color: '#dc2626',
                                 padding: '12px',
                                 borderRadius: '6px',
-                                marginBottom: '16px'
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
                             }}>
-                                {error}
+                                <div>{error}</div>
+                                <button
+                                    onClick={() => setError('')}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '16px',
+                                        color: '#dc2626'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div style={{
+                                backgroundColor: '#d1fae5',
+                                color: '#065f46',
+                                padding: '12px',
+                                borderRadius: '6px',
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}>
+                                <div>{successMessage}</div>
+                                <button
+                                    onClick={() => setSuccessMessage('')}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '16px',
+                                        color: '#065f46'
+                                    }}
+                                >
+                                    ×
+                                </button>
                             </div>
                         )}
 
@@ -270,7 +330,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                             }}>
                                 <button
                                     type="button"
-                                    onClick={() => setShowPopup(false)}
+                                    onClick={handleClose}
                                     disabled={loading}
                                     style={{
                                         flex: 1,
@@ -289,21 +349,21 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || successMessage}
                                     style={{
                                         flex: 1,
                                         padding: '12px',
-                                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                                        backgroundColor: successMessage ? '#10b981' : 'rgba(105, 180, 185, 1)',
                                         color: 'white',
                                         border: 'none',
                                         borderRadius: '6px',
-                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        cursor: loading || successMessage ? 'not-allowed' : 'pointer',
                                         fontWeight: '600',
                                         fontSize: '14px',
                                         opacity: loading ? 0.6 : 1
                                     }}
                                 >
-                                    {loading ? 'Створення...' : 'Створити підгрупи'}
+                                    {loading ? 'Створення...' : successMessage ? 'Створено!' : 'Створити підгрупи'}
                                 </button>
                             </div>
                         </form>
