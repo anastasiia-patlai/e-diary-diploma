@@ -11,7 +11,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
         }}>
             <div
                 style={{
-                    backgroundColor: isExpanded ? 'rgba(16, 185, 129, 0.1)' : '#f9fafb',
+                    backgroundColor: isExpanded ? 'rgba(85, 160, 165, 0.1)' : '#f9fafb',
                     padding: isMobile ? '12px 16px' : '15px 20px',
                     cursor: 'pointer',
                     display: 'flex',
@@ -31,7 +31,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
                         width: isMobile ? '32px' : '36px',
                         height: isMobile ? '32px' : '36px',
                         borderRadius: '8px',
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        backgroundColor: 'rgba(15, 139, 98, 0.2)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
