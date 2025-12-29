@@ -98,12 +98,12 @@ router.post('/register', async (req, res) => {
 
         console.log('3. Checking if school already exists...');
         const schools = await getSchools();
-        if (schools.length > 0) {
-            console.log('School already exists');
-            return res.status(400).json({
-                message: 'Навчальний заклад вже зареєстрований в системі'
-            });
-        }
+        // if (schools.length > 0) {
+        //     console.log('School already exists');
+        //     return res.status(400).json({
+        //         message: 'Навчальний заклад вже зареєстрований в системі'
+        //     });
+        // }
         console.log('No existing school found');
 
         console.log('4. Validating institution type specific fields...');
@@ -227,6 +227,30 @@ router.post('/register', async (req, res) => {
             message: 'Помилка при реєстрації навчального закладу',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Внутрішня помилка сервера',
             details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+router.get('/check-existing', async (req, res) => {
+    try {
+        const schools = await getSchools();
+        const hasSchool = schools.length > 0;
+
+        res.json({
+            hasSchool,
+            schoolCount: schools.length,
+            schools: schools.map(s => ({
+                databaseName: s.databaseName,
+                fullName: s.fullName,
+                institutionType: s.institutionType,
+                city: s.city
+            }))
+        });
+    } catch (error) {
+        console.error('Error checking existing schools:', error);
+        res.status(500).json({
+            message: 'Помилка перевірки існуючих шкіл',
+            error: error.message
         });
     }
 });

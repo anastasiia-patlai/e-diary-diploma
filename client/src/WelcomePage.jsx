@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import {
     FaSchool,
     FaUser,
@@ -10,11 +10,9 @@ import {
     FaMapMarkerAlt,
     FaUserTie,
     FaEnvelope,
-    FaPhone,
-    FaExclamationTriangle,
-    FaMobileAlt
+    FaPhone
 } from 'react-icons/fa';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const WelcomePage = () => {
@@ -26,7 +24,7 @@ const WelcomePage = () => {
         city: '',
         address: '',
         adminFullName: '',
-        adminPosition: '',
+        adminPosition: 'Директор',
         adminEmail: '',
         adminPhone: '',
         adminPassword: '',
@@ -38,14 +36,9 @@ const WelcomePage = () => {
     const [databaseName, setDatabaseName] = useState('');
     const [institutionFullName, setInstitutionFullName] = useState('');
     const [loading, setLoading] = useState(false);
-    const [checking, setChecking] = useState(true);
     const [error, setError] = useState('');
-    const [hasSchool, setHasSchool] = useState(false);
-    const [showWarningModal, setShowWarningModal] = useState(false);
-    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const navigate = useNavigate();
-    const location = useLocation();
 
     const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -76,44 +69,6 @@ const WelcomePage = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        const checkSchoolExists = async () => {
-            try {
-                const searchParams = new URLSearchParams(location.search);
-                const forceShow = searchParams.get('force') === 'true';
-
-                if (forceShow) {
-                    setChecking(false);
-                    setHasSchool(false);
-                    setShowRegistrationForm(true);
-                    return;
-                }
-
-                const response = await axios.get(`${API_BASE_URL}/school/check-school`);
-                const schoolExists = response.data.hasSchool;
-                setHasSchool(schoolExists);
-
-                if (schoolExists) {
-                    setShowWarningModal(true);
-                } else {
-                    setShowRegistrationForm(true);
-                }
-            } catch (error) {
-                console.error('Error checking school:', error);
-                if (error.response?.status === 404) {
-                    setHasSchool(false);
-                    setShowRegistrationForm(true);
-                } else {
-                    setError('Помилка при перевірці наявності навчального закладу');
-                }
-            } finally {
-                setChecking(false);
-            }
-        };
-
-        checkSchoolExists();
-    }, [navigate, location.search]);
-
     // ГЕНЕРУВАННЯ НАЗВИ БАЗИ ДАНИХ ТА ПОВНОЇ НАЗВИ ЗАКЛАДУ
     useEffect(() => {
         const { institutionType, number, name, honoraryName, city } = formData;
@@ -129,17 +84,6 @@ const WelcomePage = () => {
             setDatabaseName('');
         }
     }, [formData.institutionType, formData.number, formData.name, formData.honoraryName, formData.city]);
-
-    // ОБРОБНИКИ ДЛЯ МОДАЛЬНОГО ВІКНА
-    const handleCancelRegistration = () => {
-        setShowWarningModal(false);
-        navigate('/login');
-    };
-
-    const handleContinueRegistration = () => {
-        setShowWarningModal(false);
-        setShowRegistrationForm(true);
-    };
 
     // ВАЛІДАЦІЯ ПОЛІВ
     const validateField = (name, value) => {
@@ -328,6 +272,7 @@ const WelcomePage = () => {
         e.preventDefault();
         setError('');
 
+        // Валідуємо всі поля
         Object.keys(formData).forEach((field) => {
             setTouched((prev) => ({ ...prev, [field]: true }));
             validateField(field, formData[field]);
@@ -342,6 +287,7 @@ const WelcomePage = () => {
             setError('Для обраного типу закладу номер є обов\'язковим');
             return;
         }
+
         setLoading(true);
 
         try {
@@ -355,7 +301,21 @@ const WelcomePage = () => {
 
         } catch (error) {
             console.error('Error registering school:', error);
-            setError(error.response?.data?.message || 'Помилка при реєстрації навчального закладу');
+
+            // Обробка помилок
+            if (error.response?.status === 400) {
+                if (error.response?.data?.message === 'Навчальний заклад вже зареєстрований в системі') {
+                    setError('Навчальний заклад вже існує. Якщо ви хочете створити новий, зверніться до адміністратора.');
+                } else if (error.response?.data?.message === 'База даних з такою назвою вже існує') {
+                    setError('База даних з такою назвою вже існує. Спробуйте змінити назву закладу або місто.');
+                } else {
+                    setError(error.response?.data?.message || 'Помилка при реєстрації навчального закладу');
+                }
+            } else if (error.response?.status === 500) {
+                setError('Помилка сервера. Спробуйте пізніше.');
+            } else {
+                setError('Помилка при реєстрації навчального закладу');
+            }
         } finally {
             setLoading(false);
         }
@@ -387,7 +347,7 @@ const WelcomePage = () => {
                         onBlur={handleBlur}
                         required
                         size={isMobile ? "lg" : undefined}
-                        style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                        style={{ fontSize: isMobile ? '14px' : '16px' }}
                     >
                         {institutionTypes.map(type => (
                             <option key={type.value} value={type.value}>
@@ -421,7 +381,7 @@ const WelcomePage = () => {
                             placeholder="Наприклад: 1"
                             required
                             size={isMobile ? "lg" : undefined}
-                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                            style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             {errors.number}
@@ -449,7 +409,7 @@ const WelcomePage = () => {
                             onBlur={handleBlur}
                             placeholder="Наприклад: 1"
                             size={isMobile ? "lg" : undefined}
-                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                            style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле для коледжу
@@ -476,7 +436,7 @@ const WelcomePage = () => {
                             onBlur={handleBlur}
                             placeholder="Наприклад: спеціалізована на вивченні англійської мови"
                             size={isMobile ? "lg" : undefined}
-                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                            style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле
@@ -503,7 +463,7 @@ const WelcomePage = () => {
                             onBlur={handleBlur}
                             placeholder="Наприклад: Тараса Шевченка"
                             size={isMobile ? "lg" : undefined}
-                            style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                            style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                             Необов'язкове поле
@@ -516,95 +476,10 @@ const WelcomePage = () => {
         return fields;
     };
 
-    if (checking) {
-        return (
-            <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center" style={backgroundStyle}>
-                <div className="text-center">
-                    <Spinner animation="border" style={{ color: 'rgba(105, 180, 185, 1)' }} />
-                    <p className="mt-3" style={{ fontSize: isMobile ? '16px' : '14px' }}>
-                        Перевірка наявності навчального закладу...
-                    </p>
-                </div>
-            </Container>
-        );
-    }
+    const colSize = getResponsiveCol();
 
-    // МОДАЛЬНЕ ВІКНО ДЛЯ ПІДТВЕРДЖЕННЯ РЕЄСТРАЦІЇ (адаптивне)
-    const WarningModal = () => (
-        <Modal
-            show={showWarningModal}
-            onHide={handleCancelRegistration}
-            centered
-            backdrop="static"
-            size={isMobile ? "sm" : "lg"}
-        >
-            <Modal.Header closeButton style={{ backgroundColor: '#fff3cd', borderColor: '#ffeaa7' }}>
-                <Modal.Title className="d-flex align-items-center">
-                    <FaExclamationTriangle className="me-2" style={{ color: '#856404' }} />
-                    <span style={{ color: '#856404', fontSize: isMobile ? '16px' : '18px' }}>Увага!</span>
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
-                <div className="text-center mb-3">
-                    <FaExclamationTriangle size={isMobile ? 36 : 48} className="mb-2" style={{ color: '#856404' }} />
-                    <h5 className="mb-2" style={{ color: '#856404', fontSize: isMobile ? '16px' : '18px' }}>
-                        У системі вже зареєстровано навчальний заклад
-                    </h5>
-                    <p className="text-muted" style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                        Ви намагаєтесь зареєструвати новий навчальний заклад, але в системі вже існує зареєстрований заклад.
-                    </p>
-                    <p className="text-muted" style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                        <strong>Увага:</strong> Реєстрація нового закладу може призвести до конфліктів даних і втрати інформації про існуючий заклад.
-                    </p>
-                </div>
-                <div className="alert alert-warning" style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                    <strong>Рекомендація:</strong> Якщо ви є адміністратором існуючого закладу, будь ласка, увійдіть в систему. Якщо ви дійсно хочете зареєструвати новий заклад, продовжуйте обережно.
-                </div>
-            </Modal.Body>
-            <Modal.Footer style={{
-                flexDirection: isMobile ? 'column' : 'row',
-                gap: isMobile ? '0.5rem' : '0'
-            }}>
-                <Button
-                    variant="secondary"
-                    onClick={handleCancelRegistration}
-                    style={{
-                        padding: isMobile ? '0.75rem' : '0.5rem 1.25rem',
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        width: isMobile ? '100%' : 'auto',
-                        fontSize: isMobile ? '16px' : '14px'
-                    }}
-                >
-                    Скасувати
-                </Button>
-                <Button
-                    variant="warning"
-                    onClick={handleContinueRegistration}
-                    style={{
-                        backgroundColor: '#856404',
-                        borderColor: '#856404',
-                        color: 'white',
-                        padding: isMobile ? '0.75rem' : '0.5rem 1.25rem',
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        width: isMobile ? '100%' : 'auto',
-                        fontSize: isMobile ? '16px' : '14px'
-                    }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#6c5203'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = '#856404'}
-                >
-                    Продовжити реєстрацію
-                </Button>
-            </Modal.Footer>
-        </Modal>
-    );
-
-    // ФОРМА РЕЄСТРАЦІЇ (адаптивна)
-    const RegistrationForm = () => {
-        const colSize = getResponsiveCol();
-
-        return (
+    return (
+        <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-3" style={backgroundStyle}>
             <div className={isMobile ? "w-100 px-2" : "w-100"} style={{ maxWidth: isMobile ? '100%' : '785px' }}>
                 <Card className="shadow-lg border-0" style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -621,14 +496,8 @@ const WelcomePage = () => {
                         <p className="mb-0 mt-2 opacity-75" style={{ fontSize: isMobile ? '14px' : '16px' }}>
                             Заповніть інформацію про ваш навчальний заклад
                         </p>
-
-                        {/* Показуємо попередження тільки якщо заклад вже існує */}
-                        {hasSchool && (
-                            <Alert variant="warning" className="mt-2 mb-0" style={{ fontSize: isMobile ? '14px' : '14px' }}>
-                                <strong>Режим примусової реєстрації:</strong> Ви можете зареєструвати новий заклад, навіть якщо в системі вже є інший.
-                            </Alert>
-                        )}
                     </Card.Header>
+
                     <Card.Body className="p-3" style={{ padding: isMobile ? '1rem' : '1.5rem' }}>
                         {error && (
                             <Alert variant="danger" className="mb-3" style={{ fontSize: isMobile ? '14px' : '14px' }}>
@@ -667,7 +536,7 @@ const WelcomePage = () => {
                                                 placeholder="Наприклад: Київ"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.city}
@@ -690,7 +559,7 @@ const WelcomePage = () => {
                                                 placeholder="Наприклад: вул. Шевченка, 1"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.address}
@@ -717,7 +586,7 @@ const WelcomePage = () => {
                                         className="bg-light"
                                         placeholder="Назва згенерується автоматично"
                                         size={isMobile ? "lg" : undefined}
-                                        style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                        style={{ fontSize: isMobile ? '14px' : '16px' }}
                                     />
                                     <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                         Ця назва буде використана для створення бази даних вашого закладу
@@ -753,7 +622,7 @@ const WelcomePage = () => {
                                                 placeholder="Наприклад: Іваненко Петро Сидорович"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.adminFullName}
@@ -776,7 +645,7 @@ const WelcomePage = () => {
                                                 placeholder="Наприклад: Директор"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.adminPosition}
@@ -802,7 +671,7 @@ const WelcomePage = () => {
                                                 placeholder="Наприклад: ivanenko.petro@gmail.com"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.adminEmail}
@@ -825,7 +694,7 @@ const WelcomePage = () => {
                                                 placeholder="+380XXXXXXXXX"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.adminPhone}
@@ -854,7 +723,7 @@ const WelcomePage = () => {
                                                 placeholder="Мінімум 6 символів"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.adminPassword}
@@ -877,7 +746,7 @@ const WelcomePage = () => {
                                                 placeholder="Повторіть пароль"
                                                 required
                                                 size={isMobile ? "lg" : undefined}
-                                                style={{ fontSize: isMobile ? '14px' : '16px' }} // Зменшений текст у полі введення
+                                                style={{ fontSize: isMobile ? '14px' : '16px' }}
                                             />
                                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '14px' : '12px' }}>
                                                 {errors.confirmPassword}
@@ -920,16 +789,6 @@ const WelcomePage = () => {
                     </Card.Body>
                 </Card>
             </div>
-        );
-    };
-
-    return (
-        <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-3" style={backgroundStyle}>
-            {/* Модальне вікно попередження */}
-            <WarningModal />
-
-            {/* Показуємо форму реєстрації, якщо showRegistrationForm = true */}
-            {showRegistrationForm && <RegistrationForm />}
         </Container>
     );
 };

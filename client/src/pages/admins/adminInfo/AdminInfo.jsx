@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import {
     FaUser,
     FaEnvelope,
@@ -7,7 +8,9 @@ import {
     FaBirthdayCake,
     FaCalendar,
     FaUserCog,
-    FaEdit
+    FaEdit,
+    FaPlusCircle,
+    FaDatabase
 } from "react-icons/fa";
 import EditAdminPopup from "./EditAdminPopup";
 import Notification from "./Notification";
@@ -18,6 +21,20 @@ const AdminInfo = ({ userData }) => {
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
+    const navigate = useNavigate();
+
+    const handleCreateNewSchool = () => {
+        navigate('/');
+    };
+
+    // ПЕРЕВІРКА, ЧИ КОРИСТУВАЧ Є ДИРЕКТОРОМ
+    const isDirector = () => {
+        const displayData = currentUserData || userData;
+        const position = displayData?.position?.toLowerCase();
+        return position?.includes('директор') ||
+            position?.includes('завідувач') ||
+            position?.includes('керівник');
+    };
 
     // Відслідковуємо зміну розміру вікна
     useEffect(() => {
@@ -67,7 +84,7 @@ const AdminInfo = ({ userData }) => {
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const { databaseName, userId } = userInfo;
 
-            console.log('🔄 Початок збереження даних:', { databaseName, userId, updatedData });
+            console.log('Початок збереження даних:', { databaseName, userId, updatedData });
 
             if (!databaseName || !userId) {
                 throw new Error('Не вдалося знайти дані для оновлення в localStorage');
@@ -81,10 +98,10 @@ const AdminInfo = ({ userData }) => {
                 body: JSON.stringify(updatedData)
             });
 
-            console.log('📡 Статус відповіді:', response.status);
+            console.log('Статус відповіді:', response.status);
 
             const result = await response.json();
-            console.log('📦 Відповідь сервера:', result);
+            console.log('Відповідь сервера:', result);
 
             if (!response.ok) {
                 throw new Error(result.message || `Помилка сервера: ${response.status}`);
@@ -138,7 +155,6 @@ const AdminInfo = ({ userData }) => {
         );
     }
 
-    // Визначаємо кількість стовпчиків
     const useColumns = !isMobile && !isTablet; // Тільки для великих екранів
 
     return (
@@ -148,11 +164,55 @@ const AdminInfo = ({ userData }) => {
                 margin: '0 auto',
                 padding: isMobile ? '0 16px' : '0'
             }}>
+                {/* КНОПКИ ДІЙ */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
-                    marginBottom: isMobile ? '16px' : '24px'
+                    gap: isMobile ? '12px' : '16px',
+                    marginBottom: isMobile ? '16px' : '24px',
+                    flexWrap: 'wrap'
                 }}>
+                    {/* КНОПКА СТВОРЕННЯ НОВОЇ ШКОЛИ - ТІЛЬКИ ДЛЯ ДИРЕКТОРА */}
+                    {isDirector() && (
+                        <button
+                            onClick={handleCreateNewSchool}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '6px' : '8px',
+                                padding: isMobile ? '10px 16px' : '12px 24px',
+                                backgroundColor: 'rgba(85, 160, 165, 1)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: isMobile ? '14px' : '16px',
+                                fontWeight: '500',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                width: isMobile ? '100%' : 'auto',
+                                maxWidth: isMobile ? '190px' : 'none'
+                            }}
+                            onMouseOver={(e) => {
+                                if (!isMobile) {
+                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!isMobile) {
+                                    e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                                }
+                            }}
+                        >
+                            <FaPlusCircle size={isMobile ? 14 : 16} />
+                            {isMobile ? 'Створити щоденник' : 'Створити новий щоденник'}
+                        </button>
+                    )}
+
                     <button
                         onClick={() => setShowEditPopup(true)}
                         style={{
