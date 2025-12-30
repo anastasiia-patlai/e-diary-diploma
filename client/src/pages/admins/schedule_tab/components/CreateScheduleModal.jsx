@@ -11,7 +11,8 @@ import {
     FaGraduationCap,
     FaExclamationTriangle,
     FaCheckCircle,
-    FaCalendarCheck
+    FaCalendarCheck,
+    FaUserFriends
 } from "react-icons/fa";
 import axios from "axios";
 
@@ -29,6 +30,7 @@ const CreateScheduleModal = ({
     const [formData, setFormData] = useState({
         subject: "",
         group: "",
+        subgroup: "all", // 'all', '1', '2', '3'
         dayOfWeek: "",
         timeSlot: "",
         teacher: "",
@@ -38,8 +40,8 @@ const CreateScheduleModal = ({
 
     const [errors, setErrors] = useState({
         general: "",
-        validationErrors: [], // Помилки валідації полів
-        conflictErrors: []    // Конфлікти розкладу
+        validationErrors: [],
+        conflictErrors: []
     });
 
     const [timeSlots, setTimeSlots] = useState([]);
@@ -48,11 +50,13 @@ const CreateScheduleModal = ({
     const [availability, setAvailability] = useState({
         available: true,
         checking: false,
-        conflicts: [], // Унікальні конфлікти
+        conflicts: [],
         groupTimeslotConflict: null
     });
     const [filteredTeachers, setFilteredTeachers] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [selectedGroupInfo, setSelectedGroupInfo] = useState(null);
+    const [subgroupsInfo, setSubgroupsInfo] = useState([]);
 
     const databaseNameRef = useRef(schoolDatabaseName);
 
@@ -104,6 +108,7 @@ const CreateScheduleModal = ({
         setFormData({
             subject: "",
             group: "",
+            subgroup: "all",
             dayOfWeek: "",
             timeSlot: "",
             teacher: "",
@@ -120,7 +125,27 @@ const CreateScheduleModal = ({
         });
         setFilteredTeachers([]);
         setLoading(false);
+        setSelectedGroupInfo(null);
+        setSubgroupsInfo([]);
     };
+
+    // Завантажити інформацію про групу при виборі
+    useEffect(() => {
+        if (formData.group) {
+            const group = groups.find(g => g._id === formData.group);
+            setSelectedGroupInfo(group);
+
+            if (group?.hasSubgroups && group?.subgroups?.length > 0) {
+                setSubgroupsInfo(group.subgroups);
+            } else {
+                setSubgroupsInfo([]);
+                setFormData(prev => ({ ...prev, subgroup: "all" }));
+            }
+        } else {
+            setSelectedGroupInfo(null);
+            setSubgroupsInfo([]);
+        }
+    }, [formData.group, groups]);
 
     useEffect(() => {
         if (formData.subject && teachers.length > 0) {
@@ -187,17 +212,15 @@ const CreateScheduleModal = ({
         loadTimeSlots();
     }, [formData.dayOfWeek]);
 
-    // Автоматична перевірка доступності при зміні даних
+    // Автоматична перевірка доступності з урахуванням підгруп
     useEffect(() => {
         const checkAllAvailability = async () => {
             const dbName = databaseNameRef.current;
 
-            // Мінімальні умови для перевірки
             if (!formData.dayOfWeek || !formData.timeSlot || !dbName) {
                 return;
             }
 
-            // Перевіряємо тільки якщо є що перевіряти
             const hasResourcesToCheck = formData.classroom || formData.teacher || formData.group;
             if (!hasResourcesToCheck) {
                 return;
@@ -206,10 +229,10 @@ const CreateScheduleModal = ({
             try {
                 setAvailability(prev => ({ ...prev, checking: true }));
 
-                // Використовуємо ТІЛЬКИ ОДИН endpoint для перевірки
                 const checkData = {
                     databaseName: dbName,
                     group: formData.group,
+                    subgroup: formData.subgroup,
                     teacher: formData.teacher,
                     classroom: formData.classroom,
                     dayOfWeek: formData.dayOfWeek,
@@ -217,13 +240,9 @@ const CreateScheduleModal = ({
                     subject: formData.subject
                 };
 
-                // Використовуємо тільки /api/schedule/check-availability
                 const scheduleCheckResponse = await axios.post("http://localhost:3001/api/schedule/check-availability", checkData);
-
-                // Отримуємо унікальні конфлікти
                 const uniqueConflicts = scheduleCheckResponse.data.conflicts || [];
 
-                // Фільтруємо дублікати за типом
                 const filteredConflicts = [];
                 const seenTypes = new Set();
 
@@ -238,10 +257,9 @@ const CreateScheduleModal = ({
                     available: scheduleCheckResponse.data.available,
                     checking: false,
                     conflicts: filteredConflicts,
-                    groupTimeslotConflict: filteredConflicts.find(c => c.type === 'GROUP_TIMESLOT_CONFLICT')
+                    groupTimeslotConflict: filteredConflicts.find(c => c.type === 'GROUP_TIMESLOT_CONFLICT' || c.type === 'SUBGROUP_CONFLICT')
                 });
 
-                // Оновлюємо список конфліктних помилок (без дублікатів)
                 if (filteredConflicts.length > 0) {
                     const conflictMessages = filteredConflicts.map(c => c.message);
                     setErrors(prev => ({
@@ -263,10 +281,9 @@ const CreateScheduleModal = ({
             }
         };
 
-        // Дебаунс запиту
         const timeoutId = setTimeout(checkAllAvailability, 500);
         return () => clearTimeout(timeoutId);
-    }, [formData.classroom, formData.teacher, formData.group, formData.dayOfWeek, formData.timeSlot, formData.subject]);
+    }, [formData.classroom, formData.teacher, formData.group, formData.subgroup, formData.dayOfWeek, formData.timeSlot, formData.subject]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -276,12 +293,15 @@ const CreateScheduleModal = ({
 
             if (name === "dayOfWeek") {
                 newData.dayOfWeek = value;
-                newData.timeSlot = ""; // Скидаємо час при зміні дня
+                newData.timeSlot = "";
             } else if (name === "subject") {
                 newData.subject = value;
-                newData.teacher = ""; // Скидаємо викладача при зміні предмета
+                newData.teacher = "";
             } else if (name === "group") {
                 newData.group = value;
+                newData.subgroup = "all";
+            } else if (name === "subgroup") {
+                newData.subgroup = value;
             } else {
                 newData[name] = value;
             }
@@ -289,10 +309,16 @@ const CreateScheduleModal = ({
             return newData;
         });
 
-        // Очистити помилки при зміні поля
         if (errors.general || errors.validationErrors.length > 0 || errors.conflictErrors.length > 0) {
             setErrors({ general: "", validationErrors: [], conflictErrors: [] });
         }
+    };
+
+    const handleSubgroupSelect = (subgroupValue) => {
+        setFormData(prev => ({
+            ...prev,
+            subgroup: subgroupValue
+        }));
     };
 
     const validateForm = () => {
@@ -324,7 +350,6 @@ const CreateScheduleModal = ({
             isValid = false;
         }
 
-        // Додаткові перевірки
         if (formData.teacher && filteredTeachers.length === 0) {
             validationErrors.push("Не знайдено викладачів для обраного предмета");
             isValid = false;
@@ -344,7 +369,6 @@ const CreateScheduleModal = ({
             ...errors.conflictErrors
         ];
 
-        // Видаляємо дублікати
         return [...new Set(allErrors)];
     };
 
@@ -395,22 +419,21 @@ const CreateScheduleModal = ({
                 return;
             }
 
-            // Створюємо дані БЕЗ _id
             const scheduleData = {
                 subject: formData.subject,
                 group: formData.group,
+                subgroup: formData.subgroup,
                 dayOfWeek: selectedDay._id || selectedDay.id,
                 timeSlot: formData.timeSlot,
                 teacher: formData.teacher,
                 classroom: formData.classroom,
                 semester: selectedSemester,
-                databaseName: dbName
-                // НЕ додаємо _id - MongoDB згенерує його автоматично
+                databaseName: dbName,
+                isFullGroup: formData.subgroup === 'all'
             };
 
             console.log('Відправляємо дані для створення розкладу:', scheduleData);
 
-            // Викликаємо API для створення розкладу
             const response = await axios.post("http://localhost:3001/api/schedule", scheduleData);
 
             if (response.data && response.data.schedule) {
@@ -419,20 +442,35 @@ const CreateScheduleModal = ({
             }
         } catch (error) {
             console.error("Error saving schedule:", error);
+            console.error("Error details:", error.response?.data);
 
             if (error.response) {
                 const errorData = error.response.data;
 
                 if (error.response.status === 409) {
-                    // Конфлікти
                     const conflictMessages = [];
 
                     if (errorData.conflictType === 'GROUP_TIMESLOT_CONFLICT') {
                         conflictMessages.push(errorData.details?.message || "Група вже має урок в цей час");
+                    } else if (errorData.conflictType === 'SUBGROUP_CONFLICT') {
+                        conflictMessages.push(errorData.details?.message || "Підгрупа вже має урок в цей час");
+                    } else if (errorData.conflictType === 'FULL_GROUP_CONFLICT') {
+                        conflictMessages.push(errorData.details?.message || "Вся група вже має урок в цей час");
+                    } else if (errorData.error === 'DUPLICATE_SUBGROUP_TIMESLOT') {
+                        // Спеціальна обробка для конфлікту підгруп
+                        const subgroup = errorData.details?.subgroup || formData.subgroup;
+                        const message = subgroup === 'all'
+                            ? 'Вся група вже має урок в цей час'
+                            : `Підгрупа ${subgroup} вже має урок в цей час`;
+                        conflictMessages.push(message);
+                    } else if (errorData.error === 'DUPLICATE_TIMESLOT') {
+                        conflictMessages.push("Конфлікт розкладу: група вже має урок в цей час");
                     } else if (errorData.details?.message) {
                         conflictMessages.push(errorData.details.message);
                     } else if (errorData.message) {
                         conflictMessages.push(errorData.message);
+                    } else {
+                        conflictMessages.push("Конфлікт розкладу: група вже має урок в цей час");
                     }
 
                     setErrors({
@@ -441,7 +479,6 @@ const CreateScheduleModal = ({
                         conflictErrors: [...new Set(conflictMessages)]
                     });
                 } else if (error.response.status === 400) {
-                    // Помилки валідації, включаючи duplicate _id
                     if (errorData.error === 'DUPLICATE_ID_ERROR') {
                         setErrors({
                             general: "Технічна помилка: спроба створити запис з уже існуючим ID",
@@ -491,10 +528,7 @@ const CreateScheduleModal = ({
         ? filteredTeachers.filter(teacher => teacher?.isAvailable !== false)
         : [];
 
-    // Отримати інформацію про обраний часовий слот
     const selectedTimeSlotInfo = timeSlots.find(slot => slot._id === formData.timeSlot);
-
-    // ОТРИМАТИ ВСІ УНІКАЛЬНІ ПОМИЛКИ
     const allErrors = getAllErrors();
 
     if (!show) return null;
@@ -561,7 +595,6 @@ const CreateScheduleModal = ({
                     </button>
                 </div>
 
-                {/* Секція загальних помилок */}
                 {errors.general && (
                     <div style={{
                         backgroundColor: '#fee2e2',
@@ -578,7 +611,6 @@ const CreateScheduleModal = ({
                     </div>
                 )}
 
-                {/* Секція всіх помилок (включаючи конфлікти) */}
                 {allErrors.length > 0 && (
                     <div style={{
                         backgroundColor: '#fef3c7',
@@ -600,7 +632,6 @@ const CreateScheduleModal = ({
                     </div>
                 )}
 
-                {/* Статус перевірки доступності */}
                 {availability.checking && (
                     <div style={{
                         backgroundColor: '#fef3c7',
@@ -616,7 +647,6 @@ const CreateScheduleModal = ({
                     </div>
                 )}
 
-                {/* Статус доступності */}
                 {!availability.checking && availability.available && availability.conflicts.length === 0 &&
                     formData.dayOfWeek && formData.timeSlot &&
                     (formData.classroom || formData.teacher || formData.group) && (
@@ -635,7 +665,6 @@ const CreateScheduleModal = ({
                     )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* Поля форми */}
                     <div>
                         <label style={{
                             display: 'flex',
@@ -760,6 +789,7 @@ const CreateScheduleModal = ({
                             {Array.isArray(groups) && groups.map(group => (
                                 <option key={group?._id} value={group?._id}>
                                     {group?.name}
+                                    {group?.hasSubgroups && ` (${group.subgroups?.length || 0} підгрупи)`}
                                 </option>
                             ))}
                         </select>
@@ -773,6 +803,104 @@ const CreateScheduleModal = ({
                             </div>
                         )}
                     </div>
+
+                    {/* Секція підгрупи */}
+                    {selectedGroupInfo?.hasSubgroups && subgroupsInfo.length > 0 && (
+                        <div>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                marginBottom: '8px',
+                                fontWeight: '600',
+                                color: '#374151'
+                            }}>
+                                <FaUserFriends style={{
+                                    marginRight: '8px',
+                                    color: 'rgba(105, 180, 185, 1)',
+                                    fontSize: '14px'
+                                }} />
+                                Підгрупа *
+                            </label>
+                            <div style={{
+                                display: 'flex',
+                                gap: '8px',
+                                flexWrap: 'wrap'
+                            }}>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSubgroupSelect('all')}
+                                    style={{
+                                        padding: '10px 16px',
+                                        backgroundColor: formData.subgroup === 'all' ? 'rgba(105, 180, 185, 1)' : '#f3f4f6',
+                                        color: formData.subgroup === 'all' ? 'white' : '#374151',
+                                        border: `1px solid ${formData.subgroup === 'all' ? 'rgba(105, 180, 185, 1)' : '#e5e7eb'}`,
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        fontSize: '14px',
+                                        transition: 'all 0.2s',
+                                        minWidth: '100px'
+                                    }}
+                                >
+                                    Вся група
+                                </button>
+
+                                {subgroupsInfo.map((subgroup, index) => (
+                                    <button
+                                        key={subgroup._id}
+                                        type="button"
+                                        onClick={() => handleSubgroupSelect(String(index + 1))}
+                                        style={{
+                                            padding: '10px 16px',
+                                            backgroundColor: formData.subgroup === String(index + 1) ? 'rgba(105, 180, 185, 1)' : '#f3f4f6',
+                                            color: formData.subgroup === String(index + 1) ? 'white' : '#374151',
+                                            border: `1px solid ${formData.subgroup === String(index + 1) ? 'rgba(105, 180, 185, 1)' : '#e5e7eb'}`,
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '14px',
+                                            transition: 'all 0.2s',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            minWidth: '100px'
+                                        }}
+                                    >
+                                        {subgroup.name}
+                                        <span style={{
+                                            fontSize: '12px',
+                                            opacity: 0.8
+                                        }}>
+                                            ({subgroup.students?.length || 0})
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {formData.subgroup !== "all" && (
+                                <div style={{
+                                    marginTop: '8px',
+                                    padding: '8px',
+                                    backgroundColor: '#f0f9ff',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    color: '#0369a1'
+                                }}>
+                                    Заняття тільки для підгрупи {formData.subgroup}
+                                </div>
+                            )}
+
+                            {availability.conflicts.some(c => c.type === 'SUBGROUP_CONFLICT') && (
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#dc2626',
+                                    marginTop: '4px'
+                                }}>
+                                    ⚠️ Підгрупа вже має урок в цей час
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div>
                         <label style={{

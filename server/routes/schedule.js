@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
 
         const schedules = await Schedule.find(query)
             .populate('teacher', 'fullName email position positions')
-            .populate('group', 'name category gradeLevel')
+            .populate('group', 'name category gradeLevel hasSubgroups subgroups')
             .populate('classroom', 'name type')
             .populate('dayOfWeek', 'name order')
             .populate('timeSlot', 'order startTime endTime')
@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Створити новий запис розкладу з перевірками на конфлікти
+// Створити новий запис розкладу з перевірками на конфлікти для підгруп
 router.post('/', async (req, res) => {
     try {
         const { databaseName, ...scheduleData } = req.body;
@@ -80,38 +80,142 @@ router.post('/', async (req, res) => {
         const Schedule = getSchoolScheduleModel(databaseName);
         const Group = getSchoolGroupModel(databaseName);
 
-        // ВИДАЛИТИ _id з даних, якщо він є (для уникнення duplicate key error)
+        // ВИДАЛИТИ _id з даних, якщо він є
         if (scheduleData._id) {
             console.log('Видаляємо _id з даних для уникнення duplicate key error:', scheduleData._id);
             delete scheduleData._id;
         }
 
-        // 1. ПЕРЕВІРКА: Чи не має група вже уроку в цей час (головна перевірка)
-        // const groupTimeSlotConflict = await Schedule.findOne({
-        //     group: scheduleData.group,
-        //     dayOfWeek: scheduleData.dayOfWeek,
-        //     timeSlot: scheduleData.timeSlot
-        // })
-        //     .populate('teacher', 'fullName')
-        //     .populate('timeSlot', 'order startTime endTime');
+        // Отримати інформацію про групу
+        const groupInfo = await Group.findById(scheduleData.group);
+        const subgroup = scheduleData.subgroup || 'all';
+        const isFullGroup = subgroup === 'all';
 
-        // if (groupTimeSlotConflict) {
-        //     return res.status(409).json({
-        //         message: 'Конфлікт розкладу: Група вже має урок в цей час',
-        //         conflictType: 'GROUP_TIMESLOT_CONFLICT',
-        //         details: {
-        //             existingLesson: {
-        //                 subject: groupTimeSlotConflict.subject,
-        //                 teacher: groupTimeSlotConflict.teacher?.fullName,
-        //                 classroom: groupTimeSlotConflict.classroom,
-        //                 timeSlot: groupTimeSlotConflict.timeSlot?.order,
-        //                 timeRange: groupTimeSlotConflict.timeSlot ?
-        //                     `${groupTimeSlotConflict.timeSlot.startTime} - ${groupTimeSlotConflict.timeSlot.endTime}` : null
-        //             },
-        //             message: `Група вже має урок з ${groupTimeSlotConflict.subject} в цей час`
-        //         }
-        //     });
-        // }
+        console.log('Створення розкладу:', {
+            group: scheduleData.group,
+            subgroup: subgroup,
+            day: scheduleData.dayOfWeek,
+            timeSlot: scheduleData.timeSlot,
+            isFullGroup: isFullGroup,
+            subject: scheduleData.subject
+        });
+
+        // 1. ПЕРЕВІРКА КОНФЛІКТІВ З УРАХУВАННЯМ ПІДГРУП
+        // Якщо це заняття для всієї групи
+        if (isFullGroup) {
+            console.log('Перевірка конфліктів для всієї групи...');
+
+            // Перевірити, чи є будь-яке заняття в цей час для цієї групи
+            // Якщо урок для всієї групи - не може бути НІ іншого уроку для всієї групи, НІ для підгруп
+            const anyGroupConflict = await Schedule.findOne({
+                group: scheduleData.group,
+                dayOfWeek: scheduleData.dayOfWeek,
+                timeSlot: scheduleData.timeSlot
+                // Шукаємо будь-яке заняття (і для всієї групи, і для підгруп)
+            })
+                .populate('teacher', 'fullName')
+                .populate('timeSlot', 'order startTime endTime');
+
+            console.log('Знайдено конфлікт для всієї групи:', anyGroupConflict);
+
+            if (anyGroupConflict) {
+                const conflictType = anyGroupConflict.subgroup === 'all' ? 'FULL_GROUP_CONFLICT' : 'SUBGROUP_CONFLICT';
+                const conflictMessage = anyGroupConflict.subgroup === 'all'
+                    ? 'Вся група вже має урок в цей час'
+                    : `Підгрупа ${anyGroupConflict.subgroup} вже має урок в цей час`;
+
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу',
+                    conflictType: conflictType,
+                    details: {
+                        existingLesson: {
+                            subject: anyGroupConflict.subject,
+                            teacher: anyGroupConflict.teacher?.fullName,
+                            subgroup: anyGroupConflict.subgroup,
+                            timeRange: anyGroupConflict.timeSlot ?
+                                `${anyGroupConflict.timeSlot.startTime} - ${anyGroupConflict.timeSlot.endTime}` : null
+                        },
+                        message: conflictMessage
+                    }
+                });
+            }
+        }
+        // Якщо це заняття для підгрупи
+        else {
+            console.log(`Перевірка конфліктів для підгрупи ${subgroup}...`);
+
+            // 1. Перевірити конфлікт з тією ж підгрупою
+            const sameSubgroupConflict = await Schedule.findOne({
+                group: scheduleData.group,
+                subgroup: subgroup, // Саме ця підгрупа
+                dayOfWeek: scheduleData.dayOfWeek,
+                timeSlot: scheduleData.timeSlot
+            })
+                .populate('teacher', 'fullName')
+                .populate('timeSlot', 'order startTime endTime');
+
+            console.log('Знайдено конфлікт з тією ж підгрупою:', sameSubgroupConflict);
+
+            if (sameSubgroupConflict) {
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу для підгрупи',
+                    conflictType: 'SUBGROUP_CONFLICT',
+                    details: {
+                        existingLesson: {
+                            subject: sameSubgroupConflict.subject,
+                            teacher: sameSubgroupConflict.teacher?.fullName,
+                            subgroup: sameSubgroupConflict.subgroup,
+                            timeRange: sameSubgroupConflict.timeSlot ?
+                                `${sameSubgroupConflict.timeSlot.startTime} - ${sameSubgroupConflict.timeSlot.endTime}` : null
+                        },
+                        message: `Підгрупа ${subgroup} вже має урок в цей час`
+                    }
+                });
+            }
+
+            // 2. Перевірити конфлікт з заняттям для всієї групи
+            // Якщо вся група вже має урок - підгрупа не може мати урок
+            const fullGroupConflict = await Schedule.findOne({
+                group: scheduleData.group,
+                subgroup: 'all', // Тільки заняття для всієї групи
+                dayOfWeek: scheduleData.dayOfWeek,
+                timeSlot: scheduleData.timeSlot
+            })
+                .populate('teacher', 'fullName')
+                .populate('timeSlot', 'order startTime endTime');
+
+            console.log('Знайдено конфлікт з всією групою:', fullGroupConflict);
+
+            if (fullGroupConflict) {
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу',
+                    conflictType: 'FULL_GROUP_CONFLICT',
+                    details: {
+                        existingLesson: {
+                            subject: fullGroupConflict.subject,
+                            teacher: fullGroupConflict.teacher?.fullName,
+                            timeRange: fullGroupConflict.timeSlot ?
+                                `${fullGroupConflict.timeSlot.startTime} - ${fullGroupConflict.timeSlot.endTime}` : null
+                        },
+                        message: `Вся група вже має урок в цей час`
+                    }
+                });
+            }
+
+            // 3. РІЗНІ ПІДГРУПИ МОЖУТЬ МАТИ УРОКИ ОДНОЧАСНО - це дозволено
+            // Не перевіряємо конфлікти з іншими підгрупами
+            console.log('Різні підгрупи можуть мати уроки одночасно - це дозволено');
+
+            // Перевіримо для інформації, чи є інші підгрупи в цей час
+            const otherSubgroups = await Schedule.find({
+                group: scheduleData.group,
+                dayOfWeek: scheduleData.dayOfWeek,
+                timeSlot: scheduleData.timeSlot,
+                subgroup: { $ne: 'all', $ne: subgroup } // Інші підгрупи
+            });
+
+            console.log(`Інші підгрупи в цей час: ${otherSubgroups.length} (це дозволено)`);
+        }
 
         // 2. Перевірка: Чи не зайнятий викладач в цей час
         const teacherConflict = await Schedule.findOne({
@@ -123,18 +227,21 @@ router.post('/', async (req, res) => {
             .populate('timeSlot', 'order startTime endTime');
 
         if (teacherConflict) {
+            const subgroupInfo = teacherConflict.subgroup === 'all'
+                ? 'всю групу'
+                : `підгрупу ${teacherConflict.subgroup}`;
+
             return res.status(409).json({
-                // message: 'Конфлікт розкладу для викладача',
                 conflictType: 'TEACHER_BUSY',
                 details: {
                     existingLesson: {
                         subject: teacherConflict.subject,
                         group: teacherConflict.group?.name,
-                        classroom: teacherConflict.classroom,
+                        subgroup: teacherConflict.subgroup,
                         timeRange: teacherConflict.timeSlot ?
                             `${teacherConflict.timeSlot.startTime} - ${teacherConflict.timeSlot.endTime}` : null
                     },
-                    message: `Викладач вже веде урок в групі ${teacherConflict.group?.name} в цей час`
+                    message: `Викладач вже веде урок у ${subgroupInfo} "${teacherConflict.group?.name}" в цей час`
                 }
             });
         }
@@ -150,6 +257,10 @@ router.post('/', async (req, res) => {
             .populate('timeSlot', 'order startTime endTime');
 
         if (classroomConflict) {
+            const subgroupInfo = classroomConflict.subgroup === 'all'
+                ? 'всю групу'
+                : `підгрупу ${classroomConflict.subgroup}`;
+
             return res.status(409).json({
                 message: 'Конфлікт розкладу для аудиторії',
                 conflictType: 'CLASSROOM_BUSY',
@@ -158,10 +269,11 @@ router.post('/', async (req, res) => {
                         subject: classroomConflict.subject,
                         group: classroomConflict.group?.name,
                         teacher: classroomConflict.teacher?.fullName,
+                        subgroup: classroomConflict.subgroup,
                         timeRange: classroomConflict.timeSlot ?
                             `${classroomConflict.timeSlot.startTime} - ${classroomConflict.timeSlot.endTime}` : null
                     },
-                    message: `Аудиторія вже зайнята групою ${classroomConflict.group?.name} в цей час`
+                    message: `Аудиторія вже зайнята ${subgroupInfo} "${classroomConflict.group?.name}" в цей час`
                 }
             });
         }
@@ -217,14 +329,19 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // Створення нового запису (без _id, щоб MongoDB згенерувала новий)
+        // Додати isFullGroup до даних
+        scheduleData.isFullGroup = isFullGroup;
+
+        console.log('Створення нового запису розкладу:', scheduleData);
+
+        // Створення нового запису
         const schedule = new Schedule(scheduleData);
         await schedule.save();
 
         // Повернути повну інформацію з популяцією
         await schedule.populate([
             { path: 'teacher', select: 'fullName email position positions' },
-            { path: 'group', select: 'name category gradeLevel' },
+            { path: 'group', select: 'name category gradeLevel hasSubgroups subgroups' },
             { path: 'classroom', select: 'name type capacity' },
             { path: 'dayOfWeek', select: 'name order' },
             { path: 'timeSlot', select: 'order startTime endTime' },
@@ -237,8 +354,16 @@ router.post('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating schedule:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+            keyPattern: error.keyPattern,
+            keyValue: error.keyValue
+        });
 
         if (error.code === 11000) {
+            // Duplicate key error - конфлікт унікального індексу
             if (error.keyPattern && error.keyPattern._id) {
                 return res.status(400).json({
                     message: 'Помилка: спроба створити запис з уже існуючим ID',
@@ -248,14 +373,31 @@ router.post('/', async (req, res) => {
                         solution: 'ID буде автоматично згенеровано MongoDB'
                     }
                 });
-            } else {
+            }
+            // Якщо спрацьовує унікальний індекс для підгруп
+            else if (error.keyPattern && error.keyPattern.group && error.keyPattern.dayOfWeek && error.keyPattern.timeSlot && error.keyPattern.subgroup) {
+                const subgroup = error.keyValue?.subgroup || 'all';
+
                 return res.status(409).json({
-                    message: 'Конфлікт розкладу: група вже має урок в цей час',
-                    error: 'DUPLICATE_TIMESLOT_FOR_GROUP',
+                    message: 'Конфлікт розкладу',
+                    error: 'DUPLICATE_SUBGROUP_TIMESLOT',
                     details: {
                         group: error.keyValue?.group,
+                        subgroup: subgroup,
                         dayOfWeek: error.keyValue?.dayOfWeek,
-                        timeSlot: error.keyValue?.timeSlot
+                        timeSlot: error.keyValue?.timeSlot,
+                        message: subgroup === 'all'
+                            ? 'Вся група вже має урок в цей час'
+                            : `Підгрупа ${subgroup} вже має урок в цей час`
+                    }
+                });
+            }
+            else {
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу',
+                    error: 'DUPLICATE_TIMESLOT',
+                    details: {
+                        message: 'Група або підгрупа вже має урок в цей час'
                     }
                 });
             }
@@ -276,7 +418,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Оновити запис розкладу з аналогічними перевірками
+// Оновити запис розкладу з аналогічними перевірками для підгруп
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -300,38 +442,88 @@ router.put('/:id', async (req, res) => {
             delete updateData._id;
         }
 
-        // Перевірки на конфлікти при оновленні
+        // Перевірки на конфлікти при оновленні з урахуванням підгруп
         const group = updateData.group || existingSchedule.group;
         const dayOfWeek = updateData.dayOfWeek || existingSchedule.dayOfWeek;
         const timeSlot = updateData.timeSlot || existingSchedule.timeSlot;
         const teacher = updateData.teacher || existingSchedule.teacher;
         const classroom = updateData.classroom || existingSchedule.classroom;
-        const subject = updateData.subject || existingSchedule.subject;
+        const subgroup = updateData.subgroup || existingSchedule.subgroup || 'all';
+        const isFullGroup = subgroup === 'all';
 
-        // 1. Перевірка конфлікту для групи (головна перевірка)
-        const groupConflict = await Schedule.findOne({
-            group: group,
-            dayOfWeek: dayOfWeek,
-            timeSlot: timeSlot,
-            _id: { $ne: id }
-        }).populate('teacher', 'fullName').populate('timeSlot', 'order startTime endTime');
-
-        if (groupConflict) {
-            return res.status(409).json({
-                message: 'Конфлікт розкладу: Група вже має урок в цей час',
-                conflictType: 'GROUP_TIMESLOT_CONFLICT',
-                details: {
-                    existingLesson: {
-                        subject: groupConflict.subject,
-                        teacher: groupConflict.teacher?.fullName,
-                        classroom: groupConflict.classroom,
-                        timeSlot: groupConflict.timeSlot?.order,
-                        timeRange: groupConflict.timeSlot ?
-                            `${groupConflict.timeSlot.startTime} - ${groupConflict.timeSlot.endTime}` : null
-                    },
-                    message: `Група вже має урок з ${groupConflict.subject} в цей час`
-                }
+        // 1. Перевірка конфлікту для групи/підгрупи
+        if (isFullGroup) {
+            // Перевірити, чи є будь-яке інше заняття в цей час для цієї групи
+            const anyGroupConflict = await Schedule.findOne({
+                group: group,
+                dayOfWeek: dayOfWeek,
+                timeSlot: timeSlot,
+                _id: { $ne: id }
             });
+
+            if (anyGroupConflict) {
+                const conflictType = anyGroupConflict.subgroup === 'all' ? 'FULL_GROUP_CONFLICT' : 'SUBGROUP_CONFLICT';
+                const conflictMessage = anyGroupConflict.subgroup === 'all'
+                    ? 'Вся група вже має урок в цей час'
+                    : `Підгрупа ${anyGroupConflict.subgroup} вже має урок в цей час`;
+
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу',
+                    conflictType: conflictType,
+                    details: {
+                        existingLesson: {
+                            subject: anyGroupConflict.subject,
+                            subgroup: anyGroupConflict.subgroup
+                        },
+                        message: conflictMessage
+                    }
+                });
+            }
+        } else {
+            // Перевірити конфлікт з тією ж підгрупою
+            const sameSubgroupConflict = await Schedule.findOne({
+                group: group,
+                subgroup: subgroup,
+                dayOfWeek: dayOfWeek,
+                timeSlot: timeSlot,
+                _id: { $ne: id }
+            });
+
+            if (sameSubgroupConflict) {
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу для підгрупи',
+                    conflictType: 'SUBGROUP_CONFLICT',
+                    details: {
+                        existingLesson: {
+                            subject: sameSubgroupConflict.subject,
+                            subgroup: sameSubgroupConflict.subgroup
+                        },
+                        message: `Підгрупа ${subgroup} вже має урок в цей час`
+                    }
+                });
+            }
+
+            // Перевірити конфлікт з заняттям для всієї групи
+            const fullGroupConflict = await Schedule.findOne({
+                group: group,
+                subgroup: 'all',
+                dayOfWeek: dayOfWeek,
+                timeSlot: timeSlot,
+                _id: { $ne: id }
+            });
+
+            if (fullGroupConflict) {
+                return res.status(409).json({
+                    message: 'Конфлікт розкладу',
+                    conflictType: 'FULL_GROUP_CONFLICT',
+                    details: {
+                        existingLesson: {
+                            subject: fullGroupConflict.subject
+                        },
+                        message: `Вся група вже має урок в цей час`
+                    }
+                });
+            }
         }
 
         // 2. Перевірка викладача
@@ -343,6 +535,10 @@ router.put('/:id', async (req, res) => {
         }).populate('group', 'name').populate('timeSlot', 'order startTime endTime');
 
         if (teacherConflict) {
+            const subgroupInfo = teacherConflict.subgroup === 'all'
+                ? 'всю групу'
+                : `підгрупу ${teacherConflict.subgroup}`;
+
             return res.status(409).json({
                 message: 'Конфлікт розкладу для викладача',
                 conflictType: 'TEACHER_BUSY',
@@ -350,11 +546,11 @@ router.put('/:id', async (req, res) => {
                     existingLesson: {
                         subject: teacherConflict.subject,
                         group: teacherConflict.group?.name,
-                        classroom: teacherConflict.classroom,
+                        subgroup: teacherConflict.subgroup,
                         timeRange: teacherConflict.timeSlot ?
                             `${teacherConflict.timeSlot.startTime} - ${teacherConflict.timeSlot.endTime}` : null
                     },
-                    message: `Викладач вже веде урок в групі ${teacherConflict.group?.name} в цей час`
+                    message: `Викладач вже веде урок у ${subgroupInfo} "${teacherConflict.group?.name}" в цей час`
                 }
             });
         }
@@ -368,6 +564,10 @@ router.put('/:id', async (req, res) => {
         }).populate('group', 'name').populate('teacher', 'fullName').populate('timeSlot', 'order startTime endTime');
 
         if (classroomConflict) {
+            const subgroupInfo = classroomConflict.subgroup === 'all'
+                ? 'всю групу'
+                : `підгрупу ${classroomConflict.subgroup}`;
+
             return res.status(409).json({
                 message: 'Конфлікт розкладу для аудиторії',
                 conflictType: 'CLASSROOM_BUSY',
@@ -376,15 +576,16 @@ router.put('/:id', async (req, res) => {
                         subject: classroomConflict.subject,
                         group: classroomConflict.group?.name,
                         teacher: classroomConflict.teacher?.fullName,
+                        subgroup: classroomConflict.subgroup,
                         timeRange: classroomConflict.timeSlot ?
                             `${classroomConflict.timeSlot.startTime} - ${classroomConflict.timeSlot.endTime}` : null
                     },
-                    message: `Аудиторія вже зайнята групою ${classroomConflict.group?.name} в цей час`
+                    message: `Аудиторія вже зайнята ${subgroupInfo} "${classroomConflict.group?.name}" в цей час`
                 }
             });
         }
 
-        // 4. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день
+        // 4. Перевірка ліміту уроків для викладача
         const teacherDaySchedule = await Schedule.find({
             teacher: teacher,
             dayOfWeek: dayOfWeek,
@@ -411,7 +612,7 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        // 5. Перевірка: Чи не перевищує група максимальну кількість уроків на день
+        // 5. Перевірка ліміту уроків для групи
         const groupDaySchedule = await Schedule.find({
             group: group,
             dayOfWeek: dayOfWeek,
@@ -437,6 +638,9 @@ router.put('/:id', async (req, res) => {
             });
         }
 
+        // Додати isFullGroup до даних оновлення
+        updateData.isFullGroup = isFullGroup;
+
         // Оновлення запису
         const updatedSchedule = await Schedule.findByIdAndUpdate(
             id,
@@ -444,7 +648,7 @@ router.put('/:id', async (req, res) => {
             { new: true, runValidators: true }
         ).populate([
             { path: 'teacher', select: 'fullName email position positions' },
-            { path: 'group', select: 'name category gradeLevel' },
+            { path: 'group', select: 'name category gradeLevel hasSubgroups subgroups' },
             { path: 'classroom', select: 'name type capacity building' },
             { path: 'dayOfWeek', select: 'name order nameShort' },
             { path: 'timeSlot', select: 'order startTime endTime' },
@@ -471,7 +675,7 @@ router.put('/:id', async (req, res) => {
             }
 
             return res.status(409).json({
-                message: 'Конфлікт розкладу: група вже має урок в цей час',
+                message: 'Конфлікт розкладу: група/підгрупа вже має урок в цей час',
                 error: 'DUPLICATE_TIMESLOT_FOR_GROUP'
             });
         }
@@ -521,7 +725,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Перевірити доступність ресурсів (допоміжний метод)
+// Перевірити доступність ресурсів з урахуванням підгруп
 router.post('/check-availability', async (req, res) => {
     try {
         const { databaseName, ...checkData } = req.body;
@@ -533,33 +737,108 @@ router.post('/check-availability', async (req, res) => {
         const Schedule = getSchoolScheduleModel(databaseName);
         const conflicts = [];
 
-        // 1. Головна перевірка: чи не має група вже уроку в цей час
+        const subgroup = checkData.subgroup || 'all';
+        const isFullGroup = subgroup === 'all';
+
+        // 1. Головна перевірка: конфлікти для групи/підгрупи
         if (checkData.group && checkData.dayOfWeek && checkData.timeSlot) {
-            const query = {
-                group: checkData.group,
-                dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot
-            };
+            if (isFullGroup) {
+                // Для всієї групи: перевірити будь-яке заняття в цей час
+                const query = {
+                    group: checkData.group,
+                    dayOfWeek: checkData.dayOfWeek,
+                    timeSlot: checkData.timeSlot
+                };
 
-            if (checkData.excludeId) {
-                query._id = { $ne: checkData.excludeId };
-            }
+                if (checkData.excludeId) {
+                    query._id = { $ne: checkData.excludeId };
+                }
 
-            const groupConflict = await Schedule.findOne(query)
-                .populate('teacher', 'fullName')
-                .populate('timeSlot', 'order startTime endTime');
+                const anyGroupConflict = await Schedule.findOne(query)
+                    .populate('teacher', 'fullName')
+                    .populate('timeSlot', 'order startTime endTime');
 
-            if (groupConflict) {
-                conflicts.push({
-                    type: 'GROUP_TIMESLOT_CONFLICT',
-                    message: `Група вже має урок "${groupConflict.subject}" в цей час (${groupConflict.timeSlot?.startTime} - ${groupConflict.timeSlot?.endTime})`,
-                    details: {
-                        existingSubject: groupConflict.subject,
-                        existingTeacher: groupConflict.teacher?.fullName,
-                        timeRange: groupConflict.timeSlot ?
-                            `${groupConflict.timeSlot.startTime} - ${groupConflict.timeSlot.endTime}` : null
-                    }
-                });
+                if (anyGroupConflict) {
+                    const conflictType = anyGroupConflict.subgroup === 'all' ? 'FULL_GROUP_CONFLICT' : 'SUBGROUP_CONFLICT';
+                    const conflictMessage = anyGroupConflict.subgroup === 'all'
+                        ? 'Вся група вже має урок в цей час'
+                        : `Підгрупа ${anyGroupConflict.subgroup} вже має урок в цей час`;
+
+                    conflicts.push({
+                        type: conflictType,
+                        message: conflictMessage,
+                        details: {
+                            existingSubject: anyGroupConflict.subject,
+                            existingTeacher: anyGroupConflict.teacher?.fullName,
+                            subgroup: anyGroupConflict.subgroup,
+                            timeRange: anyGroupConflict.timeSlot ?
+                                `${anyGroupConflict.timeSlot.startTime} - ${anyGroupConflict.timeSlot.endTime}` : null
+                        }
+                    });
+                }
+            } else {
+                // Для підгрупи
+
+                // 1. Перевірити конфлікт з тією ж підгрупою
+                const sameSubgroupQuery = {
+                    group: checkData.group,
+                    subgroup: subgroup,
+                    dayOfWeek: checkData.dayOfWeek,
+                    timeSlot: checkData.timeSlot
+                };
+
+                if (checkData.excludeId) {
+                    sameSubgroupQuery._id = { $ne: checkData.excludeId };
+                }
+
+                const sameSubgroupConflict = await Schedule.findOne(sameSubgroupQuery)
+                    .populate('teacher', 'fullName')
+                    .populate('timeSlot', 'order startTime endTime');
+
+                if (sameSubgroupConflict) {
+                    conflicts.push({
+                        type: 'SUBGROUP_CONFLICT',
+                        message: `Підгрупа ${subgroup} вже має урок "${sameSubgroupConflict.subject}" в цей час`,
+                        details: {
+                            existingSubject: sameSubgroupConflict.subject,
+                            existingTeacher: sameSubgroupConflict.teacher?.fullName,
+                            timeRange: sameSubgroupConflict.timeSlot ?
+                                `${sameSubgroupConflict.timeSlot.startTime} - ${sameSubgroupConflict.timeSlot.endTime}` : null
+                        }
+                    });
+                }
+
+                // 2. Перевірити конфлікт з заняттям для всієї групи
+                const fullGroupQuery = {
+                    group: checkData.group,
+                    subgroup: 'all',
+                    dayOfWeek: checkData.dayOfWeek,
+                    timeSlot: checkData.timeSlot
+                };
+
+                if (checkData.excludeId) {
+                    fullGroupQuery._id = { $ne: checkData.excludeId };
+                }
+
+                const fullGroupConflict = await Schedule.findOne(fullGroupQuery)
+                    .populate('teacher', 'fullName')
+                    .populate('timeSlot', 'order startTime endTime');
+
+                if (fullGroupConflict) {
+                    conflicts.push({
+                        type: 'FULL_GROUP_CONFLICT',
+                        message: `Вся група вже має урок "${fullGroupConflict.subject}" в цей час`,
+                        details: {
+                            existingSubject: fullGroupConflict.subject,
+                            existingTeacher: fullGroupConflict.teacher?.fullName,
+                            timeRange: fullGroupConflict.timeSlot ?
+                                `${fullGroupConflict.timeSlot.startTime} - ${fullGroupConflict.timeSlot.endTime}` : null
+                        }
+                    });
+                }
+
+                // 3. РІЗНІ ПІДГРУПИ МОЖУТЬ МАТИ УРОКИ ОДНОЧАСНО
+                // Не перевіряємо конфлікти з іншими підгрупами
             }
         }
 
@@ -580,11 +859,16 @@ router.post('/check-availability', async (req, res) => {
                 .populate('timeSlot', 'startTime endTime');
 
             if (teacherConflict) {
+                const subgroupInfo = teacherConflict.subgroup === 'all'
+                    ? 'всю групу'
+                    : `підгрупу ${teacherConflict.subgroup}`;
+
                 conflicts.push({
                     type: 'TEACHER_BUSY',
-                    message: `Викладач вже веде урок у групі "${teacherConflict.group?.name}" в цей час`,
+                    message: `Викладач вже веде урок у ${subgroupInfo} "${teacherConflict.group?.name}" в цей час`,
                     details: {
                         existingGroup: teacherConflict.group?.name,
+                        subgroup: teacherConflict.subgroup,
                         timeRange: teacherConflict.timeSlot ?
                             `${teacherConflict.timeSlot.startTime} - ${teacherConflict.timeSlot.endTime}` : null
                     }
@@ -609,11 +893,16 @@ router.post('/check-availability', async (req, res) => {
                 .populate('timeSlot', 'startTime endTime');
 
             if (classroomConflict) {
+                const subgroupInfo = classroomConflict.subgroup === 'all'
+                    ? 'всю групу'
+                    : `підгрупу ${classroomConflict.subgroup}`;
+
                 conflicts.push({
                     type: 'CLASSROOM_BUSY',
-                    message: `Аудиторія вже зайнята групою "${classroomConflict.group?.name}" в цей час`,
+                    message: `Аудиторія вже зайнята ${subgroupInfo} "${classroomConflict.group?.name}" в цей час`,
                     details: {
                         existingGroup: classroomConflict.group?.name,
+                        subgroup: classroomConflict.subgroup,
                         timeRange: classroomConflict.timeSlot ?
                             `${classroomConflict.timeSlot.startTime} - ${classroomConflict.timeSlot.endTime}` : null
                     }
@@ -766,10 +1055,10 @@ router.get('/teacher/:teacherId', async (req, res) => {
     }
 });
 
-// Перевірити, чи вільний часовий слот для групи
+// Перевірити, чи вільний часовий слот для групи/підгрупи
 router.get('/check-group-timeslot', async (req, res) => {
     try {
-        const { databaseName, groupId, dayOfWeekId, timeSlotId, excludeScheduleId } = req.query;
+        const { databaseName, groupId, subgroup, dayOfWeekId, timeSlotId, excludeScheduleId } = req.query;
 
         if (!databaseName || !groupId || !dayOfWeekId || !timeSlotId) {
             return res.status(400).json({
@@ -778,29 +1067,49 @@ router.get('/check-group-timeslot', async (req, res) => {
         }
 
         const Schedule = getSchoolScheduleModel(databaseName);
+        const subgroupValue = subgroup || 'all';
 
-        const query = {
-            group: groupId,
-            dayOfWeek: dayOfWeekId,
-            timeSlot: timeSlotId
-        };
+        let query;
+
+        if (subgroupValue === 'all') {
+            // Перевірити будь-яке заняття для групи
+            query = {
+                group: groupId,
+                dayOfWeek: dayOfWeekId,
+                timeSlot: timeSlotId
+            };
+        } else {
+            // Перевірити конкретну підгрупу та всю групу
+            query = {
+                group: groupId,
+                dayOfWeek: dayOfWeekId,
+                timeSlot: timeSlotId,
+                $or: [
+                    { subgroup: subgroupValue },
+                    { subgroup: 'all' }
+                ]
+            };
+        }
 
         if (excludeScheduleId) {
             query._id = { $ne: excludeScheduleId };
         }
 
-        const existingSchedule = await Schedule.findOne(query)
+        const existingSchedules = await Schedule.find(query)
             .populate('teacher', 'fullName')
             .populate('timeSlot', 'order startTime endTime');
 
+        const conflicts = existingSchedules.map(schedule => ({
+            subject: schedule.subject,
+            teacher: schedule.teacher?.fullName,
+            subgroup: schedule.subgroup,
+            timeRange: schedule.timeSlot ?
+                `${schedule.timeSlot.startTime} - ${schedule.timeSlot.endTime}` : null
+        }));
+
         res.json({
-            available: !existingSchedule,
-            conflict: existingSchedule ? {
-                subject: existingSchedule.subject,
-                teacher: existingSchedule.teacher?.fullName,
-                timeRange: existingSchedule.timeSlot ?
-                    `${existingSchedule.timeSlot.startTime} - ${existingSchedule.timeSlot.endTime}` : null
-            } : null
+            available: conflicts.length === 0,
+            conflicts: conflicts
         });
     } catch (error) {
         console.error('Error checking group timeslot:', error);

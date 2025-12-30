@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Row, Col, Card, Table, Spinner } from "react-bootstrap";
 import { FaCalendarAlt, FaExclamationTriangle, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { FaChalkboardTeacher, FaDoorOpen, FaBook, FaTrash, FaEdit } from "react-icons/fa";
-import ScheduleCell from "./ScheduleCell";
+import { FaChalkboardTeacher, FaDoorOpen, FaUsers, FaTrash, FaEdit, FaUserFriends } from "react-icons/fa";
 import EditScheduleModal from "./edit_component/EditScheduleModal";
 
 const ScheduleTable = ({
@@ -18,7 +17,6 @@ const ScheduleTable = ({
     isMobile = false,
     databaseName
 }) => {
-    const [currentDayIndex, setCurrentDayIndex] = useState(0);
     const [selectedDay, setSelectedDay] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedSchedule, setSelectedSchedule] = useState(null);
@@ -39,8 +37,8 @@ const ScheduleTable = ({
         return uniqueSlots.sort((a, b) => a.order - b.order);
     };
 
-    const getScheduleForSlot = (dayId, groupId, timeSlotId) => {
-        return schedules.find(schedule => {
+    const getSchedulesForSlot = (dayId, groupId, timeSlotId) => {
+        return schedules.filter(schedule => {
             const scheduleDayId = schedule.dayOfWeek?._id || schedule.dayOfWeek?.id;
             return scheduleDayId === dayId &&
                 schedule.group?._id === groupId &&
@@ -73,28 +71,16 @@ const ScheduleTable = ({
         return getAllUniqueTimeSlots();
     };
 
-    const navigateDay = (direction) => {
-        const safeDays = Array.isArray(daysOfWeek) ? daysOfWeek : [];
-
-        setCurrentDayIndex(prev => {
-            if (direction === 'prev' && prev > 0) return prev - 1;
-            if (direction === 'next' && prev < safeDays.length - 1) return prev + 1;
-            return prev;
-        });
-    };
-
     const handleDaySelect = (day) => {
         setSelectedDay(selectedDay?.id === day.id ? null : day);
     };
 
-    // Функція для відкриття модального вікна редагування
     const handleEditSchedule = (schedule) => {
         console.log('Відкриття редагування розкладу:', schedule);
         setSelectedSchedule(schedule);
         setShowEditModal(true);
     };
 
-    // Функція для збереження змін
     const handleSaveSchedule = async (updatedSchedule) => {
         console.log('Збереження оновленого розкладу:', updatedSchedule);
 
@@ -103,6 +89,443 @@ const ScheduleTable = ({
         }
 
         setShowEditModal(false);
+    };
+
+    // КОМПАНЕНТ ДЛЯ КОМІРКИ З ПІДГРУПАМИ
+    const ScheduleCellWithSubgroups = ({ day, group, timeSlot }) => {
+        const cellSchedules = getSchedulesForSlot(day._id || day.id, group._id, timeSlot._id);
+
+        // ЗНАЙТИ ЗАНЯТТЯ ДЛЯ ВСІЄЇ ГРУПИ
+        const fullGroupSchedule = cellSchedules.find(s => s.subgroup === 'all' || s.isFullGroup);
+
+        // ЗНАЙТИ ЗАНЯТТЯ ДЛЯ ПІДГРУП
+        const subgroupSchedules = cellSchedules.filter(s => s.subgroup !== 'all');
+
+        // ВИЗНАЧИТИ КІЛЬКІСТЬ ПІДГРУП У ГРУПІ
+        const subgroupCount = group.hasSubgroups ? Math.min(group.subgroups?.length || 0, 3) : 0;
+
+        // ВИСОТА КОМІРКИ ЗАЛЕЖИТЬ ВІД КІЛЬКОСТІ ПІДГРУП
+        const cellHeight = subgroupCount > 0 ? 100 + (subgroupCount * 60) : 120;
+
+        // ЯКЩО Є ЗАНЯТТЯ ДЛЯ ВСІЄЇ ГРУПИ - ВОНО ЗАЙМАЄ ВСЮ КОМІРКУ
+        if (fullGroupSchedule) {
+            return (
+                <td style={{
+                    width: '200px',
+                    padding: "4px",
+                    borderBottom: "1px solid #e5e7eb",
+                    verticalAlign: "top",
+                    minHeight: `${cellHeight}px`,
+                    backgroundColor: "#f0f9ff",
+                    position: 'relative'
+                }}>
+                    <div style={{
+                        height: `${cellHeight}px`,
+                        padding: "8px",
+                        backgroundColor: "white",
+                        border: "2px solid rgba(105, 180, 185, 0.3)",
+                        borderRadius: "6px",
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                    }}>
+                        <FullGroupScheduleCard
+                            schedule={fullGroupSchedule}
+                            onEdit={() => handleEditSchedule(fullGroupSchedule)}
+                            onDelete={() => onDeleteSchedule(fullGroupSchedule)}
+                            cellHeight={cellHeight}
+                        />
+                    </div>
+                </td>
+            );
+        }
+
+        // ЯКЩО Є ЗАНЯТТЯ ТІЛЬКИ ДЛЯ ПІДГРУП
+        if (subgroupSchedules.length > 0 && subgroupCount > 0) {
+            return (
+                <td style={{
+                    width: '200px',
+                    padding: "4px",
+                    borderBottom: "1px solid #e5e7eb",
+                    verticalAlign: "top",
+                    minHeight: `${cellHeight}px`,
+                    backgroundColor: "#f0f9ff",
+                    position: 'relative'
+                }}>
+                    <div style={{
+                        height: `${cellHeight}px`,
+                        padding: "4px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px"
+                    }}>
+                        {Array.from({ length: subgroupCount }).map((_, index) => {
+                            const subgroupNumber = index + 1;
+                            const subgroupSchedule = subgroupSchedules.find(s => s.subgroup === String(subgroupNumber));
+
+                            return (
+                                <div
+                                    key={index}
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: subgroupSchedule ? "white" : "#f9fafb",
+                                        border: `1px solid ${subgroupSchedule ? "rgba(105, 180, 185, 0.3)" : "#e5e7eb"}`,
+                                        borderRadius: "6px",
+                                        padding: "8px",
+                                        position: 'relative',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        minHeight: '60px'
+                                    }}
+                                >
+                                    {subgroupSchedule ? (
+                                        <SubgroupScheduleCard
+                                            schedule={subgroupSchedule}
+                                            subgroupNumber={subgroupNumber}
+                                            onEdit={() => handleEditSchedule(subgroupSchedule)}
+                                            onDelete={() => onDeleteSchedule(subgroupSchedule)}
+                                        />
+                                    ) : (
+                                        <div style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            height: "100%",
+                                            color: "#9ca3af",
+                                            fontSize: "14px",
+                                            fontStyle: 'italic'
+                                        }}>
+                                            Підгрупа {subgroupNumber}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </td>
+            );
+        }
+
+        // Пуста комірка
+        return (
+            <td style={{
+                width: '200px',
+                padding: "4px",
+                borderBottom: "1px solid #e5e7eb",
+                verticalAlign: "top",
+                minHeight: `${cellHeight}px`,
+                position: 'relative'
+            }}>
+                <div style={{
+                    height: `${cellHeight}px`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#9ca3af",
+                    fontSize: "14px",
+                    border: "1px dashed #e5e7eb",
+                    borderRadius: "6px",
+                    backgroundColor: "#f9fafb"
+                }}>
+                    —
+                </div>
+            </td>
+        );
+    };
+
+    // Картка для заняття всієї групи (займає всю комірку)
+    const FullGroupScheduleCard = ({ schedule, onEdit, onDelete, cellHeight }) => {
+        return (
+            <div style={{
+                position: 'relative',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+            }}>
+                {/* Верхня частина - інформація про заняття */}
+                <div>
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "8px"
+                    }}>
+                        <div style={{
+                            fontWeight: "600",
+                            color: "rgba(105, 180, 185, 1)",
+                            fontSize: "18px",
+                            lineHeight: "1.3",
+                            maxWidth: '70%',
+                            wordBreak: 'break-word'
+                        }}>
+                            {schedule.subject}
+                        </div>
+                        <div style={{
+                            display: "flex",
+                            gap: "6px"
+                        }}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit();
+                                }}
+                                style={{
+                                    padding: "4px 8px",
+                                    fontSize: "12px",
+                                    backgroundColor: "rgba(105, 180, 185, 1)",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '40px'
+                                }}
+                                title="Редагувати"
+                            >
+                                <FaEdit size={12} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete();
+                                }}
+                                style={{
+                                    padding: "4px 8px",
+                                    fontSize: "12px",
+                                    backgroundColor: "#ef4444",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '40px'
+                                }}
+                                title="Видалити"
+                            >
+                                <FaTrash size={12} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        fontSize: "13px",
+                        color: "#374151",
+                        lineHeight: "1.4",
+                        marginBottom: "8px"
+                    }}>
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            marginBottom: "4px"
+                        }}>
+                            <FaChalkboardTeacher size={12} style={{ color: "#6b7280" }} />
+                            <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: "15px"
+                            }}>
+                                {schedule.teacher?.fullName || "Без викладача"}
+                            </span>
+                        </div>
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px"
+                        }}>
+                            <FaDoorOpen size={12} style={{ color: "#6b7280" }} />
+                            <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: "14px"
+                            }}>
+                                {schedule.classroom?.name || "Без аудиторії"}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Нижня частина - бейдж "ВСЯ ГРУПА" */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    marginTop: "auto",
+                    paddingTop: "8px",
+                    borderTop: "1px solid rgba(105, 180, 185, 0.2)"
+                }}>
+                    <div style={{
+                        fontSize: "12px",
+                        color: "rgba(105, 180, 185, 1)",
+                        fontWeight: "bold",
+                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                    }}>
+                        <FaUsers size={10} />
+                        ВСЯ ГРУПА
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Картка для підгрупи (займає частину комірки)
+    const SubgroupScheduleCard = ({ schedule, subgroupNumber, onEdit, onDelete }) => {
+        return (
+            <div style={{
+                position: 'relative',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+            }}>
+                {/* Верхня частина - інформація про заняття */}
+                <div>
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "6px"
+                    }}>
+                        <div style={{
+                            fontWeight: "600",
+                            color: "rgba(105, 180, 185, 1)",
+                            fontSize: "16px",
+                            lineHeight: "1.3",
+                            maxWidth: '70%',
+                            wordBreak: 'break-word'
+                        }}>
+                            {schedule.subject}
+                        </div>
+                        <div style={{
+                            display: "flex",
+                            gap: "4px"
+                        }}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit();
+                                }}
+                                style={{
+                                    padding: "3px 6px",
+                                    fontSize: "11px",
+                                    backgroundColor: "rgba(105, 180, 185, 1)",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "3px",
+                                    cursor: "pointer",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '35px'
+                                }}
+                                title="Редагувати"
+                            >
+                                <FaEdit size={12} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDelete();
+                                }}
+                                style={{
+                                    padding: "3px 6px",
+                                    fontSize: "11px",
+                                    backgroundColor: "#ef4444",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "3px",
+                                    cursor: "pointer",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '35px'
+                                }}
+                                title="Видалити"
+                            >
+                                <FaTrash size={12} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        fontSize: "12px",
+                        color: "#374151",
+                        lineHeight: "1.4"
+                    }}>
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            marginBottom: "3px"
+                        }}>
+                            <FaChalkboardTeacher size={11} style={{ color: "#6b7280" }} />
+                            <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: "13px"
+                            }}>
+                                {schedule.teacher?.fullName || "Без викладача"}
+                            </span>
+                        </div>
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px"
+                        }}>
+                            <FaDoorOpen size={11} style={{ color: "#6b7280" }} />
+                            <span style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: "12px"
+                            }}>
+                                {schedule.classroom?.name || "Без аудиторії"}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Нижня частина - бейдж підгрупи */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    marginTop: "auto",
+                    paddingTop: "4px",
+                    borderTop: "1px solid rgba(105, 180, 185, 0.1)"
+                }}>
+                    <div style={{
+                        fontSize: "11px",
+                        color: "rgba(105, 180, 185, 1)",
+                        fontWeight: "bold",
+                        backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                        padding: '3px 6px',
+                        borderRadius: '3px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                    }}>
+                        <FaUserFriends size={9} />
+                        П{subgroupNumber}
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     if (loading) {
@@ -171,7 +594,7 @@ const ScheduleTable = ({
         );
     }
 
-    // Мобільний варіант - акордеон з днями тижня
+    // Мобільний варіант
     if (isMobile) {
         return (
             <>
@@ -213,7 +636,6 @@ const ScheduleTable = ({
                     </Card.Header>
 
                     <Card.Body style={{ padding: "0" }}>
-                        {/* Список днів тижня з акордеоном */}
                         {safeDaysOfWeek.map((day) => {
                             const dayTimeSlots = getTimeSlotsForDay(day._id || day.id);
                             const isDayExpanded = selectedDay?.id === day.id;
@@ -223,7 +645,6 @@ const ScheduleTable = ({
                                     borderBottom: "1px solid #e5e7eb",
                                     backgroundColor: isDayExpanded ? "#f9fafb" : "white"
                                 }}>
-                                    {/* Заголовок дня */}
                                     <button
                                         onClick={() => handleDaySelect(day)}
                                         style={{
@@ -283,7 +704,6 @@ const ScheduleTable = ({
                                         </div>
                                     </button>
 
-                                    {/* Контент дня (акордеон) */}
                                     {isDayExpanded && dayTimeSlots.length > 0 && (
                                         <div style={{
                                             padding: "16px",
@@ -324,19 +744,37 @@ const ScheduleTable = ({
                                                             </div>
                                                         </div>
 
-                                                        {/* Список груп для цього часового слоту */}
                                                         <div style={{
                                                             display: "grid",
                                                             gap: "8px"
                                                         }}>
                                                             {safeGroups.map((group) => {
-                                                                const schedule = getScheduleForSlot(day._id || day.id, group._id, timeSlot._id);
+                                                                const cellSchedules = getSchedulesForSlot(day._id || day.id, group._id, timeSlot._id);
+
+                                                                if (cellSchedules.length === 0) {
+                                                                    return (
+                                                                        <div
+                                                                            key={group._id}
+                                                                            style={{
+                                                                                backgroundColor: "#f3f4f6",
+                                                                                border: "1px solid #e5e7eb",
+                                                                                borderRadius: "6px",
+                                                                                padding: "10px",
+                                                                                textAlign: "center",
+                                                                                color: "#9ca3af",
+                                                                                fontSize: "13px"
+                                                                            }}
+                                                                        >
+                                                                            {group.name} - немає заняття
+                                                                        </div>
+                                                                    );
+                                                                }
 
                                                                 return (
                                                                     <div
                                                                         key={group._id}
                                                                         style={{
-                                                                            backgroundColor: schedule ? "white" : "#f3f4f6",
+                                                                            backgroundColor: "white",
                                                                             border: "1px solid #e5e7eb",
                                                                             borderRadius: "6px",
                                                                             padding: "10px",
@@ -357,115 +795,90 @@ const ScheduleTable = ({
                                                                             }}>
                                                                                 {group.name}
                                                                             </div>
-                                                                            {schedule && (
-                                                                                <div style={{
-                                                                                    display: "flex",
-                                                                                    gap: "6px"
-                                                                                }}>
-                                                                                    <button
-                                                                                        onClick={() => handleEditSchedule(schedule)}
-                                                                                        style={{
-                                                                                            padding: "6px 10px",
-                                                                                            fontSize: "12px",
-                                                                                            backgroundColor: "rgba(105, 180, 185, 1)",
-                                                                                            color: "white",
-                                                                                            border: "none",
-                                                                                            borderRadius: "4px",
-                                                                                            cursor: "pointer",
-                                                                                            display: "flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "4px",
-                                                                                            minWidth: "80px"
-                                                                                        }}
-                                                                                    >
-                                                                                        <FaEdit size={10} />
-                                                                                        Редаг.
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={() => {
-                                                                                            console.log('Мобільна версія - передаємо розклад для видалення:', schedule);
-                                                                                            console.log('День тижня:', schedule?.dayOfWeek);
-                                                                                            console.log('Час:', schedule?.timeSlot);
-                                                                                            console.log('Група:', schedule?.group);
-                                                                                            console.log('Викладач:', schedule?.teacher);
-                                                                                            console.log('Аудиторія:', schedule?.classroom);
-
-                                                                                            if (onDeleteSchedule) {
-                                                                                                onDeleteSchedule(schedule);
-                                                                                            }
-                                                                                        }} style={{
-                                                                                            padding: "6px 10px",
-                                                                                            fontSize: "12px",
-                                                                                            backgroundColor: "#ef4444",
-                                                                                            color: "white",
-                                                                                            border: "none",
-                                                                                            borderRadius: "4px",
-                                                                                            cursor: "pointer",
-                                                                                            display: "flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "4px",
-                                                                                            minWidth: "80px"
-                                                                                        }}
-                                                                                    >
-                                                                                        <FaTrash size={10} />
-                                                                                        Видел.
-                                                                                    </button>
-                                                                                </div>
-                                                                            )}
                                                                         </div>
 
-                                                                        {schedule ? (
-                                                                            <div style={{
-                                                                                display: "flex",
-                                                                                flexDirection: "column",
-                                                                                gap: "4px"
-                                                                            }}>
+                                                                        {cellSchedules.map((schedule) => (
+                                                                            <div
+                                                                                key={schedule._id}
+                                                                                style={{
+                                                                                    backgroundColor: schedule.subgroup === 'all' ? "#f0f9ff" : "#f9fafb",
+                                                                                    border: `1px solid ${schedule.subgroup === 'all' ? "rgba(105, 180, 185, 0.3)" : "#e5e7eb"}`,
+                                                                                    borderRadius: "6px",
+                                                                                    padding: "8px",
+                                                                                    marginBottom: "4px"
+                                                                                }}
+                                                                            >
                                                                                 <div style={{
                                                                                     display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    gap: "6px"
+                                                                                    justifyContent: "space-between",
+                                                                                    alignItems: "flex-start",
+                                                                                    marginBottom: "4px"
                                                                                 }}>
-                                                                                    <FaBook style={{ fontSize: "12px", color: "rgba(105, 180, 185, 1)" }} />
-                                                                                    <span style={{
-                                                                                        fontWeight: "500",
+                                                                                    <div style={{
+                                                                                        fontWeight: "600",
                                                                                         color: "rgba(105, 180, 185, 1)",
                                                                                         fontSize: "14px"
                                                                                     }}>
-                                                                                        {schedule.subject || schedule.subject?.name || "Без назви"}
-                                                                                    </span>
+                                                                                        {schedule.subject}
+                                                                                        {schedule.subgroup !== 'all' && ` (Підгрупа ${schedule.subgroup})`}
+                                                                                    </div>
+                                                                                    <div style={{
+                                                                                        display: "flex",
+                                                                                        gap: "6px"
+                                                                                    }}>
+                                                                                        <button
+                                                                                            onClick={() => handleEditSchedule(schedule)}
+                                                                                            style={{
+                                                                                                padding: "4px 8px",
+                                                                                                fontSize: "11px",
+                                                                                                backgroundColor: "rgba(105, 180, 185, 1)",
+                                                                                                color: "white",
+                                                                                                border: "none",
+                                                                                                borderRadius: "3px",
+                                                                                                cursor: "pointer"
+                                                                                            }}
+                                                                                        >
+                                                                                            Редаг.
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => onDeleteSchedule(schedule)}
+                                                                                            style={{
+                                                                                                padding: "4px 8px",
+                                                                                                fontSize: "11px",
+                                                                                                backgroundColor: "#ef4444",
+                                                                                                color: "white",
+                                                                                                border: "none",
+                                                                                                borderRadius: "3px",
+                                                                                                cursor: "pointer"
+                                                                                            }}
+                                                                                        >
+                                                                                            Видел.
+                                                                                        </button>
+                                                                                    </div>
                                                                                 </div>
                                                                                 <div style={{
                                                                                     display: "flex",
                                                                                     alignItems: "center",
                                                                                     gap: "6px",
-                                                                                    fontSize: "13px",
-                                                                                    color: "#6b7280"
+                                                                                    fontSize: "12px",
+                                                                                    color: "#6b7280",
+                                                                                    marginBottom: "2px"
                                                                                 }}>
-                                                                                    <FaChalkboardTeacher style={{ fontSize: "12px", color: "#6b7280" }} />
+                                                                                    <FaChalkboardTeacher size={10} />
                                                                                     {schedule.teacher?.fullName || "Викладач не вказаний"}
                                                                                 </div>
                                                                                 <div style={{
                                                                                     display: "flex",
                                                                                     alignItems: "center",
                                                                                     gap: "6px",
-                                                                                    fontSize: "13px",
+                                                                                    fontSize: "12px",
                                                                                     color: "#6b7280"
                                                                                 }}>
-                                                                                    <FaDoorOpen style={{ fontSize: "12px", color: "#6b7280" }} />
+                                                                                    <FaDoorOpen size={10} />
                                                                                     {schedule.classroom?.name || "Аудиторія не вказана"}
                                                                                 </div>
                                                                             </div>
-                                                                        ) : (
-                                                                            <div style={{
-                                                                                color: "#9ca3af",
-                                                                                fontSize: "13px",
-                                                                                textAlign: "center",
-                                                                                padding: "8px 0",
-                                                                                fontStyle: "italic"
-                                                                            }}>
-                                                                                Немає заняття
-                                                                            </div>
-                                                                        )}
+                                                                        ))}
                                                                     </div>
                                                                 );
                                                             })}
@@ -475,26 +888,12 @@ const ScheduleTable = ({
                                             </div>
                                         </div>
                                     )}
-
-                                    {isDayExpanded && dayTimeSlots.length === 0 && (
-                                        <div style={{
-                                            padding: "16px",
-                                            backgroundColor: "white",
-                                            borderTop: "1px solid #e5e7eb",
-                                            textAlign: "center",
-                                            color: "#6b7280",
-                                            fontStyle: "italic"
-                                        }}>
-                                            Немає уроків для цього дня
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })}
                     </Card.Body>
                 </Card>
 
-                {/* Модальне вікно редагування */}
                 <EditScheduleModal
                     show={showEditModal}
                     onHide={() => setShowEditModal(false)}
@@ -594,6 +993,16 @@ const ScheduleTable = ({
                                                     zIndex: 100
                                                 }}>
                                                     {group.name}
+                                                    {group.hasSubgroups && (
+                                                        <div style={{
+                                                            fontSize: '12px',
+                                                            color: '#6b7280',
+                                                            fontWeight: 'normal',
+                                                            marginTop: '2px'
+                                                        }}>
+                                                            ({group.subgroups?.length || 0} підгрупи)
+                                                        </div>
+                                                    )}
                                                 </th>
                                             ))}
                                         </tr>
@@ -628,12 +1037,13 @@ const ScheduleTable = ({
                                                                     {day.nameShort || day.name}
                                                                     <br />
                                                                     <small style={{
-                                                                        fontSize: "12px",
+                                                                        fontSize: "13px",
                                                                         color: "#6b7280",
                                                                         fontWeight: "normal"
                                                                     }}>
                                                                         {day.name}
-                                                                    </small>                                                            </td>
+                                                                    </small>
+                                                                </td>
                                                             )}
 
                                                             <td style={{
@@ -646,6 +1056,7 @@ const ScheduleTable = ({
                                                                 whiteSpace: "nowrap",
                                                                 textAlign: "center",
                                                                 verticalAlign: "middle",
+                                                                fontSize: "14px",
                                                                 position: 'sticky',
                                                                 left: '90px',
                                                                 zIndex: 10
@@ -653,112 +1064,14 @@ const ScheduleTable = ({
                                                                 {timeSlot.order}. {timeSlot.startTime} - {timeSlot.endTime}
                                                             </td>
 
-                                                            {safeGroups.map(group => {
-                                                                const schedule = getScheduleForSlot(day._id || day.id, group._id, timeSlot._id);
-                                                                return (
-                                                                    <td key={group._id} style={{
-                                                                        width: '200px',
-                                                                        padding: "8px",
-                                                                        borderBottom: "1px solid #e5e7eb",
-                                                                        verticalAlign: "top",
-                                                                        minHeight: "80px",
-                                                                        backgroundColor: schedule ? "#f0f9ff" : "transparent"
-                                                                    }}>
-                                                                        {schedule ? (
-                                                                            <div style={{
-                                                                                padding: "8px",
-                                                                                border: "1px solid #e5e7eb",
-                                                                                borderRadius: "6px",
-                                                                                backgroundColor: "white",
-                                                                                fontSize: "12px"
-                                                                            }}>
-                                                                                <div style={{
-                                                                                    fontWeight: "600",
-                                                                                    color: "#374151",
-                                                                                    marginBottom: "4px"
-                                                                                }}>
-                                                                                    {schedule.subject}
-                                                                                </div>
-                                                                                <div style={{
-                                                                                    color: "#6b7280",
-                                                                                    marginBottom: "2px",
-                                                                                    fontSize: "11px"
-                                                                                }}>
-                                                                                    {schedule.teacher?.fullName}
-                                                                                </div>
-                                                                                <div style={{
-                                                                                    color: "#6b7280",
-                                                                                    marginBottom: "4px",
-                                                                                    fontSize: "11px"
-                                                                                }}>
-                                                                                    {schedule.classroom?.name}
-                                                                                </div>
-                                                                                <br />
-                                                                                <div style={{
-                                                                                    display: "flex",
-                                                                                    gap: "8px",
-                                                                                    justifyContent: "flex-end"
-                                                                                }}>
-                                                                                    <button
-                                                                                        onClick={() => handleEditSchedule(schedule)}
-                                                                                        style={{
-                                                                                            padding: "4px 8px",
-                                                                                            fontSize: "10px",
-                                                                                            backgroundColor: "rgba(105, 180, 185, 1)",
-                                                                                            color: "white",
-                                                                                            border: "none",
-                                                                                            borderRadius: "4px",
-                                                                                            cursor: "pointer",
-                                                                                            display: "flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "4px"
-                                                                                        }}
-                                                                                    >
-                                                                                        <FaEdit size={8} />
-                                                                                        Редаг.
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={() => {
-                                                                                            console.log('Десктопна версія - передаємо розклад для видалення:', schedule);
-                                                                                            console.log('День тижня:', schedule?.dayOfWeek);
-                                                                                            console.log('Час:', schedule?.timeSlot);
-                                                                                            console.log('Група:', schedule?.group);
-                                                                                            console.log('Викладач:', schedule?.teacher);
-                                                                                            console.log('Аудиторія:', schedule?.classroom);
-
-                                                                                            if (onDeleteSchedule) {
-                                                                                                onDeleteSchedule(schedule);
-                                                                                            }
-                                                                                        }}
-                                                                                        style={{
-                                                                                            padding: "4px 8px",
-                                                                                            fontSize: "10px",
-                                                                                            backgroundColor: "#ef4444",
-                                                                                            color: "white",
-                                                                                            border: "none",
-                                                                                            borderRadius: "4px",
-                                                                                            cursor: "pointer",
-                                                                                            display: "flex",
-                                                                                            alignItems: "center",
-                                                                                            gap: "4px"
-                                                                                        }}
-                                                                                    >
-                                                                                        <FaTrash size={8} />
-                                                                                        Видал.
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div style={{
-                                                                                textAlign: "center",
-                                                                                color: "#9ca3af",
-                                                                                fontSize: "12px",
-                                                                                padding: "12px 0"
-                                                                            }}>—</div>
-                                                                        )}
-                                                                    </td>
-                                                                );
-                                                            })}
+                                                            {safeGroups.map(group => (
+                                                                <ScheduleCellWithSubgroups
+                                                                    key={group._id}
+                                                                    day={day}
+                                                                    group={group}
+                                                                    timeSlot={timeSlot}
+                                                                />
+                                                            ))}
                                                         </tr>
                                                     ))}
                                                 </React.Fragment>
@@ -772,7 +1085,6 @@ const ScheduleTable = ({
                 </Col>
             </Row>
 
-            {/* Модальне вікно редагування для десктопної версії */}
             <EditScheduleModal
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}

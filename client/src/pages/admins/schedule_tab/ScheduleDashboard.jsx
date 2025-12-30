@@ -253,24 +253,45 @@ const ScheduleDashboard = () => {
 
             console.log(`Отримано ${response.data.length} розкладів`);
 
-            // Перевірка на дублікати
+            // ФІКС: Правильна перевірка на дублікати з урахуванням підгруп
             const uniqueSchedules = [];
             const seenKeys = new Set();
 
             response.data.forEach(schedule => {
                 const dayOfWeekId = schedule.dayOfWeek?._id || schedule.dayOfWeek;
                 const timeSlotId = schedule.timeSlot?._id || schedule.timeSlot;
-                const key = `${schedule.group?._id}-${dayOfWeekId}-${timeSlotId}`;
+                const groupId = schedule.group?._id || schedule.group;
+                const subgroup = schedule.subgroup || 'all';
+
+                // Ключ унікальності ВКЛЮЧАЄ підгрупу
+                const key = `${groupId}-${dayOfWeekId}-${timeSlotId}-${subgroup}`;
+
+                console.log('Перевірка розкладу:', {
+                    subject: schedule.subject,
+                    group: schedule.group?.name,
+                    subgroup: schedule.subgroup,
+                    day: schedule.dayOfWeek?.name,
+                    timeSlot: schedule.timeSlot?.order,
+                    key: key
+                });
 
                 if (!seenKeys.has(key)) {
                     seenKeys.add(key);
                     uniqueSchedules.push(schedule);
+                    console.log('Додано унікальний розклад:', schedule.subject, 'підгрупа:', schedule.subgroup);
                 } else {
-                    console.warn("Знайдено дублікат розкладу:", schedule);
+                    console.warn("Знайдено дублікат розкладу:", {
+                        subject: schedule.subject,
+                        group: schedule.group?.name,
+                        subgroup: schedule.subgroup,
+                        day: schedule.dayOfWeek?.name,
+                        timeSlot: schedule.timeSlot?.order
+                    });
                 }
             });
 
             setSchedules(uniqueSchedules);
+            console.log(`Завантажено ${uniqueSchedules.length} унікальних розкладів`);
 
         } catch (err) {
             console.error('Помилка завантаження розкладів:', err);
@@ -345,17 +366,28 @@ const ScheduleDashboard = () => {
             setLoading(true);
             console.log("Створення розкладу з даними:", scheduleData);
 
+            // ФІКС: Перевірка на дублікати в локальному стані З УРАХУВАННЯМ ПІДГРУП
             const existingInState = schedules.find(schedule => {
                 const scheduleDayOfWeek = schedule.dayOfWeek?._id || schedule.dayOfWeek;
                 const scheduleTimeSlot = schedule.timeSlot?._id || schedule.timeSlot;
+                const scheduleGroupId = schedule.group?._id || schedule.group;
+                const scheduleSubgroup = schedule.subgroup || 'all';
 
-                return schedule.group?._id === scheduleData.group &&
-                    String(scheduleDayOfWeek) === String(scheduleData.dayOfWeek) &&
-                    String(scheduleTimeSlot) === String(scheduleData.timeSlot);
+                const newDayOfWeek = scheduleData.dayOfWeek;
+                const newTimeSlot = scheduleData.timeSlot;
+                const newGroupId = scheduleData.group;
+                const newSubgroup = scheduleData.subgroup || 'all';
+
+                // Перевіряємо на повний збіг (група + день + час + підгрупа)
+                return scheduleGroupId === newGroupId &&
+                    String(scheduleDayOfWeek) === String(newDayOfWeek) &&
+                    String(scheduleTimeSlot) === String(newTimeSlot) &&
+                    scheduleSubgroup === newSubgroup;
             });
 
             if (existingInState) {
-                const errorMsg = `Помилка: Ця група вже має урок в цей час. Предмет: ${existingInState.subject || "Без назви"}`;
+                const subgroupInfo = existingInState.subgroup === 'all' ? 'всю групу' : `підгрупу ${existingInState.subgroup}`;
+                const errorMsg = `Помилка: ${subgroupInfo} вже має урок в цей час. Предмет: ${existingInState.subject || "Без назви"}`;
                 setError(errorMsg);
                 showSystemNotification(errorMsg, "danger");
                 setLoading(false);
@@ -376,9 +408,11 @@ const ScheduleDashboard = () => {
             setError("");
 
             if (response.data.schedule) {
+                // Додаємо новий розклад до стану
                 setSchedules(prev => [...prev, response.data.schedule]);
             }
 
+            // Завантажуємо оновлений розклад з сервера
             setTimeout(() => {
                 loadSchedules();
             }, 300);
@@ -397,6 +431,15 @@ const ScheduleDashboard = () => {
                     if (details.existingLesson?.subject) {
                         errorMessage += ` Предмет: ${details.existingLesson.subject}`;
                     }
+                } else if (conflictData.conflictType === 'SUBGROUP_CONFLICT') {
+                    const details = conflictData.details;
+                    errorMessage += `Підгрупа ${details.existingLesson?.subgroup} вже має урок в цей час.`;
+
+                    if (details.existingLesson?.subject) {
+                        errorMessage += ` Предмет: ${details.existingLesson.subject}`;
+                    }
+                } else if (conflictData.conflictType === 'FULL_GROUP_CONFLICT') {
+                    errorMessage += "Вся група вже має урок в цей час.";
                 } else {
                     errorMessage += conflictData.message || "Невідомий конфлікт";
                 }
@@ -404,6 +447,7 @@ const ScheduleDashboard = () => {
                 setError(errorMessage);
                 showSystemNotification(errorMessage, "danger");
 
+                // Перезавантажуємо розклад для синхронізації
                 setTimeout(() => {
                     loadSchedules();
                 }, 300);
@@ -426,12 +470,47 @@ const ScheduleDashboard = () => {
 
             const dayOfWeekId = schedule.dayOfWeek?._id || schedule.dayOfWeek;
             const timeSlotId = schedule.timeSlot?._id || schedule.timeSlot;
+            const groupId = schedule.group._id;
+            const subgroup = schedule.subgroup || 'all'; // ВАЖЛИВО: додаємо підгрупу до ключа
 
-            const key = `${schedule.group._id}-${dayOfWeekId}-${timeSlotId}`;
-            if (seen.has(key)) {
+            // Старий ключ (без підгрупи) - може викликати помилкові дублікати
+            const oldKey = `${groupId}-${dayOfWeekId}-${timeSlotId}`;
+
+            // Новий ключ (з підгрупою) - правильний
+            const newKey = `${groupId}-${dayOfWeekId}-${timeSlotId}-${subgroup}`;
+
+            if (seen.has(newKey)) {
                 duplicates.push(schedule);
+                console.error('Справжній дублікат (з підгрупою):', {
+                    subject: schedule.subject,
+                    group: schedule.group.name,
+                    subgroup: schedule.subgroup,
+                    day: schedule.dayOfWeek?.name,
+                    timeSlot: schedule.timeSlot?.order
+                });
             } else {
-                seen.add(key);
+                seen.add(newKey);
+            }
+
+            // Додаткова перевірка: якщо це урок для всієї групи, він не повинен конфліктувати з підгрупами
+            if (schedule.subgroup === 'all' || schedule.isFullGroup) {
+                // Перевіряємо, чи є підгрупи в цей час
+                const subgroupsAtSameTime = schedules.filter(s =>
+                    s.group?._id === groupId &&
+                    (s.dayOfWeek?._id || s.dayOfWeek) === dayOfWeekId &&
+                    (s.timeSlot?._id || s.timeSlot) === timeSlotId &&
+                    (s.subgroup !== 'all' && s.subgroup !== undefined)
+                );
+
+                if (subgroupsAtSameTime.length > 0) {
+                    console.warn('УВАГА: Вся група має урок одночасно з підгрупами:', {
+                        fullGroupSubject: schedule.subject,
+                        subgroups: subgroupsAtSameTime.map(s => ({
+                            subject: s.subject,
+                            subgroup: s.subgroup
+                        }))
+                    });
+                }
             }
         });
 
