@@ -1,5 +1,5 @@
 import React from "react";
-import { FaTimes, FaExclamationTriangle, FaTrash } from "react-icons/fa";
+import { FaTimes, FaExclamationTriangle, FaTrash, FaUsers, FaUserFriends } from "react-icons/fa";
 
 const DeleteCertainScheduleLesson = ({
     show,
@@ -70,7 +70,79 @@ const DeleteCertainScheduleLesson = ({
         return 'Не вказано';
     };
 
+    // Отримати інформацію про підгрупу
+    const getSubgroupInfo = () => {
+        if (!schedule) return { type: 'unknown', value: 'Не вказано' };
+
+        // Перевіряємо різні способи, які може бути задано підгрупу
+        const subgroup = schedule.subgroup || schedule.subGroup || schedule.subgroupNumber;
+        const isFullGroup = schedule.isFullGroup === true || subgroup === 'all' || subgroup === undefined;
+
+        if (isFullGroup) {
+            return {
+                type: 'full_group',
+                value: 'Вся група',
+                icon: <FaUsers style={{ marginRight: '6px', color: 'rgba(105, 180, 185, 1)' }} />
+            };
+        } else {
+            const subgroupNumber = subgroup || '?';
+            return {
+                type: 'subgroup',
+                value: `Підгрупа ${subgroupNumber}`,
+                icon: <FaUserFriends style={{ marginRight: '6px', color: 'rgba(105, 180, 185, 1)' }} />
+            };
+        }
+    };
+
+    // Отримати додаткову інформацію про групу (якщо є)
+    const getGroupAdditionalInfo = () => {
+        if (!schedule) return null;
+
+        const groupInfo = schedule.group;
+        if (!groupInfo) return null;
+
+        const info = [];
+
+        // Категорія групи
+        if (groupInfo.category) {
+            info.push(groupInfo.category);
+        }
+
+        // Рівень навчання
+        if (groupInfo.gradeLevel) {
+            info.push(`${groupInfo.gradeLevel} курс`);
+        }
+
+        // Кількість підгруп
+        if (groupInfo.hasSubgroups && groupInfo.subgroups?.length > 0) {
+            info.push(`${groupInfo.subgroups.length} підгр.`);
+        }
+
+        return info.length > 0 ? info.join(' • ') : null;
+    };
+
+    // Отримати стиль для відображення підгрупи
+    const getSubgroupStyle = (subgroupType) => {
+        if (subgroupType === 'full_group') {
+            return {
+                backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                color: 'rgba(105, 180, 185, 1)',
+                border: '1px solid rgba(105, 180, 185, 0.3)'
+            };
+        } else {
+            return {
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                color: 'rgb(59, 130, 246)',
+                border: '1px solid rgba(59, 130, 246, 0.3)'
+            };
+        }
+    };
+
     if (!show || !schedule) return null;
+
+    const subgroupInfo = getSubgroupInfo();
+    const groupAdditionalInfo = getGroupAdditionalInfo();
+    const subgroupStyle = getSubgroupStyle(subgroupInfo.type);
 
     return (
         <div style={{
@@ -90,7 +162,7 @@ const DeleteCertainScheduleLesson = ({
                 borderRadius: '12px',
                 padding: isMobile ? '16px' : '24px',
                 width: '90%',
-                maxWidth: isMobile ? '95%' : '550px',
+                maxWidth: isMobile ? '95%' : '600px', // Збільшимо для додаткової інформації
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
@@ -158,7 +230,7 @@ const DeleteCertainScheduleLesson = ({
                         fontSize: isMobile ? '13px' : '14px',
                         lineHeight: '1.4'
                     }}>
-                        Ви збираєтеся видалити заняття з розкладу.
+                        Ви збираєтеся видалити заняття з розкладу. Ця дія не може бути скасована.
                     </p>
                 </div>
 
@@ -217,7 +289,10 @@ const DeleteCertainScheduleLesson = ({
                                 <div style={{
                                     fontWeight: '600',
                                     color: '#374151',
-                                    fontSize: isMobile ? '14px' : '15px'
+                                    fontSize: isMobile ? '14px' : '15px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
                                 }}>
                                     {getGroupName()}
                                 </div>
@@ -229,14 +304,18 @@ const DeleteCertainScheduleLesson = ({
                                     color: '#6b7280',
                                     marginBottom: '4px'
                                 }}>
-                                    День:
+                                    Тип заняття:
                                 </div>
                                 <div style={{
                                     fontWeight: '600',
-                                    color: '#374151',
-                                    fontSize: isMobile ? '14px' : '15px'
+                                    color: subgroupStyle.color,
+                                    fontSize: isMobile ? '14px' : '15px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
                                 }}>
-                                    {getDayName()}
+                                    {subgroupInfo.icon}
+                                    {subgroupInfo.value}
                                 </div>
                             </div>
                         </div>
@@ -253,14 +332,14 @@ const DeleteCertainScheduleLesson = ({
                                     color: '#6b7280',
                                     marginBottom: '4px'
                                 }}>
-                                    Час:
+                                    День та час:
                                 </div>
                                 <div style={{
                                     fontWeight: '600',
                                     color: '#374151',
                                     fontSize: isMobile ? '14px' : '15px'
                                 }}>
-                                    {getTimeSlot()}
+                                    {getDayName()}, {getTimeSlot()}
                                 </div>
                             </div>
 
@@ -299,6 +378,35 @@ const DeleteCertainScheduleLesson = ({
                             </div>
                         </div>
                     </div>
+
+                    {/* Додаткова інформація (якщо є) */}
+                    {schedule.semester && (
+                        <div style={{
+                            marginTop: '16px',
+                            paddingTop: '16px',
+                            borderTop: '1px solid #e5e7eb'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <div style={{
+                                    fontSize: isMobile ? '12px' : '13px',
+                                    color: '#6b7280'
+                                }}>
+                                    Семестр:
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: isMobile ? '13px' : '14px'
+                                }}>
+                                    {schedule.semester?.name || 'Не вказано'}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Кнопки дій */}
@@ -384,7 +492,7 @@ const DeleteCertainScheduleLesson = ({
                         ) : (
                             <>
                                 <FaTrash />
-                                Видалити
+                                Видалити заняття
                             </>
                         )}
                     </button>
