@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, Tab, Nav, Spinner, Row, Col } from "react-bootstrap";
 import { FaEdit, FaTrash, FaUserFriends, FaUsers, FaChalkboardTeacher, FaDoorOpen, FaBook, FaClock, FaCalendarAlt } from "react-icons/fa";
-// import EditScheduleModal from "./edit_component/EditScheduleModal";
+import EditScheduleModal from "../components/edit_component/EditScheduleModal";
 
 const GroupScheduleTable = ({
     schedules,
@@ -820,7 +820,7 @@ const GroupScheduleTable = ({
             {renderContent()}
 
             {/* КРИТИЧНО ВАЖЛИВО: Рендерити модалку ТІЛЬКИ якщо є всі дані */}
-            {/* {showEditModal && safeDaysOfWeek.length > 0 && (
+            {showEditModal && safeDaysOfWeek.length > 0 && (
                 <EditScheduleModal
                     show={showEditModal}
                     onHide={() => setShowEditModal(false)}
@@ -834,7 +834,7 @@ const GroupScheduleTable = ({
                     loading={false}
                     databaseName={databaseName}
                 />
-            )} */}
+            )}
         </>
     );
 };
