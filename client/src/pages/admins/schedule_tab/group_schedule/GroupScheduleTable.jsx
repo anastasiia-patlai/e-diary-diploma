@@ -747,18 +747,18 @@ const GroupScheduleTable = ({
                                                                 }}>
                                                                     {timeSlot.startTime} - {timeSlot.endTime}
                                                                 </div>
-                                                                <div style={{
+                                                                {/* <div style={{
                                                                     fontSize: isMobile ? "12px" : "13px",
                                                                     color: "#6b7280"
                                                                 }}>
                                                                     Урок {timeSlot.order}
-                                                                </div>
+                                                                </div> */}
                                                             </div>
                                                         </div>
                                                         <div style={{
                                                             padding: "4px 8px",
                                                             backgroundColor: "rgba(105, 180, 185, 0.2)",
-                                                            color: "rgba(105, 180, 185, 1)",
+                                                            color: "#6b7280",
                                                             borderRadius: "4px",
                                                             fontSize: isMobile ? "12px" : "13px",
                                                             fontWeight: "600",
@@ -766,8 +766,7 @@ const GroupScheduleTable = ({
                                                             alignItems: "center",
                                                             gap: "4px"
                                                         }}>
-                                                            <FaClock size={isMobile ? 12 : 14} />
-                                                            {timeSlot.startTime}
+                                                            Урок {timeSlot.order}
                                                         </div>
                                                     </div>
 
@@ -830,8 +829,9 @@ const GroupScheduleTable = ({
                     classrooms={safeClassrooms}
                     timeSlots={timeSlots}
                     teachers={safeTeachers}
+                    groups={groups} // Додаємо групи
                     onSave={handleSaveSchedule}
-                    loading={saveLoading}
+                    loading={false}
                     databaseName={databaseName}
                 />
             )} */}

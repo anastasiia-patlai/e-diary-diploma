@@ -1093,6 +1093,7 @@ const ScheduleTable = ({
                 classrooms={safeClassrooms}
                 timeSlots={timeSlots}
                 teachers={safeTeachers}
+                groups={groups}
                 onSave={handleSaveSchedule}
                 loading={false}
                 databaseName={databaseName}

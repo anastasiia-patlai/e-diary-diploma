@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     FaTimes,
     FaSave,
@@ -9,7 +9,9 @@ import {
     FaExclamationTriangle,
     FaCheckCircle,
     FaExchangeAlt,
-    FaInfoCircle
+    FaInfoCircle,
+    FaUsers,
+    FaUserFriends
 } from "react-icons/fa";
 import axios from "axios";
 import CurrentScheduleInfo from "./CurrentScheduleInfo";
@@ -22,6 +24,7 @@ const EditScheduleModal = ({
     classrooms,
     timeSlots,
     teachers,
+    groups = [],
     onSave,
     loading = false,
     databaseName
@@ -30,14 +33,14 @@ const EditScheduleModal = ({
         dayOfWeek: "",
         timeSlot: "",
         classroom: "",
-        teacher: ""
+        teacher: "",
     });
 
     const [originalData, setOriginalData] = useState({
         dayOfWeek: "",
         timeSlot: "",
         classroom: "",
-        teacher: ""
+        teacher: "",
     });
 
     const [errors, setErrors] = useState({
@@ -52,84 +55,104 @@ const EditScheduleModal = ({
         available: true,
         checking: false,
         conflicts: [],
-        duplicateConflict: null // Конфлікт двох уроків в одній комірці
+        duplicateConflict: null
     });
 
     const [isChanged, setIsChanged] = useState(false);
     const [showConflictAlert, setShowConflictAlert] = useState(false);
     const [conflictDetails, setConflictDetails] = useState(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
-
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedGroupInfo, setSelectedGroupInfo] = useState(null);
+    const [subgroupsInfo, setSubgroupsInfo] = useState([]);
 
     const databaseNameRef = useRef(databaseName);
+    const checkAvailabilityTimeoutRef = useRef(null);
+    const previousScheduleIdRef = useRef(null);
+    const isInitializedRef = useRef(false);
 
     useEffect(() => {
         databaseNameRef.current = databaseName;
     }, [databaseName]);
 
-    // Ініціалізація даних при відкритті модального вікна
+    // Ініціалізація даних при відкритті модального вікна (лише один раз при відкритті)
     useEffect(() => {
-        if (show && schedule) {
-            console.log('EditScheduleModal отримав schedule:', schedule);
-            console.log('daysOfWeek:', daysOfWeek);
-            console.log('timeSlots:', timeSlots);
-            console.log('teachers:', teachers);
-            console.log('classrooms:', classrooms);
+        // Перевіряємо, чи модальне вікно відкрито і чи є schedule
+        if (show && schedule && schedule._id) {
+            // Перевіряємо, чи це той самий schedule, щоб уникнути повторної ініціалізації
+            const scheduleId = schedule._id;
 
-            const initialData = {
-                dayOfWeek: schedule.dayOfWeek?._id || schedule.dayOfWeek?.id || schedule.dayOfWeek || "",
-                timeSlot: schedule.timeSlot?._id || schedule.timeSlot || "",
-                classroom: schedule.classroom?._id || schedule.classroom || "",
-                teacher: schedule.teacher?._id || schedule.teacher || ""
-            };
+            if (previousScheduleIdRef.current !== scheduleId || !isInitializedRef.current) {
+                console.log('EditScheduleModal ініціалізується з новим schedule:', scheduleId);
 
-            console.log('Початкові дані:', initialData);
+                const initialData = {
+                    dayOfWeek: schedule.dayOfWeek?._id || schedule.dayOfWeek?.id || schedule.dayOfWeek || "",
+                    timeSlot: schedule.timeSlot?._id || schedule.timeSlot || "",
+                    classroom: schedule.classroom?._id || schedule.classroom || "",
+                    teacher: schedule.teacher?._id || schedule.teacher || "",
+                };
 
-            setFormData(initialData);
-            setOriginalData(initialData);
-            setErrors({ general: "", validationErrors: [], conflictErrors: [] });
-            setAvailability({ available: true, checking: false, conflicts: [], duplicateConflict: null });
-            setIsChanged(false);
-            setShowConflictAlert(false);
-            setConflictDetails(null);
-            setSaveSuccess(false);
+                setFormData(initialData);
+                setOriginalData(initialData);
+                setErrors({ general: "", validationErrors: [], conflictErrors: [] });
+                setAvailability({ available: true, checking: false, conflicts: [], duplicateConflict: null });
+                setIsChanged(false);
+                setShowConflictAlert(false);
+                setConflictDetails(null);
+                setSaveSuccess(false);
 
-            // Оновлення фільтрованих часових слотів
-            if (initialData.dayOfWeek) {
-                console.log('Оновлення часових слотів для дня:', initialData.dayOfWeek);
-                updateTimeSlots(initialData.dayOfWeek);
+                // Знаходимо інформацію про групу (тільки для відображення)
+                const groupId = schedule.group?._id || schedule.group;
+                if (groupId && groups.length > 0) {
+                    const group = groups.find(g => g._id === groupId);
+                    setSelectedGroupInfo(group);
+
+                    if (group?.hasSubgroups && group?.subgroups?.length > 0) {
+                        setSubgroupsInfo(group.subgroups);
+                    } else {
+                        setSubgroupsInfo([]);
+                    }
+                }
+
+                // Оновлення фільтрованих часових слотів
+                if (initialData.dayOfWeek) {
+                    updateTimeSlots(initialData.dayOfWeek);
+                }
+
+                // Оновлення фільтрованих викладачів
+                updateFilteredTeachers();
+
+                previousScheduleIdRef.current = scheduleId;
+                isInitializedRef.current = true;
             }
-
-            // Оновлення фільтрованих викладачів
-            updateFilteredTeachers();
         }
-    }, [show, schedule]);
 
-    // Оновлення часових слотів при зміні дня тижня
-    const updateTimeSlots = (dayOfWeekId) => {
-        console.log('updateTimeSlots викликано з dayOfWeekId:', dayOfWeekId);
-        console.log('Всі часові слоти:', timeSlots);
+        // Скидання при закритті модального вікна
+        if (!show) {
+            isInitializedRef.current = false;
+            previousScheduleIdRef.current = null;
+        }
 
+        return () => {
+            // Очищення таймаутів при розмонтуванні
+            if (checkAvailabilityTimeoutRef.current) {
+                clearTimeout(checkAvailabilityTimeoutRef.current);
+            }
+        };
+    }, [show, schedule, groups]);
+
+    // Мемоізована функція для оновлення часових слотів
+    const updateTimeSlots = useCallback((dayOfWeekId) => {
         if (!dayOfWeekId || !timeSlots || !Array.isArray(timeSlots)) {
-            console.log('Немає даних для фільтрації');
             setFilteredTimeSlots([]);
             return;
         }
 
         const filtered = timeSlots.filter(slot => {
             if (!slot) return false;
-
-            // Перевіряємо різні формати ID
             const slotDayId = slot.dayOfWeek?._id || slot.dayOfWeek?.id || slot.dayOfWeek;
-            const isMatch = slotDayId === dayOfWeekId;
-
-            console.log(`Перевірка слота ${slot._id}: slotDayId=${slotDayId}, dayOfWeekId=${dayOfWeekId}, match=${isMatch}`);
-
-            return isMatch;
+            return slotDayId === dayOfWeekId;
         });
-
-        console.log('Знайдено слотів для дня:', filtered.length);
 
         const uniqueSlots = [];
         const seen = new Set();
@@ -143,22 +166,20 @@ const EditScheduleModal = ({
         });
 
         const sortedSlots = uniqueSlots.sort((a, b) => a.order - b.order);
-        console.log('Фільтровані та відсортовані слоти:', sortedSlots);
-
         setFilteredTimeSlots(sortedSlots);
 
-        // Якщо обраний часовий слот не належить до нового дня, скидаємо його
-        if (formData.timeSlot) {
-            const currentSlotExists = sortedSlots.some(slot => slot._id === formData.timeSlot);
-            console.log(`Перевірка поточного слота ${formData.timeSlot}: exists=${currentSlotExists}`);
+        // Перевіряємо, чи поточний обраний слот є в новому списку
+        const currentTimeSlotId = formData.timeSlot;
+        if (currentTimeSlotId) {
+            const currentSlotExists = sortedSlots.some(slot => slot._id === currentTimeSlotId);
             if (!currentSlotExists) {
                 setFormData(prev => ({ ...prev, timeSlot: "" }));
             }
         }
-    };
+    }, [timeSlots, formData.timeSlot]);
 
-    // Оновлення списку викладачів
-    const updateFilteredTeachers = () => {
+    // Мемоізована функція для оновлення списку викладачів
+    const updateFilteredTeachers = useCallback(() => {
         if (!teachers || !Array.isArray(teachers)) {
             setFilteredTeachers([]);
             return;
@@ -169,11 +190,9 @@ const EditScheduleModal = ({
             const subjectLower = subject.toLowerCase();
             const filtered = teachers.filter(teacher => {
                 if (!teacher) return false;
-
                 const positions = teacher.positions || [];
                 const position = teacher.position || "";
                 const fullName = teacher.fullName || "";
-
                 return positions.some(pos => pos.toLowerCase().includes(subjectLower)) ||
                     position.toLowerCase().includes(subjectLower) ||
                     fullName.toLowerCase().includes(subjectLower);
@@ -182,37 +201,16 @@ const EditScheduleModal = ({
         } else {
             setFilteredTeachers(teachers);
         }
-    };
+    }, [teachers, schedule]);
 
-    // ПЕРЕВІРКА ЗМІН У ФОРМІ
-    useEffect(() => {
-        if (!schedule) return;
-
-        const hasChanges =
-            formData.dayOfWeek !== originalData.dayOfWeek ||
-            formData.timeSlot !== originalData.timeSlot ||
-            formData.classroom !== originalData.classroom ||
-            formData.teacher !== originalData.teacher;
-
-        setIsChanged(hasChanges);
-
-        // АВТОМАТИЧНА ПЕРЕВІРКА ДОСТУПНОСТІ ПРИ ЗМІНІ
-        if (hasChanges) {
-            checkAvailability();
-        } else {
-            setAvailability({ available: true, checking: false, conflicts: [], duplicateConflict: null });
-            setShowConflictAlert(false);
-        }
-    }, [formData, originalData, schedule]);
-
-    // ПЕРЕВІРКА ДОСТУПНОСТІ РЕСУРСІВ
-    const checkAvailability = async () => {
+    // ПЕРЕВІРКА ДОСТУПНОСТІ РЕСУРСІВ З УРАХУВАННЯМ ПІДГРУП
+    const checkAvailability = useCallback(async () => {
         const dbName = databaseNameRef.current;
         if (!dbName || !schedule?._id) return;
 
         // МІНІМАЛЬНІ УМОВИ ДЛЯ ПЕРЕВІРКИ
         const hasDataToCheck = formData.dayOfWeek && formData.timeSlot &&
-            (formData.classroom || formData.teacher || originalData.group);
+            (formData.classroom || formData.teacher || schedule.group?._id || schedule.group);
 
         if (!hasDataToCheck) {
             setAvailability({ available: true, checking: false, conflicts: [], duplicateConflict: null });
@@ -225,6 +223,7 @@ const EditScheduleModal = ({
             const checkData = {
                 databaseName: dbName,
                 group: schedule.group?._id || schedule.group,
+                subgroup: schedule.subgroup || "all", // Використовуємо поточну підгрупу з schedule
                 teacher: formData.teacher,
                 classroom: formData.classroom,
                 dayOfWeek: formData.dayOfWeek,
@@ -249,7 +248,11 @@ const EditScheduleModal = ({
             });
 
             // ПЕРЕВІРКА, ЧИ Є КОНФЛІКТ ДВОХ УРОКІВ В ОДНІЙ КОМІРЦІ
-            const duplicateConflict = filteredConflicts.find(c => c.type === 'GROUP_TIMESLOT_CONFLICT');
+            const duplicateConflict = filteredConflicts.find(c =>
+                c.type === 'GROUP_TIMESLOT_CONFLICT' ||
+                c.type === 'SUBGROUP_CONFLICT' ||
+                c.type === 'FULL_GROUP_CONFLICT'
+            );
 
             setAvailability({
                 available: response.data.available,
@@ -258,12 +261,10 @@ const EditScheduleModal = ({
                 duplicateConflict: duplicateConflict
             });
 
-            // ПОКАЗУЄМО СПОВІЩЕННЯ ПРО КОНФЛІКТИ ДВОХ УРОКІВ
+            // ПОКАЗУЄМО СПОВІЩЕННЯ ПРО КОНФЛІКТИ
             if (duplicateConflict) {
                 setShowConflictAlert(true);
                 setConflictDetails(duplicateConflict);
-
-                // ОЧИСТИТИ ІНШІ ПОМИЛКИ
                 setErrors(prev => ({
                     ...prev,
                     conflictErrors: [duplicateConflict.message]
@@ -285,7 +286,42 @@ const EditScheduleModal = ({
             setShowConflictAlert(false);
             setConflictDetails(null);
         }
-    };
+    }, [schedule, formData.dayOfWeek, formData.timeSlot, formData.classroom, formData.teacher]);
+
+    // ПЕРЕВІРКА ЗМІН У ФОРМІ з дебаунсом
+    useEffect(() => {
+        if (!schedule) return;
+
+        const hasChanges =
+            formData.dayOfWeek !== originalData.dayOfWeek ||
+            formData.timeSlot !== originalData.timeSlot ||
+            formData.classroom !== originalData.classroom ||
+            formData.teacher !== originalData.teacher;
+
+        setIsChanged(hasChanges);
+
+        // Очистити попередній таймаут
+        if (checkAvailabilityTimeoutRef.current) {
+            clearTimeout(checkAvailabilityTimeoutRef.current);
+        }
+
+        // АВТОМАТИЧНА ПЕРЕВІРКА ДОСТУПНОСТІ ПРИ ЗМІНІ з дебаунсом
+        if (hasChanges) {
+            checkAvailabilityTimeoutRef.current = setTimeout(() => {
+                checkAvailability();
+            }, 500); // Затримка 500мс
+        } else {
+            setAvailability({ available: true, checking: false, conflicts: [], duplicateConflict: null });
+            setShowConflictAlert(false);
+        }
+
+        // Очищення таймауту при розмонтуванні
+        return () => {
+            if (checkAvailabilityTimeoutRef.current) {
+                clearTimeout(checkAvailabilityTimeoutRef.current);
+            }
+        };
+    }, [formData, originalData, schedule, checkAvailability]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -373,31 +409,47 @@ const EditScheduleModal = ({
 
         // Якщо є конфлікт двох уроків в одній комірці, запитати підтвердження
         if (availability.duplicateConflict) {
-            const userConfirmed = window.confirm(
-                "Увага! Ви намагаєтесь перемістити урок на час, де вже є інший урок.\n\n" +
-                `Поточний урок: ${availability.duplicateConflict.details?.existingSubject || 'Невідомий предмет'}\n` +
-                `Викладач: ${availability.duplicateConflict.details?.existingTeacher || 'Невідомий'}\n\n` +
-                "Ви впевнені, що хочете продовжити? Два уроки будуть показані в одній комірці."
-            );
+            const conflictType = availability.duplicateConflict.type;
+            let message = "";
+
+            if (conflictType === 'SUBGROUP_CONFLICT') {
+                message = `Увага! Ви намагаєтесь перемістити урок для підгрупи на час, де вже є урок для цієї ж підгрупи.\n\n` +
+                    `Поточний урок: ${availability.duplicateConflict.details?.existingSubject || 'Невідомий предмет'}\n` +
+                    `Викладач: ${availability.duplicateConflict.details?.existingTeacher || 'Невідомий'}\n` +
+                    `Підгрупа: ${schedule.subgroup || 'Вся група'}\n\n` +
+                    "Ви впевнені, що хочете продовжити?";
+            } else if (conflictType === 'FULL_GROUP_CONFLICT') {
+                message = `Увага! Ви намагаєтесь перемістити урок для підгрупи на час, де вже є урок для всієї групи.\n\n` +
+                    `Поточний урок: ${availability.duplicateConflict.details?.existingSubject || 'Невідомий предмет'}\n` +
+                    `Викладач: ${availability.duplicateConflict.details?.existingTeacher || 'Невідомий'}\n\n` +
+                    "Ви впевнені, що хочете продовжити?";
+            } else {
+                message = "Увага! Ви намагаєтесь перемістити урок на час, де вже є інший урок.\n\n" +
+                    `Поточний урок: ${availability.duplicateConflict.details?.existingSubject || 'Невідомий предмет'}\n` +
+                    `Викладач: ${availability.duplicateConflict.details?.existingTeacher || 'Невідомий'}\n\n` +
+                    "Ви впевнені, що хочете продовжити?";
+            }
+
+            const userConfirmed = window.confirm(message);
 
             if (!userConfirmed) {
                 return;
             }
         }
 
-        // ВИКОРИСТОВУЄМО локальний стан isSaving замість setLoading
         setIsSaving(true);
 
         try {
-            // Підготуємо дані для оновлення
+            // Підготуємо дані для оновлення (підгрупа залишається незмінною)
             const updateData = {
                 databaseName: dbName,
                 dayOfWeek: formData.dayOfWeek,
                 timeSlot: formData.timeSlot,
                 teacher: formData.teacher,
                 classroom: formData.classroom,
-                subject: schedule.subject, // Зберігаємо оригінальний предмет
+                subject: schedule.subject,
                 group: schedule.group?._id || schedule.group,
+                subgroup: schedule.subgroup || "all", // Беремо підгрупу з початкового schedule
                 semester: schedule.semester?._id || schedule.semester
             };
 
@@ -407,15 +459,12 @@ const EditScheduleModal = ({
             const response = await axios.put(`http://localhost:3001/api/schedule/${schedule._id}`, updateData);
 
             if (response.data && response.data.schedule) {
-                // Показуємо повідомлення про успіх
                 setSaveSuccess(true);
 
-                // Оновлюємо батьківський компонент
                 if (onSave) {
                     onSave(response.data.schedule);
                 }
 
-                // Закриваємо модальне вікно через 2 секунди
                 setTimeout(() => {
                     setSaveSuccess(false);
                     onHide();
@@ -429,11 +478,14 @@ const EditScheduleModal = ({
                 const errorData = error.response.data;
 
                 if (error.response.status === 409) {
-                    // Конфлікти
                     const conflictMessages = [];
 
                     if (errorData.conflictType === 'GROUP_TIMESLOT_CONFLICT') {
                         conflictMessages.push(errorData.details?.message || "Група вже має урок в цей час");
+                    } else if (errorData.conflictType === 'SUBGROUP_CONFLICT') {
+                        conflictMessages.push(errorData.details?.message || "Підгрупа вже має урок в цей час");
+                    } else if (errorData.conflictType === 'FULL_GROUP_CONFLICT') {
+                        conflictMessages.push(errorData.details?.message || "Вся група вже має урок в цей час");
                     } else if (errorData.details?.message) {
                         conflictMessages.push(errorData.details.message);
                     } else if (errorData.message) {
@@ -446,7 +498,6 @@ const EditScheduleModal = ({
                         conflictErrors: [...new Set(conflictMessages)]
                     });
                 } else if (error.response.status === 400) {
-                    // Помилки валідації
                     const validationErrors = [];
 
                     if (errorData.missingFields) {
@@ -476,7 +527,6 @@ const EditScheduleModal = ({
                 });
             }
         } finally {
-            // ВИКОРИСТОВУЄМО setIsSaving замість setLoading
             setIsSaving(false);
         }
     };
@@ -486,8 +536,6 @@ const EditScheduleModal = ({
             ...errors.validationErrors,
             ...errors.conflictErrors
         ];
-
-        // Видаляємо дублікати
         return [...new Set(allErrors)];
     };
 
@@ -549,6 +597,9 @@ const EditScheduleModal = ({
                     }}>
                         <FaExchangeAlt />
                         Редагування заняття
+                        {schedule.subgroup && schedule.subgroup !== 'all' &&
+                            ` (Підгрупа ${schedule.subgroup})`
+                        }
                     </h2>
                     <button
                         onClick={onHide}
@@ -679,7 +730,7 @@ const EditScheduleModal = ({
                     </div>
                 )}
 
-                {/* Форма редагування */}
+                {/* Форма редагування - тільки день, час, викладач, аудиторія */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* День тижня */}
                     <div>

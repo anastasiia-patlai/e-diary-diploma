@@ -1,6 +1,14 @@
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
-import { FaChalkboardTeacher, FaUsers, FaCalendarDay, FaClock, FaBook, FaDoorOpen } from 'react-icons/fa';
+import {
+    FaChalkboardTeacher,
+    FaUsers,
+    FaCalendarDay,
+    FaClock,
+    FaBook,
+    FaDoorOpen,
+    FaUserFriends
+} from 'react-icons/fa';
 
 const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
     return (
@@ -24,7 +32,7 @@ const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
                 Поточне заняття:
             </h6>
 
-            {/* ПЕРШИЙ РЯД - предмет та група з роздільною лінією */}
+            {/* ПЕРШИЙ РЯД - предмет, група та підгрупа з роздільною лінією */}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -34,7 +42,7 @@ const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
             }}>
                 <Row className="g-4">
                     {/* ЛІВИЙ СТОВПЧИК - Предмет */}
-                    <Col xs={6}>
+                    <Col xs={4}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -70,8 +78,8 @@ const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
                         </div>
                     </Col>
 
-                    {/* ПРАВИЙ СТОВПЧИК - Група */}
-                    <Col xs={6}>
+                    {/* СЕРЕДНІЙ СТОВПЧИК - Група */}
+                    <Col xs={4}>
                         <div style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -116,10 +124,63 @@ const CurrentScheduleInfo = ({ schedule, formatTimeSlot }) => {
                             </div>
                         </div>
                     </Col>
+
+                    {/* ПРАВИЙ СТОВПЧИК - Підгрупа */}
+                    <Col xs={4}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px'
+                        }}>
+                            <div style={{
+                                color: 'rgba(105, 180, 185, 1)',
+                                flexShrink: 0,
+                                marginTop: '2px'
+                            }}>
+                                <FaUserFriends size={16} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: '#6b7280',
+                                    fontWeight: '600',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    marginBottom: '6px'
+                                }}>
+                                    Підгрупа
+                                </div>
+                                <div style={{
+                                    fontWeight: '600',
+                                    color: '#374151',
+                                    fontSize: '16px',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {schedule.subgroup === 'all' ? 'Вся група' : `Підгрупа ${schedule.subgroup}`}
+                                </div>
+                                {schedule.subgroup !== 'all' && schedule.group?.hasSubgroups && (
+                                    <div style={{
+                                        fontSize: '13px',
+                                        color: '#6b7280',
+                                        fontWeight: '500'
+                                    }}>
+                                        {(() => {
+                                            const subgroupInfo = schedule.group.subgroups?.find(
+                                                sg => sg.order === parseInt(schedule.subgroup) || sg.name.includes(schedule.subgroup)
+                                            );
+                                            return subgroupInfo ?
+                                                `${subgroupInfo.students?.length || 0} студентів` :
+                                                'Підгрупа';
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Col>
                 </Row>
             </div>
 
-            {/* ДРУГИЙ РЯД - інша інформація */}
+            {/* ДРУГИЙ РЯД - інша інформація (день, час, викладач, аудиторія) */}
             <Row className="g-4">
                 {/* ЛІВИЙ СТОВПЧИК */}
                 <Col xs={6}>
