@@ -89,33 +89,7 @@ const StudentsList = ({
                                     }}>
                                         {student.fullName}
                                     </div>
-                                    <div style={{
-                                        fontSize: '14px',
-                                        color: '#6b7280',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px'
-                                    }}>
-                                        <FaEnvelope size={12} />
-                                        {student.email || 'Email не вказано'}
-                                    </div>
                                 </div>
-                            </div>
-
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                minWidth: isMobile ? '100%' : '150px'
-                            }}>
-                                <FaSchool color="rgba(105, 180, 185, 1)" size={16} />
-                                <span style={{
-                                    fontSize: '15px',
-                                    color: '#1f2937',
-                                    fontWeight: '500'
-                                }}>
-                                    {student.groupName}
-                                </span>
                             </div>
 
                             <div style={{

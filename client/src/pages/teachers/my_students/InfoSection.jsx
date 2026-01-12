@@ -50,18 +50,6 @@ const InfoSection = ({ student, formatDate, icon = "user", title = "Основн
                 </div>
                 <div style={{ padding: '20px' }}>
                     <InfoRow
-                        label="ПІБ"
-                        value={student.fullName}
-                        icon={FaUser}
-                        isMobile={isMobile}
-                    />
-                    <InfoRow
-                        label="Дата народження"
-                        value={formatDate(student.dateOfBirth || student.birthDate)}
-                        icon={FaBirthdayCake}
-                        isMobile={isMobile}
-                    />
-                    <InfoRow
                         label="Електронна пошта"
                         value={student.email}
                         icon={FaEnvelope}
@@ -88,8 +76,14 @@ const InfoSection = ({ student, formatDate, icon = "user", title = "Основн
                     )}
                     <InfoRow
                         label="Підгрупа"
-                        value={student.subgroupInfo ? student.subgroupInfo.name : 'Не вказано'}
+                        value={student.subgroupInfo ? student.subgroupInfo.name : 'Не розподілено на підгрупи'}
                         icon={student.subgroupInfo ? FaUserShield : FaUsersSlash}
+                        isMobile={isMobile}
+                    />
+                    <InfoRow
+                        label="Дата народження"
+                        value={formatDate(student.dateOfBirth || student.birthDate)}
+                        icon={FaBirthdayCake}
                         isMobile={isMobile}
                     />
                 </div>

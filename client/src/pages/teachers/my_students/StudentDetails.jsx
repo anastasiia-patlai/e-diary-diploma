@@ -17,25 +17,6 @@ const StudentDetails = ({
             borderTop: '1px solid #e5e7eb',
             animation: 'slideDown 0.3s ease-out'
         }}>
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '24px',
-                paddingBottom: '16px',
-                borderBottom: '2px solid rgba(105, 180, 185, 0.2)'
-            }}>
-                <FaInfoCircle size={20} color="rgba(105, 180, 185, 1)" />
-                <h3 style={{
-                    margin: 0,
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#1f2937'
-                }}>
-                    Детальна інформація про учня
-                </h3>
-            </div>
-
             <InfoSection student={student} formatDate={formatDate} isMobile={isMobile} />
 
             {student.parents && student.parents.length > 0 ? (
