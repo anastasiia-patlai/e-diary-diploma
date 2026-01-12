@@ -29,6 +29,7 @@ import {
 // import TeacherStudents from "./students_tab/TeacherStudents";
 // import TeacherReports from "./reports_tab/TeacherReports";
 import TeacherInfo from "./teacher_info/TeacherInfo";
+import MyStudents from "./my_students/MyStudents";
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -103,11 +104,11 @@ const TeacherPage = ({ onLogout, userFullName }) => {
     const teacherSections = [
         { name: "Головна", icon: <FaHome /> },
         { name: "Мій профіль", icon: <FaUserCircle /> },
+        { name: "Мій розклад", icon: <FaCalendarAlt /> },
         { name: "Журнал", icon: <FaBook /> },
         { name: "Відвідуваність", icon: <FaUserCheck /> },
         { name: "Домашні завдання", icon: <FaTasks /> },
         { name: "Мої учні", icon: <FaUsers /> },
-        { name: "Мій розклад", icon: <FaCalendarAlt /> },
         { name: "Повідомлення", icon: <FaComments /> },
         { name: "Звіти", icon: <FaChartBar /> },
         { name: "Матеріали", icon: <FaBookOpen /> },
@@ -165,6 +166,36 @@ const TeacherPage = ({ onLogout, userFullName }) => {
 
             case "Мій профіль":
                 return userData ? <TeacherInfo userData={userData} isMobile={isMobile} /> : <div>Завантаження...</div>;
+
+            case "Мій розклад":
+                return (
+                    <div>
+                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Мій розклад</h3>
+                        <div style={{
+                            display: 'flex',
+                            gap: '20px',
+                            marginTop: '20px',
+                            flexDirection: isMobile ? 'column' : 'row'
+                        }}>
+                            <div style={{ flex: 1 }}>
+                                <h4>Розклад на тиждень</h4>
+                                {/* Тут буде компонент розкладу */}
+                            </div>
+                            <div style={{
+                                padding: '20px',
+                                backgroundColor: '#f8fafc',
+                                borderRadius: '10px',
+                                width: isMobile ? '100%' : '300px'
+                            }}>
+                                <h4>Найближчі уроки</h4>
+                                <ul style={{ paddingLeft: '20px' }}>
+                                    <li>Понеділок: 9А, 10Б</li>
+                                    <li>Вівторок: 9Б, 11А</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                );
 
             case "Журнал":
                 return (
@@ -253,44 +284,8 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 );
 
             case "Мої учні":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Мої учні</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Тут буде список учнів за класами
-                        </p>
-                    </div>
-                );
+                return <MyStudents databaseName={databaseName} />;
 
-            case "Мій розклад":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Мій розклад</h3>
-                        <div style={{
-                            display: 'flex',
-                            gap: '20px',
-                            marginTop: '20px',
-                            flexDirection: isMobile ? 'column' : 'row'
-                        }}>
-                            <div style={{ flex: 1 }}>
-                                <h4>Розклад на тиждень</h4>
-                                {/* Тут буде компонент розкладу */}
-                            </div>
-                            <div style={{
-                                padding: '20px',
-                                backgroundColor: '#f8fafc',
-                                borderRadius: '10px',
-                                width: isMobile ? '100%' : '300px'
-                            }}>
-                                <h4>Найближчі уроки</h4>
-                                <ul style={{ paddingLeft: '20px' }}>
-                                    <li>Понеділок: 9А, 10Б</li>
-                                    <li>Вівторок: 9Б, 11А</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                );
 
             case "Повідомлення":
                 return (
