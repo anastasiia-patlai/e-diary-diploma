@@ -44,12 +44,6 @@ const Navigate = ({ role = "", onLogout, userFullName }) => {
             { name: "Оцінки дитини", icon: <FaChartBar /> },
             { name: "Відвідуваність", icon: <FaUserCheck /> },
             { name: "Зв'язок з викладачами", icon: <FaEnvelope /> }
-        ],
-        teacher: [
-            { name: "Головна", icon: <FaHome /> },
-            { name: "Класи", icon: <FaUsers /> },
-            { name: "Журнал", icon: <FaBookOpen /> },
-            { name: "Повідомлення", icon: <FaEnvelope /> }
         ]
     };
 

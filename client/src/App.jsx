@@ -4,6 +4,9 @@ import Login from "./Login";
 import Navigate from "./pages/Navigate";
 import WelcomePage from "./WelcomePage";
 import AdminPage from "./pages/admins/AdminPage";
+import TeacherPage from "./pages/teachers/TeacherPage";
+import StudentPage from "./pages/students/StudentPage";
+import ParentPage from "./pages/parents/ParentPage";
 
 function App() {
   let user = null;
@@ -44,7 +47,7 @@ function App() {
           path="/student"
           element={
             user?.role === "student" ? (
-              <Navigate role="student" onLogout={handleLogout} userFullName={user.fullName} />
+              <StudentPage role="student" onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
               <RouterNavigate to="/login" />
             )
@@ -55,7 +58,7 @@ function App() {
           path="/teacher"
           element={
             user?.role === "teacher" ? (
-              <Navigate role="teacher" onLogout={handleLogout} userFullName={user.fullName} />
+              <TeacherPage role="teacher" onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
               <RouterNavigate to="/login" />
             )
@@ -66,7 +69,7 @@ function App() {
           path="/parent"
           element={
             user?.role === "parent" ? (
-              <Navigate role="parent" onLogout={handleLogout} userFullName={user.fullName} />
+              <ParentPage role="parent" onLogout={handleLogout} userFullName={user.fullName} />
             ) : (
               <RouterNavigate to="/login" />
             )

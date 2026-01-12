@@ -15,7 +15,7 @@ function Signup({ onClose, databaseName }) {
         group: "",
         positions: [""],
         category: "",
-        teacherType: "", // ✅ ДОДАНО: тип викладача
+        teacherType: "",
         jobPosition: "",
     });
 
