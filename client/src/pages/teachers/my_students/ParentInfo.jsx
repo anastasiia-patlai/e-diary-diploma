@@ -10,9 +10,8 @@ import {
     FaHome,
     FaCalendarAlt
 } from "react-icons/fa";
-import InfoRow from "./InfoRow";
 
-const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExpansion, formatDate }) => {
+const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExpansion, formatDate, isMobile }) => {
     const key = `${studentId}_${index}`;
     const isExpanded = expandedParents[key] || false;
 
@@ -24,6 +23,7 @@ const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExp
             overflow: 'hidden',
             transition: 'all 0.2s'
         }}>
+            {/* ЗАГОЛОВОК БАТЬКА */}
             <div
                 style={{
                     padding: '14px 16px',
@@ -63,17 +63,7 @@ const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExp
                             color: '#1f2937',
                             marginBottom: '2px'
                         }}>
-                            Батько {index + 1}: {parent.fullName || 'Не вказано'}
-                        </div>
-                        <div style={{
-                            fontSize: '13px',
-                            color: '#6b7280',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}>
-                            <FaEnvelope size={12} />
-                            <span>{parent.email || 'Email не вказано'}</span>
+                            {parent.fullName || 'Не вказано'}
                         </div>
                     </div>
                 </div>
@@ -87,7 +77,7 @@ const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExp
                         fontSize: '13px',
                         fontWeight: '500'
                     }}>
-                        {isExpanded ? 'Згорнути' : 'Деталі'}
+                        {isExpanded ? 'Деталі' : 'Деталі'}
                     </span>
                     {isExpanded ? (
                         <FaChevronUp size={14} />
@@ -97,61 +87,137 @@ const ParentInfo = ({ parent, index, studentId, expandedParents, toggleParentExp
                 </div>
             </div>
 
+            {/* РОЗГОРНУТА ІНФОРМАЦІЯ */}
             {isExpanded && (
                 <div style={{
                     padding: '20px',
                     backgroundColor: 'white',
-                    animation: 'slideDownParent 0.3s ease-out',
-                    paddingBottom: '0px',
-                    paddingTop: '10px'
+                    animation: 'slideDownParent 0.3s ease-out'
                 }}>
                     <div style={{
-                        marginBottom: '20px'
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
                     }}>
-                        <InfoRow
-                            label="ПІБ"
-                            value={parent.fullName}
-                            icon={FaUser}
-                            compact
-                        />
-                        <InfoRow
-                            label="Електронна пошта"
-                            value={parent.email}
-                            icon={FaEnvelope}
-                            compact
-                        />
-                        <InfoRow
-                            label="Телефон"
-                            value={parent.phone}
-                            icon={FaPhone}
-                            compact
-                        />
+                        {/* EMAIL */}
+                        <div>
+                            <div style={{
+                                fontSize: '14px',
+                                color: '#6b7280',
+                                fontWeight: '500',
+                                marginBottom: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <FaEnvelope size={14} color="rgba(105, 180, 185, 1)" />
+                                Електронна пошта
+                            </div>
+                            <div style={{
+                                fontSize: '16px',
+                                color: '#1f2937',
+                                fontWeight: '500'
+                            }}>
+                                {parent.email || 'Не вказано'}
+                            </div>
+                        </div>
 
+                        {/* ТЕЛЕФОН */}
+                        <div>
+                            <div style={{
+                                fontSize: '14px',
+                                color: '#6b7280',
+                                fontWeight: '500',
+                                marginBottom: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                <FaPhone size={14} color="rgba(105, 180, 185, 1)" />
+                                Телефон
+                            </div>
+                            <div style={{
+                                fontSize: '16px',
+                                color: '#1f2937',
+                                fontWeight: '500'
+                            }}>
+                                {parent.phone || 'Не вказано'}
+                            </div>
+                        </div>
+
+                        {/* ПОСАДА (якщо є) */}
                         {parent.position && (
-                            <InfoRow
-                                label="Посада"
-                                value={parent.position}
-                                icon={FaIdCard}
-                                compact
-                            />
+                            <div>
+                                <div style={{
+                                    fontSize: '14px',
+                                    color: '#6b7280',
+                                    fontWeight: '500',
+                                    marginBottom: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <FaIdCard size={14} color="rgba(105, 180, 185, 1)" />
+                                    Посада
+                                </div>
+                                <div style={{
+                                    fontSize: '16px',
+                                    color: '#1f2937',
+                                    fontWeight: '500'
+                                }}>
+                                    {parent.position}
+                                </div>
+                            </div>
                         )}
 
+                        {/* АДРЕСА (якщо є) */}
                         {parent.address && (
-                            <InfoRow
-                                label="Адреса"
-                                value={parent.address}
-                                icon={FaHome}
-                                compact
-                            />
+                            <div>
+                                <div style={{
+                                    fontSize: '14px',
+                                    color: '#6b7280',
+                                    fontWeight: '500',
+                                    marginBottom: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <FaHome size={14} color="rgba(105, 180, 185, 1)" />
+                                    Адреса
+                                </div>
+                                <div style={{
+                                    fontSize: '16px',
+                                    color: '#1f2937',
+                                    fontWeight: '500'
+                                }}>
+                                    {parent.address}
+                                </div>
+                            </div>
                         )}
 
+                        {/* ДАТА РЕЄСТРАЦІЇ (якщо є) */}
                         {parent.createdAt && (
-                            <InfoRow
-                                label="Дата реєстрації"
-                                value={formatDate(parent.createdAt)}
-                                icon={FaCalendarAlt}
-                                compact
-                            />
+                            <div>
+                                <div style={{
+                                    fontSize: '14px',
+                                    color: '#6b7280',
+                                    fontWeight: '500',
+                                    marginBottom: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <FaCalendarAlt size={14} color="rgba(105, 180, 185, 1)" />
+                                    Дата реєстрації
+                                </div>
+                                <div style={{
+                                    fontSize: '16px',
+                                    color: '#1f2937',
+                                    fontWeight: '500'
+                                }}>
+                                    {formatDate(parent.createdAt)}
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
