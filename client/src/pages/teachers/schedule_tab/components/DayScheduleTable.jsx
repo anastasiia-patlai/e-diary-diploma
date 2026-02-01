@@ -30,7 +30,6 @@ const DayScheduleTable = ({
 
     return (
         <div>
-            {/* Заголовок дня */}
             <div className="d-flex align-items-center justify-content-between mb-3">
                 <h5 className="mb-0">
                     <FaCalendarAlt className="me-2" />
@@ -51,16 +50,13 @@ const DayScheduleTable = ({
                 ) : null}
             </div>
 
-            {/* Адаптивна таблиця */}
             {isMobile ? (
-                // Мобільна версія
                 <div className="d-flex flex-column gap-3">
                     {timeSlots.map((slot) => {
                         const lesson = getLessonForTimeSlot(day._id, slot._id);
                         return (
                             <div key={slot._id} className={`card ${lesson ? 'border-primary' : ''}`}>
                                 <div className="card-body">
-                                    {/* Заголовок слота */}
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <div className="d-flex align-items-center">
                                             <div className="me-2" style={{
@@ -85,9 +81,7 @@ const DayScheduleTable = ({
                                         )}
                                     </div>
 
-                                    {/* Контент */}
                                     <div className="row g-3">
-                                        {/* Предмет */}
                                         <div className="col-12">
                                             <div className="d-flex align-items-start">
                                                 <FaBook className="me-2 text-success mt-1" />
@@ -97,8 +91,6 @@ const DayScheduleTable = ({
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Група */}
                                         <div className="col-6">
                                             <div className="d-flex align-items-start">
                                                 <FaUserFriends className="me-2 text-secondary mt-1" />
@@ -108,8 +100,6 @@ const DayScheduleTable = ({
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Аудиторія */}
                                         <div className="col-6">
                                             <div className="d-flex align-items-start">
                                                 <FaDoorOpen className="me-2 text-warning mt-1" />
@@ -131,16 +121,15 @@ const DayScheduleTable = ({
                     })}
                 </div>
             ) : (
-                // Десктопна версія
                 <div className="table-responsive">
                     <Table bordered hover className="align-middle">
                         <thead className="table-light">
                             <tr>
                                 <th width="80">№</th>
                                 <th width="120">Час</th>
-                                <th width="160">Предмет</th> {/* Майже однакова ширина */}
-                                <th width="150">Група</th> {/* Майже однакова ширина */}
-                                <th width="170">Аудиторія</th> {/* Майже однакова ширина */}
+                                <th width="160">Предмет</th>
+                                <th width="150">Група</th>
+                                <th width="170">Аудиторія</th>
                             </tr>
                         </thead>
                         <tbody>
