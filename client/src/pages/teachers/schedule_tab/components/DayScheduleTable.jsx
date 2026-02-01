@@ -131,16 +131,16 @@ const DayScheduleTable = ({
                     })}
                 </div>
             ) : (
-                // Десктопна версія з усіма вимогами
+                // Десктопна версія
                 <div className="table-responsive">
                     <Table bordered hover className="align-middle">
                         <thead className="table-light">
                             <tr>
                                 <th width="80">№</th>
                                 <th width="120">Час</th>
-                                <th>Предмет</th>
-                                <th width="120">Група</th> {/* Зменшена ширина */}
-                                <th width="200">Аудиторія</th> {/* Збільшена ширина */}
+                                <th width="160">Предмет</th> {/* Майже однакова ширина */}
+                                <th width="150">Група</th> {/* Майже однакова ширина */}
+                                <th width="170">Аудиторія</th> {/* Майже однакова ширина */}
                             </tr>
                         </thead>
                         <tbody>
