@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Container, Row, Col, Form, Card, Table, Badge,
-    Spinner, Alert, Tab, Nav
-} from 'react-bootstrap';
-import {
-    FaCalendarAlt,
-    FaClock,
-    FaBook,
-    FaUserFriends,
-    FaDoorOpen,
-    FaFilter,
-    FaCalendarCheck,
-    FaHistory,
-    FaCalendarTimes
-} from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Spinner, Alert, Tab } from 'react-bootstrap';
 import axios from 'axios';
+import TeacherScheduleHeader from './components/TeacherScheduleHeader';
+import DaysOfWeekTabs from './components/DaysOfWeekTabs';
+import DayScheduleTable from './components/DayScheduleTable';
+import ScheduleInfoCards from './components/ScheduleInfoCards';
 
 const TeacherScheduleTab = () => {
     const [loading, setLoading] = useState(true);
@@ -23,7 +13,6 @@ const TeacherScheduleTab = () => {
     const [databaseName, setDatabaseName] = useState('');
     const [teacherName, setTeacherName] = useState('');
 
-    // Дані для завантаження
     const [semesters, setSemesters] = useState([]);
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [selectedSemesterData, setSelectedSemesterData] = useState(null);
@@ -33,9 +22,9 @@ const TeacherScheduleTab = () => {
     const [scheduleData, setScheduleData] = useState([]);
     const [currentWeekDates, setCurrentWeekDates] = useState({});
     const [showDates, setShowDates] = useState(true);
-    const [semesterStatus, setSemesterStatus] = useState(''); // 'active', 'past', 'future'
+    const [semesterStatus, setSemesterStatus] = useState('');
 
-    // Мок-дані для тестування
+    // Мок-дані
     const mockTimeSlots = [
         { _id: '1', order: 1, startTime: '08:30', endTime: '09:15' },
         { _id: '2', order: 2, startTime: '09:25', endTime: '10:10' },
@@ -54,7 +43,6 @@ const TeacherScheduleTab = () => {
         { _id: '5', name: 'П\'ятниця', nameShort: 'Пт', order: 5, isActive: true }
     ];
 
-    // Мок-розклад для демонстрації
     const mockScheduleData = [
         {
             _id: '1',
@@ -88,22 +76,19 @@ const TeacherScheduleTab = () => {
         }
     ];
 
-    // Отримання даних вчителя з localStorage
     useEffect(() => {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role === 'teacher') {
             setTeacherId(userInfo.userId);
             setDatabaseName(userInfo.databaseName);
             setTeacherName(userInfo.fullName || 'Викладач');
-            console.log('Дані вчителя:', userInfo);
         } else {
             setError('Доступ заборонено. Будь ласка, увійдіть як вчитель.');
             setLoading(false);
         }
     }, []);
 
-    // Функція для перевірки статусу семестру
-    const checkSemesterStatus = (semester) => {
+    const checkSemesterStatus = useCallback((semester) => {
         if (!semester || !semester.startDate || !semester.endDate) {
             return 'unknown';
         }
@@ -119,10 +104,9 @@ const TeacherScheduleTab = () => {
         } else {
             return 'active';
         }
-    };
+    }, []);
 
-    // Функція для отримання поточних дат тижня (тільки для активних семестрів)
-    const getWeekDates = () => {
+    const getWeekDates = useCallback(() => {
         if (semesterStatus !== 'active') {
             return {};
         }
@@ -156,17 +140,13 @@ const TeacherScheduleTab = () => {
         }
 
         return weekDates;
-    };
+    }, [semesterStatus]);
 
-    // Завантаження семестрів
-    const loadSemesters = async () => {
+    const loadSemesters = useCallback(async () => {
         try {
-            console.log('Завантаження семестрів з API...');
             const response = await axios.get(`/api/study-calendar/semesters`, {
                 params: { databaseName }
             });
-
-            console.log('Семестри отримано:', response.data);
 
             if (response.data && Array.isArray(response.data)) {
                 const sortedSemesters = response.data.sort((a, b) => {
@@ -180,10 +160,7 @@ const TeacherScheduleTab = () => {
 
                 setSemesters(sortedSemesters);
 
-                // Автоматично вибираємо семестр
                 let selectedSem = null;
-
-                // Спочатку шукаємо активний за датами
                 for (const semester of sortedSemesters) {
                     const status = checkSemesterStatus(semester);
                     if (status === 'active') {
@@ -192,7 +169,6 @@ const TeacherScheduleTab = () => {
                     }
                 }
 
-                // Якщо немає активного, беремо останній завершений
                 if (!selectedSem) {
                     for (const semester of sortedSemesters) {
                         const status = checkSemesterStatus(semester);
@@ -203,7 +179,6 @@ const TeacherScheduleTab = () => {
                     }
                 }
 
-                // Якщо все ще немає, беремо перший
                 if (!selectedSem && sortedSemesters.length > 0) {
                     selectedSem = sortedSemesters[0];
                 }
@@ -216,7 +191,6 @@ const TeacherScheduleTab = () => {
                     setShowDates(status === 'active');
                 }
             } else {
-                // Мок-семестри для тестування
                 const mockSemesters = [
                     { _id: '1', name: 'I. Осінньо-зимовий', year: '2024-2025', isActive: true, startDate: '2024-09-01', endDate: '2024-12-31' },
                     { _id: '2', name: 'II. Зимово-весняний', year: '2024-2025', isActive: false, startDate: '2025-01-10', endDate: '2025-05-31' }
@@ -258,10 +232,9 @@ const TeacherScheduleTab = () => {
             setSelectedSemester('1');
             setSelectedSemesterData(mockSemesters[0]);
         }
-    };
+    }, [databaseName, checkSemesterStatus]);
 
-    // Завантаження днів тижня
-    const loadDaysOfWeek = async () => {
+    const loadDaysOfWeek = useCallback(async () => {
         try {
             const response = await axios.get(`/api/days/active`, {
                 params: { databaseName }
@@ -284,14 +257,10 @@ const TeacherScheduleTab = () => {
             setDaysOfWeek(mockDaysOfWeek);
             setActiveDayId('1');
         }
-    };
+    }, [databaseName]);
 
-    // Завантаження часових слотів
-    const loadTimeSlots = async (dayId) => {
+    const loadTimeSlots = useCallback(async (dayId) => {
         try {
-            console.log('Завантаження часових слотів для дня:', dayId);
-
-            // Спроба завантажити з API
             const day = daysOfWeek.find(d => d._id === dayId);
             if (day) {
                 const response = await axios.get(`/api/time-slots`, {
@@ -311,28 +280,19 @@ const TeacherScheduleTab = () => {
             console.warn('Не вдалося завантажити часові слоти, використовуються мок-дані:', error.message);
         }
 
-        // Використання мок-даних
         setTimeSlots(mockTimeSlots);
-    };
+    }, [databaseName, daysOfWeek]);
 
-    // Завантаження розкладу викладача
-    const loadTeacherSchedule = async () => {
-        if (!selectedSemester || !teacherId) {
-            console.log('Очікування семестру та ID вчителя');
-            return;
-        }
+    const loadTeacherSchedule = useCallback(async () => {
+        if (!selectedSemester || !teacherId) return;
 
         try {
-            console.log('Завантаження розкладу для вчителя:', teacherId, 'семестр:', selectedSemester);
-
             const response = await axios.get(`/api/schedule/teacher/${teacherId}`, {
                 params: {
                     databaseName,
                     semester: selectedSemester
                 }
             });
-
-            console.log('Розклад отримано з API:', response.data);
 
             if (response.data && Array.isArray(response.data) && response.data.length > 0) {
                 setScheduleData(response.data);
@@ -344,9 +304,8 @@ const TeacherScheduleTab = () => {
             console.warn('Не вдалося завантажити розклад, використовуються мок-дані:', error.message);
             setScheduleData(mockScheduleData);
         }
-    };
+    }, [databaseName, selectedSemester, teacherId]);
 
-    // Обробник зміни семестру
     const handleSemesterChange = (semesterId) => {
         const selectedSem = semesters.find(s => s._id === semesterId);
         if (selectedSem) {
@@ -365,70 +324,55 @@ const TeacherScheduleTab = () => {
         }
     };
 
-    // Основний ефект для завантаження даних
+    const handleDayChange = (dayId) => {
+        setActiveDayId(dayId);
+    };
+
     useEffect(() => {
         const loadAllData = async () => {
-            if (!databaseName || !teacherId) {
-                console.log('Очікування databaseName та teacherId');
-                return;
-            }
+            if (!databaseName || !teacherId) return;
 
             setLoading(true);
             setError(null);
 
             try {
-                console.log('Початок завантаження всіх даних');
-
-                // Завантажуємо семестри
                 await loadSemesters();
-
-                // Завантажуємо дні тижня
                 await loadDaysOfWeek();
-
                 setLoading(false);
-                console.log('Дані успішно завантажено');
             } catch (err) {
-                console.error('Критична помилка завантаження даних:', err);
                 setError('Сталася помилка при завантаженні даних');
                 setLoading(false);
             }
         };
 
         loadAllData();
-    }, [databaseName, teacherId]);
+    }, [databaseName, teacherId, loadSemesters, loadDaysOfWeek]);
 
-    // Ефект для завантаження розкладу при зміні семестру
     useEffect(() => {
         if (selectedSemester && teacherId) {
-            console.log('Зміна семестру, завантаження розкладу...');
             loadTeacherSchedule();
         }
-    }, [selectedSemester]);
+    }, [selectedSemester, teacherId, loadTeacherSchedule]);
 
-    // Ефект для завантаження часових слотів при зміні активного дня
     useEffect(() => {
         if (activeDayId && daysOfWeek.length > 0) {
-            console.log('Зміна активного дня, завантаження часових слотів...');
             loadTimeSlots(activeDayId);
         }
-    }, [activeDayId, daysOfWeek]);
+    }, [activeDayId, daysOfWeek, loadTimeSlots]);
 
-    // Ефект для оновлення дат при зміні статусу семестру
     useEffect(() => {
         if (semesterStatus === 'active') {
             setCurrentWeekDates(getWeekDates());
         } else {
             setCurrentWeekDates({});
         }
-    }, [semesterStatus]);
+    }, [semesterStatus, getWeekDates]);
 
-    // Форматування часу
     const formatTime = (timeString) => {
         if (!timeString) return '';
         return timeString.slice(0, 5);
     };
 
-    // Отримання заняття для конкретного часового слоту та дня
     const getLessonForTimeSlot = (dayId, timeSlotId) => {
         return scheduleData.find(lesson =>
             lesson.dayOfWeek?._id === dayId &&
@@ -436,7 +380,6 @@ const TeacherScheduleTab = () => {
         );
     };
 
-    // Отримання назви підгрупи
     const getSubgroupLabel = (subgroup) => {
         switch (subgroup) {
             case 'all': return 'Вся група';
@@ -445,134 +388,6 @@ const TeacherScheduleTab = () => {
             case '3': return 'Підгр. 3';
             default: return subgroup;
         }
-    };
-
-    // Рендер заголовку таблиці з датою
-    const renderTableHeader = (day) => {
-        const weekDate = currentWeekDates[day.order - 1];
-
-        return (
-            <div className="d-flex align-items-center justify-content-between mb-3">
-                <h5 className="mb-0">
-                    <FaCalendarAlt className="me-2" />
-                    {day.name}
-                </h5>
-                {weekDate && showDates ? (
-                    <Badge bg="light" text="dark" className="fs-6">
-                        {weekDate.formatted}
-                    </Badge>
-                ) : semesterStatus === 'past' ? (
-                    <Badge bg="secondary" className="fs-6">
-                        <FaHistory className="me-1" /> Завершений семестр
-                    </Badge>
-                ) : semesterStatus === 'future' ? (
-                    <Badge bg="info" className="fs-6">
-                        <FaCalendarTimes className="me-1" /> Майбутній семестр
-                    </Badge>
-                ) : null}
-            </div>
-        );
-    };
-
-    // Рендер таблиці розкладу для конкретного дня
-    const renderScheduleTable = (day) => {
-        if (timeSlots.length === 0) {
-            return (
-                <Alert variant="info">
-                    <FaClock className="me-2" />
-                    Час уроків для цього дня не налаштовано
-                </Alert>
-            );
-        }
-
-        const hasLessons = scheduleData.some(lesson =>
-            lesson.dayOfWeek?._id === day._id ||
-            lesson.dayOfWeek?._id?.toString() === day._id
-        );
-
-        return (
-            <div className="table-responsive">
-                <Table striped bordered hover className="align-middle">
-                    <thead className="table-light">
-                        <tr>
-                            <th width="80">№</th>
-                            <th width="120">Час</th>
-                            <th>Предмет</th>
-                            <th>Група</th>
-                            <th width="150">Аудиторія</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {timeSlots.map((slot) => {
-                            const lesson = getLessonForTimeSlot(day._id, slot._id);
-
-                            return (
-                                <tr key={slot._id} className={lesson ? 'table-row-hover' : ''}>
-                                    <td className="text-center fw-bold">
-                                        {slot.order}
-                                    </td>
-                                    <td className="text-nowrap">
-                                        <div className="d-flex align-items-center">
-                                            <FaClock className="me-2 text-primary" />
-                                            {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {lesson ? (
-                                            <div className="d-flex align-items-center">
-                                                <FaBook className="me-2 text-success" />
-                                                <span className="fw-semibold">{lesson.subject}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted">—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {lesson ? (
-                                            <div>
-                                                <div className="d-flex align-items-center">
-                                                    <FaUserFriends className="me-2 text-secondary" />
-                                                    <span className="fw-medium">{lesson.group?.name}</span>
-                                                </div>
-                                                {lesson.subgroup && lesson.subgroup !== 'all' && (
-                                                    <Badge bg="info" className="ms-2 mt-1">
-                                                        {getSubgroupLabel(lesson.subgroup)}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted">—</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        {lesson?.classroom ? (
-                                            <div className="d-flex align-items-center">
-                                                <FaDoorOpen className="me-2 text-warning" />
-                                                <div>
-                                                    <div className="fw-medium">{lesson.classroom.name}</div>
-                                                    {lesson.classroom.type && (
-                                                        <small className="text-muted">({lesson.classroom.type})</small>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted">—</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </Table>
-
-                {!hasLessons && (
-                    <Alert variant="secondary" className="mt-3">
-                        <FaCalendarAlt className="me-2" />
-                        Немає занять на цей день
-                    </Alert>
-                )}
-            </div>
-        );
     };
 
     if (loading) {
@@ -595,210 +410,53 @@ const TeacherScheduleTab = () => {
 
     return (
         <Container fluid className="py-4">
-            {/* Заголовок та інформація про викладача */}
-            <Card className="mb-4 border-0 shadow-sm">
-                <Card.Body className="pb-2">
-                    <Row className="align-items-center">
-                        <Col md={6}>
-                            <h4 className="mb-1">
-                                <FaCalendarCheck className="me-2 text-primary" />
-                                Розклад занять
-                            </h4>
-                            <p className="text-muted mb-0">{teacherName}</p>
-                        </Col>
-                        <Col md={6}>
-                            <div className="d-flex justify-content-md-end align-items-center mt-2 mt-md-0">
-                                <div className="me-3">
-                                    <small className="text-muted d-block">Семестр</small>
-                                    <Form.Select
-                                        value={selectedSemester || ''}
-                                        onChange={(e) => handleSemesterChange(e.target.value)}
-                                        style={{ width: '280px' }}
-                                    >
-                                        <option value="">Оберіть семестр</option>
-                                        {semesters.map(semester => {
-                                            const status = checkSemesterStatus(semester);
-                                            return (
-                                                <option key={semester._id} value={semester._id}>
-                                                    {semester.name} {semester.year}
-                                                    {status === 'active' && ' (активний)'}
-                                                    {status === 'past' && ' (завершений)'}
-                                                    {status === 'future' && ' (майбутній)'}
-                                                </option>
-                                            );
-                                        })}
-                                    </Form.Select>
-                                </div>
-                                <Badge bg="light" text="dark" className="fs-6 p-2">
-                                    <FaFilter className="me-1" />
-                                    {scheduleData.length} заняття
-                                </Badge>
+            <TeacherScheduleHeader
+                teacherName={teacherName}
+                semesters={semesters}
+                selectedSemester={selectedSemester}
+                scheduleData={scheduleData}
+                onSemesterChange={(e) => handleSemesterChange(e.target.value)}
+                checkSemesterStatus={checkSemesterStatus}
+            />
+
+            <DaysOfWeekTabs
+                daysOfWeek={daysOfWeek}
+                currentWeekDates={currentWeekDates}
+                showDates={showDates}
+                activeDayId={activeDayId}
+                onDayChange={handleDayChange}
+            >
+                <Tab.Content>
+                    {daysOfWeek.map(day => (
+                        <Tab.Pane key={day._id} eventKey={day._id}>
+                            <div className="p-3">
+                                <DayScheduleTable
+                                    day={day}
+                                    timeSlots={timeSlots}
+                                    scheduleData={scheduleData}
+                                    getLessonForTimeSlot={getLessonForTimeSlot}
+                                    formatTime={formatTime}
+                                    getSubgroupLabel={getSubgroupLabel}
+                                    weekDate={currentWeekDates[day.order - 1]}
+                                    showDates={showDates}
+                                    semesterStatus={semesterStatus}
+                                />
                             </div>
-                        </Col>
-                    </Row>
-                </Card.Body>
-            </Card>
+                        </Tab.Pane>
+                    ))}
+                </Tab.Content>
+            </DaysOfWeekTabs>
 
-            {/* Вкладки з днями тижня */}
-            <Card className="border-0 shadow-sm">
-                <Card.Body className="p-0">
-                    <Tab.Container
-                        activeKey={activeDayId || daysOfWeek[0]?._id}
-                        onSelect={(key) => setActiveDayId(key)}
-                    >
-                        {/* Навігація по днях тижня */}
-                        <Card.Header className="bg-light border-bottom">
-                            <Nav variant="tabs" className="border-0">
-                                {daysOfWeek.map(day => {
-                                    const weekDate = currentWeekDates[day.order - 1];
-                                    return (
-                                        <Nav.Item key={day._id}>
-                                            <Nav.Link eventKey={day._id} className="text-center">
-                                                <div className="d-flex flex-column">
-                                                    <span className="fw-medium">{day.nameShort}</span>
-                                                    {weekDate && showDates ? (
-                                                        <small className="text-muted">{weekDate.short}</small>
-                                                    ) : (
-                                                        <small className="text-muted" style={{ visibility: 'hidden' }}>00.00</small>
-                                                    )}
-                                                </div>
-                                            </Nav.Link>
-                                        </Nav.Item>
-                                    );
-                                })}
-                            </Nav>
-                        </Card.Header>
+            <ScheduleInfoCards
+                scheduleData={scheduleData}
+                selectedSemesterData={selectedSemesterData}
+                semesterStatus={semesterStatus}
+                teacherName={teacherName}
+            />
 
-                        {/* Контент вкладок */}
-                        <Tab.Content>
-                            {daysOfWeek.map(day => (
-                                <Tab.Pane key={day._id} eventKey={day._id}>
-                                    <Card.Body>
-                                        {renderTableHeader(day)}
-                                        {renderScheduleTable(day)}
-                                    </Card.Body>
-                                </Tab.Pane>
-                            ))}
-                        </Tab.Content>
-                    </Tab.Container>
-                </Card.Body>
-            </Card>
-
-            {/* Інформаційний блок */}
-            <Row className="mt-4">
-                <Col md={6}>
-                    <Card className="border-0 bg-light">
-                        <Card.Body>
-                            <h6 className="mb-3">
-                                <FaCalendarAlt className="me-2" />
-                                Інформація про розклад
-                            </h6>
-                            <div className="small">
-                                <div className="mb-1">
-                                    <span className="text-muted">Загальна кількість занять: </span>
-                                    <strong>{scheduleData.length}</strong>
-                                </div>
-                                <div className="mb-1">
-                                    <span className="text-muted">Обраний семестр: </span>
-                                    <strong>
-                                        {selectedSemesterData?.name || 'Не обрано'}
-                                    </strong>
-                                </div>
-                                <div className="mb-1">
-                                    <span className="text-muted">Навчальний рік: </span>
-                                    <strong>
-                                        {selectedSemesterData?.year || 'Не обрано'}
-                                    </strong>
-                                </div>
-                                <div className="mb-1">
-                                    <span className="text-muted">Статус семестру: </span>
-                                    {semesterStatus === 'active' ? (
-                                        <Badge bg="success">Активний</Badge>
-                                    ) : semesterStatus === 'past' ? (
-                                        <Badge bg="secondary">Завершений</Badge>
-                                    ) : semesterStatus === 'future' ? (
-                                        <Badge bg="info">Майбутній</Badge>
-                                    ) : null}
-                                </div>
-                                <div>
-                                    <span className="text-muted">Викладач: </span>
-                                    <strong>{teacherName}</strong>
-                                </div>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-                <Col md={6}>
-                    <Card className="border-0 bg-light">
-                        <Card.Body>
-                            <h6 className="mb-3">
-                                <FaClock className="me-2" />
-                                Легенда
-                            </h6>
-                            <div className="small">
-                                <div className="d-flex align-items-center mb-2">
-                                    <FaBook className="me-2 text-success" />
-                                    <span> - Предмет</span>
-                                </div>
-                                <div className="d-flex align-items-center mb-2">
-                                    <FaUserFriends className="me-2 text-secondary" />
-                                    <span> - Група/Клас</span>
-                                </div>
-                                <div className="d-flex align-items-center mb-2">
-                                    <FaDoorOpen className="me-2 text-warning" />
-                                    <span> - Аудиторія</span>
-                                </div>
-                                <div className="d-flex align-items-center">
-                                    <Badge bg="info" className="me-2">Підгр. 1</Badge>
-                                    <span> - Позначення підгрупи</span>
-                                </div>
-                                {semesterStatus === 'past' && (
-                                    <div className="d-flex align-items-center mt-2">
-                                        <Badge bg="secondary" className="me-2">
-                                            <FaHistory />
-                                        </Badge>
-                                        <span> - Завершений семестр (дати не актуальні)</span>
-                                    </div>
-                                )}
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* Стилі */}
             <style jsx="true">{`
                 .table-row-hover:hover {
                     background-color: rgba(0, 123, 255, 0.05) !important;
-                }
-                .nav-tabs .nav-link {
-                    border: 1px solid #dee2e6;
-                    border-bottom: none;
-                    border-radius: 0.375rem 0.375rem 0 0;
-                    margin-right: 0.25rem;
-                    color: #495057;
-                }
-                .nav-tabs .nav-link.active {
-                    background-color: #fff;
-                    border-color: #dee2e6 #dee2e6 #fff;
-                    color: #0d6efd;
-                    font-weight: 600;
-                }
-                .nav-tabs .nav-link:hover {
-                    border-color: #e9ecef #e9ecef #dee2e6;
-                }
-                .card {
-                    border-radius: 0.75rem;
-                }
-                .table {
-                    border-radius: 0.5rem;
-                    overflow: hidden;
-                }
-                .table th {
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    font-size: 0.85rem;
-                    letter-spacing: 0.5px;
                 }
             `}</style>
         </Container>
