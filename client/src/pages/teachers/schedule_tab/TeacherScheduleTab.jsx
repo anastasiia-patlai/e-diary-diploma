@@ -23,6 +23,7 @@ const TeacherScheduleTab = () => {
     const [currentWeekDates, setCurrentWeekDates] = useState({});
     const [showDates, setShowDates] = useState(true);
     const [semesterStatus, setSemesterStatus] = useState('');
+    const [isMobile, setIsMobile] = useState(false);
 
     // Мок-дані
     const mockTimeSlots = [
@@ -75,6 +76,18 @@ const TeacherScheduleTab = () => {
             timeSlot: { _id: '3', order: 3 }
         }
     ];
+
+    // Додаємо ефект для визначення ширини екрана
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -417,6 +430,7 @@ const TeacherScheduleTab = () => {
                 scheduleData={scheduleData}
                 onSemesterChange={(e) => handleSemesterChange(e.target.value)}
                 checkSemesterStatus={checkSemesterStatus}
+                isMobile={isMobile}
             />
 
             <DaysOfWeekTabs
@@ -425,6 +439,7 @@ const TeacherScheduleTab = () => {
                 showDates={showDates}
                 activeDayId={activeDayId}
                 onDayChange={handleDayChange}
+                isMobile={isMobile}
             >
                 <Tab.Content>
                     {daysOfWeek.map(day => (
@@ -440,6 +455,7 @@ const TeacherScheduleTab = () => {
                                     weekDate={currentWeekDates[day.order - 1]}
                                     showDates={showDates}
                                     semesterStatus={semesterStatus}
+                                    isMobile={isMobile}
                                 />
                             </div>
                         </Tab.Pane>
@@ -452,11 +468,19 @@ const TeacherScheduleTab = () => {
                 selectedSemesterData={selectedSemesterData}
                 semesterStatus={semesterStatus}
                 teacherName={teacherName}
+                isMobile={isMobile}
             />
 
             <style jsx="true">{`
                 .table-row-hover:hover {
                     background-color: rgba(0, 123, 255, 0.05) !important;
+                }
+                
+                @media (max-width: 768px) {
+                    .container-fluid {
+                        padding-left: 12px !important;
+                        padding-right: 12px !important;
+                    }
                 }
             `}</style>
         </Container>
