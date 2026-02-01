@@ -29,7 +29,8 @@ import {
 // import TeacherStudents from "./students_tab/TeacherStudents";
 // import TeacherReports from "./reports_tab/TeacherReports";
 import TeacherInfo from "./teacher_info/TeacherInfo";
-import MyStudents from "./my_students/MyStudents";
+import MyStudents from "./my_students_tab/MyStudents";
+import TeacherScheduleTab from "./schedule_tab/TeacherScheduleTab";
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
@@ -168,34 +169,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 return userData ? <TeacherInfo userData={userData} isMobile={isMobile} /> : <div>Завантаження...</div>;
 
             case "Мій розклад":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Мій розклад</h3>
-                        <div style={{
-                            display: 'flex',
-                            gap: '20px',
-                            marginTop: '20px',
-                            flexDirection: isMobile ? 'column' : 'row'
-                        }}>
-                            <div style={{ flex: 1 }}>
-                                <h4>Розклад на тиждень</h4>
-                                {/* Тут буде компонент розкладу */}
-                            </div>
-                            <div style={{
-                                padding: '20px',
-                                backgroundColor: '#f8fafc',
-                                borderRadius: '10px',
-                                width: isMobile ? '100%' : '300px'
-                            }}>
-                                <h4>Найближчі уроки</h4>
-                                <ul style={{ paddingLeft: '20px' }}>
-                                    <li>Понеділок: 9А, 10Б</li>
-                                    <li>Вівторок: 9Б, 11А</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return (<TeacherScheduleTab />);
 
             case "Журнал":
                 return (
