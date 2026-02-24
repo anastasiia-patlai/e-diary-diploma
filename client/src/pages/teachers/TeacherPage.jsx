@@ -110,11 +110,8 @@ const TeacherPage = ({ onLogout, userFullName }) => {
         { name: "Відвідуваність", icon: <FaUserCheck /> },
         { name: "Домашні завдання", icon: <FaTasks /> },
         { name: "Мої учні", icon: <FaUsers /> },
-        { name: "Повідомлення", icon: <FaComments /> },
         { name: "Звіти", icon: <FaChartBar /> },
-        { name: "Матеріали", icon: <FaBookOpen /> },
         { name: "Контрольні роботи", icon: <FaClipboardList /> },
-        { name: "Налаштування предмету", icon: <FaCog /> }
     ];
 
     const toggleMenu = () => {
@@ -260,17 +257,6 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             case "Мої учні":
                 return <MyStudents databaseName={databaseName} />;
 
-
-            case "Повідомлення":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Повідомлення</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Система спілкування з учнями та батьками
-                        </p>
-                    </div>
-                );
-
             case "Звіти":
                 return (
                     <div>
@@ -299,26 +285,6 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                         <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Навчальні матеріали</h3>
                         <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
                             Бібліотека матеріалів для уроків
-                        </p>
-                    </div>
-                );
-
-            case "Контрольні роботи":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Контрольні роботи</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Планування та результати контрольних робіт
-                        </p>
-                    </div>
-                );
-
-            case "Налаштування предмету":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Налаштування предмету</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Налаштування критеріїв оцінювання, ваги оцінок тощо
                         </p>
                     </div>
                 );

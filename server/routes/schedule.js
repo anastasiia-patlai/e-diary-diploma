@@ -96,21 +96,22 @@ router.post('/', async (req, res) => {
             subgroup: subgroup,
             day: scheduleData.dayOfWeek,
             timeSlot: scheduleData.timeSlot,
+            semester: scheduleData.semester, // Додано логування семестру
             isFullGroup: isFullGroup,
             subject: scheduleData.subject
         });
 
-        // 1. ПЕРЕВІРКА КОНФЛІКТІВ З УРАХУВАННЯМ ПІДГРУП
+        // 1. ПЕРЕВІРКА КОНФЛІКТІВ З УРАХУВАННЯМ ПІДГРУП І СЕМЕСТРУ
         // Якщо це заняття для всієї групи
         if (isFullGroup) {
             console.log('Перевірка конфліктів для всієї групи...');
 
-            // Перевірити, чи є будь-яке заняття в цей час для цієї групи
-            // Якщо урок для всієї групи - не може бути НІ іншого уроку для всієї групи, НІ для підгруп
+            // Перевірити, чи є будь-яке заняття в цей час для цієї групи В ТОМУ Ж СЕМЕСТРІ
             const anyGroupConflict = await Schedule.findOne({
                 group: scheduleData.group,
                 dayOfWeek: scheduleData.dayOfWeek,
-                timeSlot: scheduleData.timeSlot
+                timeSlot: scheduleData.timeSlot,
+                semester: scheduleData.semester // Додано фільтр за семестром
                 // Шукаємо будь-яке заняття (і для всієї групи, і для підгруп)
             })
                 .populate('teacher', 'fullName')
@@ -144,12 +145,13 @@ router.post('/', async (req, res) => {
         else {
             console.log(`Перевірка конфліктів для підгрупи ${subgroup}...`);
 
-            // 1. Перевірити конфлікт з тією ж підгрупою
+            // 1. Перевірити конфлікт з тією ж підгрупою В ТОМУ Ж СЕМЕСТРІ
             const sameSubgroupConflict = await Schedule.findOne({
                 group: scheduleData.group,
                 subgroup: subgroup, // Саме ця підгрупа
                 dayOfWeek: scheduleData.dayOfWeek,
-                timeSlot: scheduleData.timeSlot
+                timeSlot: scheduleData.timeSlot,
+                semester: scheduleData.semester // Додано фільтр за семестром
             })
                 .populate('teacher', 'fullName')
                 .populate('timeSlot', 'order startTime endTime');
@@ -173,13 +175,13 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            // 2. Перевірити конфлікт з заняттям для всієї групи
-            // Якщо вся група вже має урок - підгрупа не може мати урок
+            // 2. Перевірити конфлікт з заняттям для всієї групи В ТОМУ Ж СЕМЕСТРІ
             const fullGroupConflict = await Schedule.findOne({
                 group: scheduleData.group,
                 subgroup: 'all', // Тільки заняття для всієї групи
                 dayOfWeek: scheduleData.dayOfWeek,
-                timeSlot: scheduleData.timeSlot
+                timeSlot: scheduleData.timeSlot,
+                semester: scheduleData.semester // Додано фільтр за семестром
             })
                 .populate('teacher', 'fullName')
                 .populate('timeSlot', 'order startTime endTime');
@@ -203,25 +205,15 @@ router.post('/', async (req, res) => {
             }
 
             // 3. РІЗНІ ПІДГРУПИ МОЖУТЬ МАТИ УРОКИ ОДНОЧАСНО - це дозволено
-            // Не перевіряємо конфлікти з іншими підгрупами
             console.log('Різні підгрупи можуть мати уроки одночасно - це дозволено');
-
-            // Перевіримо для інформації, чи є інші підгрупи в цей час
-            const otherSubgroups = await Schedule.find({
-                group: scheduleData.group,
-                dayOfWeek: scheduleData.dayOfWeek,
-                timeSlot: scheduleData.timeSlot,
-                subgroup: { $ne: 'all', $ne: subgroup } // Інші підгрупи
-            });
-
-            console.log(`Інші підгрупи в цей час: ${otherSubgroups.length} (це дозволено)`);
         }
 
-        // 2. Перевірка: Чи не зайнятий викладач в цей час
+        // 2. Перевірка: Чи не зайнятий викладач в цей час В ТОМУ Ж СЕМЕСТРІ
         const teacherConflict = await Schedule.findOne({
             teacher: scheduleData.teacher,
             dayOfWeek: scheduleData.dayOfWeek,
-            timeSlot: scheduleData.timeSlot
+            timeSlot: scheduleData.timeSlot,
+            semester: scheduleData.semester // Додано фільтр за семестром
         })
             .populate('group', 'name')
             .populate('timeSlot', 'order startTime endTime');
@@ -246,11 +238,12 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // 3. Перевірка: Чи не зайнята аудиторія в цей час
+        // 3. Перевірка: Чи не зайнята аудиторія в цей час В ТОМУ Ж СЕМЕСТРІ
         const classroomConflict = await Schedule.findOne({
             classroom: scheduleData.classroom,
             dayOfWeek: scheduleData.dayOfWeek,
-            timeSlot: scheduleData.timeSlot
+            timeSlot: scheduleData.timeSlot,
+            semester: scheduleData.semester // Додано фільтр за семестром
         })
             .populate('group', 'name')
             .populate('teacher', 'fullName')
@@ -278,10 +271,11 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // 4. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день
+        // 4. Перевірка: Чи не перевищує викладач максимальну кількість уроків на день В ТОМУ Ж СЕМЕСТРІ
         const teacherDaySchedule = await Schedule.find({
             teacher: scheduleData.teacher,
-            dayOfWeek: scheduleData.dayOfWeek
+            dayOfWeek: scheduleData.dayOfWeek,
+            semester: scheduleData.semester // Додано фільтр за семестром
         })
             .populate('timeSlot', 'order startTime endTime')
             .sort({ 'timeSlot.order': 1 });
@@ -304,10 +298,11 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // 5. Перевірка: Чи не перевищує група максимальну кількість уроків на день
+        // 5. Перевірка: Чи не перевищує група максимальну кількість уроків на день В ТОМУ Ж СЕМЕСТРІ
         const groupDaySchedule = await Schedule.find({
             group: scheduleData.group,
-            dayOfWeek: scheduleData.dayOfWeek
+            dayOfWeek: scheduleData.dayOfWeek,
+            semester: scheduleData.semester // Додано фільтр за семестром
         })
             .populate('timeSlot', 'order startTime endTime')
             .sort({ 'timeSlot.order': 1 });
@@ -442,22 +437,24 @@ router.put('/:id', async (req, res) => {
             delete updateData._id;
         }
 
-        // Перевірки на конфлікти при оновленні з урахуванням підгруп
+        // Перевірки на конфлікти при оновленні з урахуванням підгруп І СЕМЕСТРУ
         const group = updateData.group || existingSchedule.group;
         const dayOfWeek = updateData.dayOfWeek || existingSchedule.dayOfWeek;
         const timeSlot = updateData.timeSlot || existingSchedule.timeSlot;
         const teacher = updateData.teacher || existingSchedule.teacher;
         const classroom = updateData.classroom || existingSchedule.classroom;
+        const semester = updateData.semester || existingSchedule.semester; // Додано семестр
         const subgroup = updateData.subgroup || existingSchedule.subgroup || 'all';
         const isFullGroup = subgroup === 'all';
 
         // 1. Перевірка конфлікту для групи/підгрупи
         if (isFullGroup) {
-            // Перевірити, чи є будь-яке інше заняття в цей час для цієї групи
+            // Перевірити, чи є будь-яке інше заняття в цей час для цієї групи В ТОМУ Ж СЕМЕСТРІ
             const anyGroupConflict = await Schedule.findOne({
                 group: group,
                 dayOfWeek: dayOfWeek,
                 timeSlot: timeSlot,
+                semester: semester, // Додано фільтр за семестром
                 _id: { $ne: id }
             });
 
@@ -480,12 +477,13 @@ router.put('/:id', async (req, res) => {
                 });
             }
         } else {
-            // Перевірити конфлікт з тією ж підгрупою
+            // Перевірити конфлікт з тією ж підгрупою В ТОМУ Ж СЕМЕСТРІ
             const sameSubgroupConflict = await Schedule.findOne({
                 group: group,
                 subgroup: subgroup,
                 dayOfWeek: dayOfWeek,
                 timeSlot: timeSlot,
+                semester: semester, // Додано фільтр за семестром
                 _id: { $ne: id }
             });
 
@@ -503,12 +501,13 @@ router.put('/:id', async (req, res) => {
                 });
             }
 
-            // Перевірити конфлікт з заняттям для всієї групи
+            // Перевірити конфлікт з заняттям для всієї групи В ТОМУ Ж СЕМЕСТРІ
             const fullGroupConflict = await Schedule.findOne({
                 group: group,
                 subgroup: 'all',
                 dayOfWeek: dayOfWeek,
                 timeSlot: timeSlot,
+                semester: semester, // Додано фільтр за семестром
                 _id: { $ne: id }
             });
 
@@ -526,11 +525,12 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        // 2. Перевірка викладача
+        // 2. Перевірка викладача В ТОМУ Ж СЕМЕСТРІ
         const teacherConflict = await Schedule.findOne({
             teacher: teacher,
             dayOfWeek: dayOfWeek,
             timeSlot: timeSlot,
+            semester: semester, // Додано фільтр за семестром
             _id: { $ne: id }
         }).populate('group', 'name').populate('timeSlot', 'order startTime endTime');
 
@@ -555,11 +555,12 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        // 3. Перевірка аудиторії
+        // 3. Перевірка аудиторії В ТОМУ Ж СЕМЕСТРІ
         const classroomConflict = await Schedule.findOne({
             classroom: classroom,
             dayOfWeek: dayOfWeek,
             timeSlot: timeSlot,
+            semester: semester, // Додано фільтр за семестром
             _id: { $ne: id }
         }).populate('group', 'name').populate('teacher', 'fullName').populate('timeSlot', 'order startTime endTime');
 
@@ -585,10 +586,11 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        // 4. Перевірка ліміту уроків для викладача
+        // 4. Перевірка ліміту уроків для викладача В ТОМУ Ж СЕМЕСТРІ
         const teacherDaySchedule = await Schedule.find({
             teacher: teacher,
             dayOfWeek: dayOfWeek,
+            semester: semester, // Додано фільтр за семестром
             _id: { $ne: id }
         })
             .populate('timeSlot', 'order startTime endTime')
@@ -612,10 +614,11 @@ router.put('/:id', async (req, res) => {
             });
         }
 
-        // 5. Перевірка ліміту уроків для групи
+        // 5. Перевірка ліміту уроків для групи В ТОМУ Ж СЕМЕСТРІ
         const groupDaySchedule = await Schedule.find({
             group: group,
             dayOfWeek: dayOfWeek,
+            semester: semester, // Додано фільтр за семестром
             _id: { $ne: id }
         })
             .populate('timeSlot', 'order startTime endTime')
@@ -725,13 +728,20 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Перевірити доступність ресурсів з урахуванням підгруп
+// Перевірити доступність ресурсів з урахуванням підгруп І СЕМЕСТРУ
 router.post('/check-availability', async (req, res) => {
     try {
         const { databaseName, ...checkData } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        // Перевіряємо, чи вказано семестр
+        if (!checkData.semester) {
+            return res.status(400).json({
+                error: 'Не вказано семестр. Семестр обов\'язковий для перевірки доступності.'
+            });
         }
 
         const Schedule = getSchoolScheduleModel(databaseName);
@@ -743,11 +753,12 @@ router.post('/check-availability', async (req, res) => {
         // 1. Головна перевірка: конфлікти для групи/підгрупи
         if (checkData.group && checkData.dayOfWeek && checkData.timeSlot) {
             if (isFullGroup) {
-                // Для всієї групи: перевірити будь-яке заняття в цей час
+                // Для всієї групи: перевірити будь-яке заняття в цей час В ТОМУ Ж СЕМЕСТРІ
                 const query = {
                     group: checkData.group,
                     dayOfWeek: checkData.dayOfWeek,
-                    timeSlot: checkData.timeSlot
+                    timeSlot: checkData.timeSlot,
+                    semester: checkData.semester // Додано фільтр за семестром
                 };
 
                 if (checkData.excludeId) {
@@ -779,12 +790,13 @@ router.post('/check-availability', async (req, res) => {
             } else {
                 // Для підгрупи
 
-                // 1. Перевірити конфлікт з тією ж підгрупою
+                // 1. Перевірити конфлікт з тією ж підгрупою В ТОМУ Ж СЕМЕСТРІ
                 const sameSubgroupQuery = {
                     group: checkData.group,
                     subgroup: subgroup,
                     dayOfWeek: checkData.dayOfWeek,
-                    timeSlot: checkData.timeSlot
+                    timeSlot: checkData.timeSlot,
+                    semester: checkData.semester // Додано фільтр за семестром
                 };
 
                 if (checkData.excludeId) {
@@ -808,12 +820,13 @@ router.post('/check-availability', async (req, res) => {
                     });
                 }
 
-                // 2. Перевірити конфлікт з заняттям для всієї групи
+                // 2. Перевірити конфлікт з заняттям для всієї групи В ТОМУ Ж СЕМЕСТРІ
                 const fullGroupQuery = {
                     group: checkData.group,
                     subgroup: 'all',
                     dayOfWeek: checkData.dayOfWeek,
-                    timeSlot: checkData.timeSlot
+                    timeSlot: checkData.timeSlot,
+                    semester: checkData.semester // Додано фільтр за семестром
                 };
 
                 if (checkData.excludeId) {
@@ -836,18 +849,16 @@ router.post('/check-availability', async (req, res) => {
                         }
                     });
                 }
-
-                // 3. РІЗНІ ПІДГРУПИ МОЖУТЬ МАТИ УРОКИ ОДНОЧАСНО
-                // Не перевіряємо конфлікти з іншими підгрупами
             }
         }
 
-        // 2. Перевірка викладача
+        // 2. Перевірка викладача В ТОМУ Ж СЕМЕСТРІ
         if (checkData.teacher && checkData.dayOfWeek && checkData.timeSlot) {
             const query = {
                 teacher: checkData.teacher,
                 dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot
+                timeSlot: checkData.timeSlot,
+                semester: checkData.semester // Додано фільтр за семестром
             };
 
             if (checkData.excludeId) {
@@ -876,12 +887,13 @@ router.post('/check-availability', async (req, res) => {
             }
         }
 
-        // 3. Перевірка аудиторії
+        // 3. Перевірка аудиторії В ТОМУ Ж СЕМЕСТРІ
         if (checkData.classroom && checkData.dayOfWeek && checkData.timeSlot) {
             const query = {
                 classroom: checkData.classroom,
                 dayOfWeek: checkData.dayOfWeek,
-                timeSlot: checkData.timeSlot
+                timeSlot: checkData.timeSlot,
+                semester: checkData.semester // Додано фільтр за семестром
             };
 
             if (checkData.excludeId) {
@@ -910,11 +922,12 @@ router.post('/check-availability', async (req, res) => {
             }
         }
 
-        // 4. Перевірка ліміту уроків на день для групи
+        // 4. Перевірка ліміту уроків на день для групи В ТОМУ Ж СЕМЕСТРІ
         if (checkData.group && checkData.dayOfWeek) {
             const query = {
                 group: checkData.group,
-                dayOfWeek: checkData.dayOfWeek
+                dayOfWeek: checkData.dayOfWeek,
+                semester: checkData.semester // Додано фільтр за семестром
             };
 
             if (checkData.excludeId) {
@@ -936,11 +949,12 @@ router.post('/check-availability', async (req, res) => {
             }
         }
 
-        // 5. Перевірка ліміту уроків на день для викладача
+        // 5. Перевірка ліміту уроків на день для викладача В ТОМУ Ж СЕМЕСТРІ
         if (checkData.teacher && checkData.dayOfWeek) {
             const query = {
                 teacher: checkData.teacher,
-                dayOfWeek: checkData.dayOfWeek
+                dayOfWeek: checkData.dayOfWeek,
+                semester: checkData.semester // Додано фільтр за семестром
             };
 
             if (checkData.excludeId) {
@@ -974,6 +988,7 @@ router.post('/check-availability', async (req, res) => {
         });
     }
 });
+
 
 // Отримати розклад для групи
 router.get('/group/:groupId', async (req, res) => {
@@ -1058,11 +1073,11 @@ router.get('/teacher/:teacherId', async (req, res) => {
 // Перевірити, чи вільний часовий слот для групи/підгрупи
 router.get('/check-group-timeslot', async (req, res) => {
     try {
-        const { databaseName, groupId, subgroup, dayOfWeekId, timeSlotId, excludeScheduleId } = req.query;
+        const { databaseName, groupId, subgroup, dayOfWeekId, timeSlotId, semesterId, excludeScheduleId } = req.query;
 
-        if (!databaseName || !groupId || !dayOfWeekId || !timeSlotId) {
+        if (!databaseName || !groupId || !dayOfWeekId || !timeSlotId || !semesterId) {
             return res.status(400).json({
-                error: 'Необхідні параметри: databaseName, groupId, dayOfWeekId, timeSlotId'
+                error: 'Необхідні параметри: databaseName, groupId, dayOfWeekId, timeSlotId, semesterId'
             });
         }
 
@@ -1072,18 +1087,20 @@ router.get('/check-group-timeslot', async (req, res) => {
         let query;
 
         if (subgroupValue === 'all') {
-            // Перевірити будь-яке заняття для групи
-            query = {
-                group: groupId,
-                dayOfWeek: dayOfWeekId,
-                timeSlot: timeSlotId
-            };
-        } else {
-            // Перевірити конкретну підгрупу та всю групу
+            // Перевірити будь-яке заняття для групи В ТОМУ Ж СЕМЕСТРІ
             query = {
                 group: groupId,
                 dayOfWeek: dayOfWeekId,
                 timeSlot: timeSlotId,
+                semester: semesterId // Додано фільтр за семестром
+            };
+        } else {
+            // Перевірити конкретну підгрупу та всю групу В ТОМУ Ж СЕМЕСТРІ
+            query = {
+                group: groupId,
+                dayOfWeek: dayOfWeekId,
+                timeSlot: timeSlotId,
+                semester: semesterId, // Додано фільтр за семестром
                 $or: [
                     { subgroup: subgroupValue },
                     { subgroup: 'all' }
