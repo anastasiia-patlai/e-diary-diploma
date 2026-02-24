@@ -17,23 +17,21 @@ import {
     FaTimes,
     FaUsers,
     FaBookOpen,
-    FaClipboardList
+    FaClipboardList,
+    FaArrowLeft
 } from "react-icons/fa";
 
-// Імпортуйте ваші компоненти для вчителя (потрібно буде створити аналогічно Admin)
-// import TeacherMainPage from "./teacher_tab/TeacherMainPage";
-// import TeacherJournal from "./journal_tab/TeacherJournal";
-// import TeacherSchedule from "./schedule_tab/TeacherSchedule";
-// import TeacherAttendance from "./attendance_tab/TeacherAttendance";
-// import TeacherHomework from "./homework_tab/TeacherHomework";
-// import TeacherStudents from "./students_tab/TeacherStudents";
-// import TeacherReports from "./reports_tab/TeacherReports";
+// Імпорти
 import TeacherInfo from "./teacher_info/TeacherInfo";
 import MyStudents from "./my_students_tab/MyStudents";
 import TeacherScheduleTab from "./schedule_tab/TeacherScheduleTab";
+import JournalTab from './journal_tab/JournalTab';
+import GradebookPage from './journal_tab/GradebookPage'; // Імпортуємо компонент журналу
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
+    const [showGradebook, setShowGradebook] = useState(false); // Новий стан для відображення журналу
+    const [activeGradebookSchedule, setActiveGradebookSchedule] = useState(null);
     const [userData, setUserData] = useState(null);
     const [databaseName, setDatabaseName] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -101,6 +99,18 @@ const TeacherPage = ({ onLogout, userFullName }) => {
         }
     };
 
+    // Функція для відкриття журналу
+    const handleOpenGradebook = (scheduleId) => {
+        setActiveGradebookSchedule(scheduleId);
+        setShowGradebook(true); // Показуємо журнал
+    };
+
+    // Функція для закриття журналу
+    const handleCloseGradebook = () => {
+        setShowGradebook(false);
+        setActiveGradebookSchedule(null);
+    };
+
     // Розділи для вчителя
     const teacherSections = [
         { name: "Головна", icon: <FaHome /> },
@@ -120,12 +130,46 @@ const TeacherPage = ({ onLogout, userFullName }) => {
 
     const handleSectionClick = (sectionName) => {
         setActiveSection(sectionName);
+        setShowGradebook(false); // Закриваємо журнал при зміні розділу
+        setActiveGradebookSchedule(null);
         if (isMobile) {
             setIsMenuOpen(false);
         }
     };
 
     const renderTeacherContent = () => {
+        // Якщо показуємо журнал
+        if (showGradebook && activeGradebookSchedule) {
+            return (
+                <div>
+                    <button
+                        onClick={handleCloseGradebook}
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: 'rgba(105, 180, 185, 1)',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '8px 0',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <FaArrowLeft />
+                        Назад до списку журналів
+                    </button>
+                    <GradebookPage
+                        scheduleId={activeGradebookSchedule}
+                        databaseName={databaseName}
+                        isMobile={isMobile}
+                    />
+                </div>
+            );
+        }
+
+        // Інакше показуємо звичайний контент
         switch (activeSection) {
             case "Головна":
                 return (
@@ -166,46 +210,19 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 return userData ? <TeacherInfo userData={userData} isMobile={isMobile} /> : <div>Завантаження...</div>;
 
             case "Мій розклад":
-                return (<TeacherScheduleTab />);
+                return (
+                    <TeacherScheduleTab
+                        onOpenGradebook={handleOpenGradebook}
+                    />
+                );
 
             case "Журнал":
                 return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Журнал успішності</h3>
-                        <div style={{ marginTop: '20px' }}>
-                            <div style={{
-                                display: 'flex',
-                                gap: '10px',
-                                marginBottom: '20px',
-                                flexWrap: 'wrap'
-                            }}>
-                                <select style={{ padding: '8px', borderRadius: '6px' }}>
-                                    <option>Оберіть клас</option>
-                                    <option>9А</option>
-                                    <option>10Б</option>
-                                </select>
-                                <select style={{ padding: '8px', borderRadius: '6px' }}>
-                                    <option>Оберіть предмет</option>
-                                    <option>Математика</option>
-                                    <option>Фізика</option>
-                                </select>
-                                <input
-                                    type="date"
-                                    style={{ padding: '8px', borderRadius: '6px' }}
-                                />
-                            </div>
-                            <div style={{
-                                overflowX: 'auto',
-                                backgroundColor: 'white',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px'
-                            }}>
-                                <p style={{ padding: '20px', textAlign: 'center' }}>
-                                    Тут буде таблиця з оцінками учнів
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <JournalTab
+                        databaseName={databaseName}
+                        isMobile={isMobile}
+                        onOpenGradebook={handleOpenGradebook}
+                    />
                 );
 
             case "Відвідуваність":
@@ -279,16 +296,6 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     </div>
                 );
 
-            case "Матеріали":
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Навчальні матеріали</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Бібліотека матеріалів для уроків
-                        </p>
-                    </div>
-                );
-
             default:
                 return (
                     <div>
@@ -349,7 +356,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     textAlign: 'center',
                     flex: 1
                 }}>
-                    {activeSection} {userData?.subject ? `(${userData.subject})` : ''}
+                    {showGradebook ? 'Журнал' : activeSection} {userData?.subject ? `(${userData.subject})` : ''}
                 </h1>
 
                 <button
@@ -380,82 +387,85 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 flex: 1,
                 position: 'relative'
             }}>
-                <aside style={{
-                    width: isMobile ? (isMenuOpen ? '260px' : '0') : '270px',
-                    backgroundColor: '#f9fafb',
-                    borderRight: '1px solid #e5e7eb',
-                    padding: isMobile ? (isMenuOpen ? '18px' : '0') : '18px',
-                    transition: 'all 0.3s ease',
-                    overflow: 'hidden',
-                    position: isMobile ? 'absolute' : 'relative',
-                    left: isMobile ? '0' : 'auto',
-                    top: isMobile ? '0' : 'auto',
-                    height: isMobile ? '100%' : 'auto',
-                    zIndex: 90,
-                    boxShadow: isMobile && isMenuOpen ? '2px 0 8px rgba(0,0,0,0.1)' : 'none'
-                }}>
-                    {(!isMobile || isMenuOpen) && (
-                        <>
-                            <h2 style={{
-                                fontSize: isMobile ? '17px' : '20px',
-                                fontWeight: 'bold',
-                                marginBottom: '18px',
-                                color: '#374151'
-                            }}>
-                                Розділи вчителя
-                            </h2>
-                            <ul style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '10px',
-                                listStyle: 'none',
-                                padding: 0,
-                                margin: 0
-                            }}>
-                                {teacherSections.map((section) => (
-                                    <li key={section.name}>
-                                        <button
-                                            onClick={() => handleSectionClick(section.name)}
-                                            style={{
-                                                width: '100%',
-                                                textAlign: 'left',
-                                                padding: isMobile ? '12px 14px' : '10px 14px',
-                                                borderRadius: '10px',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                backgroundColor: activeSection === section.name ? 'rgba(105, 180, 185, 1)' : 'transparent',
-                                                color: activeSection === section.name ? 'white' : '#374151',
-                                                fontWeight: activeSection === section.name ? '600' : 'normal',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '12px',
-                                                fontSize: isMobile ? '15px' : '18px'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                if (activeSection !== section.name) {
-                                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
-                                                }
-                                            }}
-                                            onMouseOut={(e) => {
-                                                if (activeSection !== section.name) {
-                                                    e.target.style.backgroundColor = 'transparent';
-                                                }
-                                            }}
-                                        >
-                                            <span style={{ fontSize: isMobile ? '15px' : '18px' }}>
-                                                {section.icon}
-                                            </span>
-                                            {section.name}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    )}
-                </aside>
+                {/* Бічне меню - ховаємо коли показуємо журнал */}
+                {!showGradebook && (
+                    <aside style={{
+                        width: isMobile ? (isMenuOpen ? '260px' : '0') : '270px',
+                        backgroundColor: '#f9fafb',
+                        borderRight: '1px solid #e5e7eb',
+                        padding: isMobile ? (isMenuOpen ? '18px' : '0') : '18px',
+                        transition: 'all 0.3s ease',
+                        overflow: 'hidden',
+                        position: isMobile ? 'absolute' : 'relative',
+                        left: isMobile ? '0' : 'auto',
+                        top: isMobile ? '0' : 'auto',
+                        height: isMobile ? '100%' : 'auto',
+                        zIndex: 90,
+                        boxShadow: isMobile && isMenuOpen ? '2px 0 8px rgba(0,0,0,0.1)' : 'none'
+                    }}>
+                        {(!isMobile || isMenuOpen) && (
+                            <>
+                                <h2 style={{
+                                    fontSize: isMobile ? '17px' : '20px',
+                                    fontWeight: 'bold',
+                                    marginBottom: '18px',
+                                    color: '#374151'
+                                }}>
+                                    Розділи вчителя
+                                </h2>
+                                <ul style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '10px',
+                                    listStyle: 'none',
+                                    padding: 0,
+                                    margin: 0
+                                }}>
+                                    {teacherSections.map((section) => (
+                                        <li key={section.name}>
+                                            <button
+                                                onClick={() => handleSectionClick(section.name)}
+                                                style={{
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: isMobile ? '12px 14px' : '10px 14px',
+                                                    borderRadius: '10px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    backgroundColor: activeSection === section.name ? 'rgba(105, 180, 185, 1)' : 'transparent',
+                                                    color: activeSection === section.name ? 'white' : '#374151',
+                                                    fontWeight: activeSection === section.name ? '600' : 'normal',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px',
+                                                    fontSize: isMobile ? '15px' : '18px'
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    if (activeSection !== section.name) {
+                                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 0.1)';
+                                                    }
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    if (activeSection !== section.name) {
+                                                        e.target.style.backgroundColor = 'transparent';
+                                                    }
+                                                }}
+                                            >
+                                                <span style={{ fontSize: isMobile ? '15px' : '18px' }}>
+                                                    {section.icon}
+                                                </span>
+                                                {section.name}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+                    </aside>
+                )}
 
-                {isMobile && isMenuOpen && (
+                {isMobile && isMenuOpen && !showGradebook && (
                     <div
                         onClick={() => setIsMenuOpen(false)}
                         style={{

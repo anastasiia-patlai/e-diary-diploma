@@ -12,7 +12,8 @@ const DayScheduleTable = ({
     weekDate,
     showDates,
     semesterStatus,
-    isMobile = false
+    isMobile = false,
+    onOpenGradebook
 }) => {
     const hasLessons = scheduleData.some(lesson =>
         lesson.dayOfWeek?._id === day._id ||
@@ -130,6 +131,7 @@ const DayScheduleTable = ({
                                 <th width="160">Предмет</th>
                                 <th width="150">Група</th>
                                 <th width="170">Аудиторія</th>
+                                <th width="100">Журнал</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -203,6 +205,25 @@ const DayScheduleTable = ({
                                                         )}
                                                     </div>
                                                 </div>
+                                            ) : (
+                                                <span className="text-muted">—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {lesson ? (
+                                                <button
+                                                    onClick={() => onOpenGradebook(lesson._id)}
+                                                    style={{
+                                                        backgroundColor: 'transparent',
+                                                        border: '1px solid rgba(105, 180, 185, 1)',
+                                                        color: 'rgba(105, 180, 185, 1)',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Журнал
+                                                </button>
                                             ) : (
                                                 <span className="text-muted">—</span>
                                             )}

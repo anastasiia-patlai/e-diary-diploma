@@ -1137,4 +1137,62 @@ router.get('/check-group-timeslot', async (req, res) => {
     }
 });
 
+// Отримати один запис розкладу за ID - ДЛЯ ЖУРНАЛУ
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { databaseName } = req.query;
+
+        console.log('=== ЗАПИТ НА ОТРИМАННЯ РОЗКЛАДУ ===');
+        console.log('ID:', id);
+        console.log('databaseName:', databaseName);
+
+        if (!databaseName) {
+            console.log('ПОМИЛКА: Не вказано databaseName');
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        // Перевіряємо, чи існує функція getSchoolScheduleModel
+        if (typeof getSchoolScheduleModel !== 'function') {
+            console.log('ПОМИЛКА: getSchoolScheduleModel не є функцією');
+            return res.status(500).json({ error: 'Внутрішня помилка сервера' });
+        }
+
+        const Schedule = getSchoolScheduleModel(databaseName);
+        console.log('Schedule model отримано:', !!Schedule);
+
+        if (!Schedule) {
+            console.log('ПОМИЛКА: Schedule model не створено');
+            return res.status(500).json({ error: 'Не вдалося створити модель розкладу' });
+        }
+
+        console.log('Виконуємо пошук за ID:', id);
+        const schedule = await Schedule.findById(id)
+            .populate('teacher', 'fullName email position')
+            .populate('group', 'name category gradeLevel hasSubgroups subgroups')
+            .populate('classroom', 'name type')
+            .populate('dayOfWeek', 'name order')
+            .populate('timeSlot', 'order startTime endTime')
+            .populate('semester', 'name year');
+
+        console.log('Результат пошуку:', schedule ? 'Знайдено' : 'Не знайдено');
+
+        if (!schedule) {
+            console.log('ПОМИЛКА: Розклад не знайдено');
+            return res.status(404).json({ error: 'Розклад не знайдено' });
+        }
+
+        console.log('Успішно повертаємо розклад');
+        res.json(schedule);
+    } catch (error) {
+        console.error('!!! ПОМИЛКА В РОУТІ /:id !!!');
+        console.error('Назва помилки:', error.name);
+        console.error('Повідомлення:', error.message);
+        console.error('Стек:', error.stack);
+        res.status(500).json({
+            error: 'Помилка при отриманні розкладу',
+            details: error.message
+        });
+    }
+});
 module.exports = router;
