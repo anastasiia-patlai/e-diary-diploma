@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { getSchoolSemesterModel, getSchoolQuarterModel, getSchoolHolidayModel } = require('../config/databaseManager');
+const {
+    getSchoolSemesterModel,
+    getSchoolQuarterModel,
+    getSchoolHolidayModel,
+    getSchoolDBConnection
+} = require('../config/databaseManager');
 
 // ТЕСТОВИЙ РОУТ ДЛЯ ПЕРЕВІРКИ
 router.get('/test-semesters', async (req, res) => {
@@ -103,6 +108,7 @@ router.post('/semesters', async (req, res) => {
 router.put('/semesters/:id', async (req, res) => {
     try {
         const { name, year, startDate, endDate, isActive, databaseName } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -120,7 +126,7 @@ router.put('/semesters/:id', async (req, res) => {
 
         const Semester = getSchoolSemesterModel(databaseName);
         const semester = await Semester.findByIdAndUpdate(
-            req.params.id,
+            id,
             {
                 name,
                 year,
@@ -145,13 +151,14 @@ router.put('/semesters/:id', async (req, res) => {
 router.delete('/semesters/:id', async (req, res) => {
     try {
         const { databaseName } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
         const Semester = getSchoolSemesterModel(databaseName);
-        const semester = await Semester.findByIdAndDelete(req.params.id);
+        const semester = await Semester.findByIdAndDelete(id);
 
         if (!semester) {
             return res.status(404).json({ error: 'Семестр не знайдено' });
@@ -226,8 +233,6 @@ router.get('/quarters', async (req, res) => {
         }
 
         const Quarter = getSchoolQuarterModel(databaseName);
-        const Semester = getSchoolSemesterModel(databaseName);
-
         const quarters = await Quarter.find()
             .populate('semester')
             .sort({ startDate: 1 });
@@ -247,7 +252,6 @@ router.post('/quarters', async (req, res) => {
         }
 
         const Quarter = getSchoolQuarterModel(databaseName);
-        const Semester = getSchoolSemesterModel(databaseName);
 
         const quarter = new Quarter(quarterData);
         await quarter.save();
@@ -262,19 +266,23 @@ router.post('/quarters', async (req, res) => {
 router.put('/quarters/:id', async (req, res) => {
     try {
         const { databaseName, ...updateData } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
         const Quarter = getSchoolQuarterModel(databaseName);
-        const Semester = getSchoolSemesterModel(databaseName);
 
         const quarter = await Quarter.findByIdAndUpdate(
-            req.params.id,
+            id,
             updateData,
             { new: true }
         ).populate('semester');
+
+        if (!quarter) {
+            return res.status(404).json({ error: 'Чверть не знайдено' });
+        }
 
         res.json(quarter);
     } catch (err) {
@@ -286,13 +294,14 @@ router.put('/quarters/:id', async (req, res) => {
 router.delete('/quarters/:id', async (req, res) => {
     try {
         const { databaseName } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
         const Quarter = getSchoolQuarterModel(databaseName);
-        await Quarter.findByIdAndDelete(req.params.id);
+        await Quarter.findByIdAndDelete(id);
         res.json({ message: 'Чверть видалено' });
     } catch (err) {
         console.error('Помилка видалення чверті:', err);
@@ -310,9 +319,6 @@ router.get('/holidays', async (req, res) => {
         }
 
         const Holiday = getSchoolHolidayModel(databaseName);
-        const Quarter = getSchoolQuarterModel(databaseName);
-        const Semester = getSchoolSemesterModel(databaseName);
-
         const holidays = await Holiday.find()
             .populate({
                 path: 'quarter',
@@ -338,7 +344,6 @@ router.post('/holidays', async (req, res) => {
         }
 
         const Holiday = getSchoolHolidayModel(databaseName);
-        const Quarter = getSchoolQuarterModel(databaseName);
 
         const holiday = new Holiday(holidayData);
         await holiday.save();
@@ -353,19 +358,23 @@ router.post('/holidays', async (req, res) => {
 router.put('/holidays/:id', async (req, res) => {
     try {
         const { databaseName, ...updateData } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
         const Holiday = getSchoolHolidayModel(databaseName);
-        const Quarter = getSchoolQuarterModel(databaseName);
 
         const holiday = await Holiday.findByIdAndUpdate(
-            req.params.id,
+            id,
             updateData,
             { new: true }
         ).populate('quarter');
+
+        if (!holiday) {
+            return res.status(404).json({ error: 'Канікули не знайдено' });
+        }
 
         res.json(holiday);
     } catch (err) {
@@ -377,13 +386,14 @@ router.put('/holidays/:id', async (req, res) => {
 router.delete('/holidays/:id', async (req, res) => {
     try {
         const { databaseName } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
         const Holiday = getSchoolHolidayModel(databaseName);
-        await Holiday.findByIdAndDelete(req.params.id);
+        await Holiday.findByIdAndDelete(id);
         res.json({ message: 'Канікули видалено' });
     } catch (err) {
         console.error('Помилка видалення канікул:', err);

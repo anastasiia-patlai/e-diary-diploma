@@ -1,7 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const { getSchoolScheduleModel, getSchoolGroupModel } = require('../config/databaseManager');
+const {
+    getSchoolScheduleModel,
+    getSchoolGroupModel,
+    getSchoolDBConnection
+} = require('../config/databaseManager');
 
 // Мідлвар для логування
 router.use((req, res, next) => {
@@ -1195,4 +1199,5 @@ router.get('/:id', async (req, res) => {
         });
     }
 });
+
 module.exports = router;

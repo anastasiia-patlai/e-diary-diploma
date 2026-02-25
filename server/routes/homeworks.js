@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getSchoolConnection } = require('../config/databaseManager'); // ДОДАНО ЦЕЙ РЯДОК
+const { getSchoolDBConnection } = require('../config/databaseManager');
 
 // Отримати всі ДЗ для уроку
 router.get('/schedule/:scheduleId', async (req, res) => {
@@ -16,7 +16,7 @@ router.get('/schedule/:scheduleId', async (req, res) => {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
-        const connection = getSchoolConnection(databaseName);
+        const connection = getSchoolDBConnection(databaseName);
         const Homework = require('../models/Homework')(connection);
 
         const homeworks = await Homework.find({ schedule: scheduleId });
@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
 
         console.log('Creating homework:', { databaseName, schedule, date, text });
 
-        const connection = getSchoolConnection(databaseName);
+        const connection = getSchoolDBConnection(databaseName);
         const Homework = require('../models/Homework')(connection);
 
         // Перевірка чи існує вже ДЗ
@@ -61,16 +61,17 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { databaseName, text } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
-        const connection = getSchoolConnection(databaseName);
+        const connection = getSchoolDBConnection(databaseName);
         const Homework = require('../models/Homework')(connection);
 
         const homework = await Homework.findByIdAndUpdate(
-            req.params.id,
+            id,
             { text },
             { new: true, runValidators: true }
         );
@@ -90,15 +91,16 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { databaseName } = req.body;
+        const { id } = req.params;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
         }
 
-        const connection = getSchoolConnection(databaseName);
+        const connection = getSchoolDBConnection(databaseName);
         const Homework = require('../models/Homework')(connection);
 
-        const homework = await Homework.findByIdAndDelete(req.params.id);
+        const homework = await Homework.findByIdAndDelete(id);
         if (!homework) {
             return res.status(404).json({ error: 'ДЗ не знайдено' });
         }

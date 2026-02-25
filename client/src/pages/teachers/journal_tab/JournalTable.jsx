@@ -22,6 +22,12 @@ const JournalTable = ({
         );
     }
 
+    console.log('JournalTable рендериться з даними:', {
+        studentsCount: students.length,
+        datesCount: dates.length,
+        firstStudent: students[0]?._id
+    });
+
     return (
         <div style={{
             backgroundColor: 'white',
@@ -95,10 +101,19 @@ const JournalTable = ({
                                 boxShadow: '2px 0 0 #e5e7eb',
                                 zIndex: 1
                             }}>
-                                {student.fullName}
+                                {student.fullName || student.name || 'Без імені'}
                             </td>
                             {dates.map((date, colIndex) => {
                                 const grade = getGradeForStudentAndDate(student._id, date);
+
+                                // Логування для першого студента і першої дати (для діагностики)
+                                if (rowIndex === 0 && colIndex === 0) {
+                                    console.log('Перевірка оцінки:', {
+                                        studentId: student._id,
+                                        date: date.fullDate,
+                                        gradeFound: grade
+                                    });
+                                }
 
                                 // Якщо це канікули - відображаємо неактивну клітинку
                                 if (date.isHoliday) {

@@ -44,6 +44,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     }, [databaseName]);
 
+    // Логування змін grades для діагностики
+    useEffect(() => {
+        console.log('Стан grades оновлено:', grades);
+    }, [grades]);
+
     const loadJournalData = async () => {
         setLoading(true);
         try {
@@ -118,6 +123,17 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 });
                 console.log('Відповідь від /api/grades/schedule/:', gradesResponse.data);
                 console.log('Знайдено оцінок:', gradesResponse.data?.length || 0);
+
+                // Детальне логування завантажених оцінок
+                if (gradesResponse.data && gradesResponse.data.length > 0) {
+                    console.log('Деталі оцінок:', gradesResponse.data.map(g => ({
+                        id: g._id,
+                        student: g.student?._id || g.student,
+                        value: g.value,
+                        date: g.date
+                    })));
+                }
+
                 setGrades(gradesResponse.data || []);
             } catch (error) {
                 console.error('Помилка при завантаженні оцінок:', error.message);
@@ -317,7 +333,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
 
         console.log(`Згенеровано ${dates.length} дат для місяця (з урахуванням семестру та канікул)`);
-        console.log('Дата першого дня після канікул:', dates.find(d => !d.isHoliday)?.fullDate);
         setDates(dates);
     };
 
@@ -368,9 +383,25 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             return;
         }
 
-        const existingGrade = grades.find(
-            g => g.student === studentId && g.date.split('T')[0] === date.fullDate
-        );
+        // Пошук існуючої оцінки з правильною обробкою форматів
+        const existingGrade = grades.find(g => {
+            // Перевіряємо studentId (може бути об'єктом або рядком)
+            const studentMatch = g.student === studentId || g.student?._id === studentId;
+
+            // Нормалізуємо дату
+            let gradeDate;
+            if (g.date instanceof Date) {
+                gradeDate = g.date.toISOString().split('T')[0];
+            } else if (typeof g.date === 'string') {
+                gradeDate = g.date.split('T')[0];
+            } else {
+                gradeDate = String(g.date);
+            }
+
+            const dateMatch = gradeDate === date.fullDate;
+
+            return studentMatch && dateMatch;
+        });
 
         console.log('Існуюча оцінка:', existingGrade);
 
@@ -381,11 +412,26 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     const handleSaveGrade = async (gradeData) => {
         try {
+            // Перевіряємо наявність всіх необхідних даних
+            if (!selectedCell || !selectedCell.studentId || !selectedCell.date) {
+                alert('Відсутні дані для збереження оцінки');
+                return;
+            }
+
+            if (!gradeData.value) {
+                alert('Виберіть оцінку');
+                return;
+            }
+
             // Перевіряємо, чи не припадає дата на канікули
+            const targetDate = new Date(selectedCell.date.fullDate);
+            targetDate.setHours(0, 0, 0, 0);
+
             const isHoliday = holidays.some(holiday => {
                 const holidayStart = new Date(holiday.startDate);
                 const holidayEnd = new Date(holiday.endDate);
-                const targetDate = new Date(selectedCell.date.fullDate);
+                holidayStart.setHours(0, 0, 0, 0);
+                holidayEnd.setHours(23, 59, 59, 999);
                 return targetDate >= holidayStart && targetDate <= holidayEnd;
             });
 
@@ -397,36 +443,70 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             // Перевіряємо, чи дата в межах семестру
             const semesterStart = new Date(selectedSemester.startDate);
             const semesterEnd = new Date(selectedSemester.endDate);
-            const targetDate = new Date(selectedCell.date.fullDate);
+            semesterStart.setHours(0, 0, 0, 0);
+            semesterEnd.setHours(23, 59, 59, 999);
 
             if (targetDate < semesterStart || targetDate > semesterEnd) {
                 alert('Дата знаходиться поза межами вибраного семестру');
                 return;
             }
 
+            // Форматуємо дату в потрібний формат (YYYY-MM-DD)
+            const formattedDate = selectedCell.date.fullDate;
+
+            const gradePayload = {
+                value: gradeData.value,
+                databaseName,
+                schedule: scheduleId,
+                student: selectedCell.studentId,
+                date: formattedDate
+            };
+
+            console.log('Відправка даних для збереження оцінки:', gradePayload);
+
+            let response;
             if (selectedGrade) {
                 // Оновлення
-                const response = await axios.put(`/api/grades/${selectedGrade._id}`, {
-                    value: gradeData.value,
-                    databaseName
-                });
-                setGrades(grades.map(g => g._id === selectedGrade._id ? response.data : g));
+                response = await axios.put(`/api/grades/${selectedGrade._id}`, gradePayload);
+                console.log('Відповідь від сервера (оновлення):', response.data);
+
+                // Оновлюємо стан використовуючи функціональне оновлення
+                setGrades(prevGrades =>
+                    prevGrades.map(g => g._id === selectedGrade._id ? response.data : g)
+                );
             } else {
                 // Створення
-                const response = await axios.post('/api/grades', {
-                    value: gradeData.value,
-                    databaseName,
-                    schedule: scheduleId,
-                    student: selectedCell.studentId,
-                    date: selectedCell.date.fullDate
-                });
-                setGrades([...grades, response.data]);
+                response = await axios.post('/api/grades', gradePayload);
+                console.log('Відповідь від сервера (створення):', response.data);
+
+                // Додаємо нову оцінку до стану
+                setGrades(prevGrades => [...prevGrades, response.data]);
             }
+
+            // Закриваємо модальне вікно
             setShowGradeModal(false);
             setSelectedCell(null);
+            setSelectedGrade(null);
+
         } catch (error) {
             console.error('Помилка збереження оцінки:', error);
-            alert('Помилка при збереженні оцінки');
+
+            // Виводимо детальну інформацію про помилку
+            if (error.response) {
+                console.error('Статус помилки:', error.response.status);
+                console.error('Дані помилки:', error.response.data);
+
+                const errorMessage = error.response.data?.error ||
+                    error.response.data?.message ||
+                    'Помилка при збереженні оцінки';
+                alert(`Помилка: ${errorMessage}`);
+            } else if (error.request) {
+                console.error('Немає відповіді від сервера:', error.request);
+                alert('Сервер не відповідає. Перевірте з\'єднання.');
+            } else {
+                console.error('Помилка запиту:', error.message);
+                alert('Помилка при відправці запиту');
+            }
         }
     };
 
@@ -437,19 +517,48 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             await axios.delete(`/api/grades/${selectedGrade._id}`, {
                 data: { databaseName }
             });
-            setGrades(grades.filter(g => g._id !== selectedGrade._id));
+
+            // Видаляємо оцінку зі стану
+            setGrades(prevGrades => prevGrades.filter(g => g._id !== selectedGrade._id));
+
             setShowGradeModal(false);
             setSelectedCell(null);
+            setSelectedGrade(null);
         } catch (error) {
             console.error('Помилка видалення оцінки:', error);
+            alert('Помилка при видаленні оцінки');
         }
     };
 
     const getGradeForStudentAndDate = (studentId, date) => {
-        const grade = grades.find(
-            g => g.student === studentId && g.date.split('T')[0] === date.fullDate
-        );
-        return grade?.value;
+        if (!grades || !Array.isArray(grades) || grades.length === 0) {
+            return null;
+        }
+
+        // Нормалізуємо цільову дату
+        const targetDate = date.fullDate || date;
+
+        // Шукаємо оцінку
+        const grade = grades.find(g => {
+            // Перевіряємо studentId (може бути об'єктом або рядком)
+            const studentMatch = g.student === studentId || g.student?._id === studentId;
+
+            // Нормалізуємо дату оцінки
+            let gradeDate;
+            if (g.date instanceof Date) {
+                gradeDate = g.date.toISOString().split('T')[0];
+            } else if (typeof g.date === 'string') {
+                gradeDate = g.date.split('T')[0];
+            } else {
+                gradeDate = String(g.date);
+            }
+
+            const dateMatch = gradeDate === targetDate;
+
+            return studentMatch && dateMatch;
+        });
+
+        return grade?.value || null;
     };
 
     if (loading || loadingSemesters) {
@@ -544,7 +653,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 </div>
             )}
 
-            {/* Навігація по місяцях (тільки в межах семестру) */}
+            {/* Навігація по місяцях */}
             {availableMonths.length > 0 && (
                 <div style={{
                     display: 'flex',
@@ -576,11 +685,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                             ) === 0 ? '#d1d5db' : '#6b7280',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            opacity: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === 0 ? 0.5 : 1
+                            gap: '4px'
                         }}
                     >
                         <FaChevronLeft />
@@ -658,11 +763,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                             ) === availableMonths.length - 1 ? '#d1d5db' : '#6b7280',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            opacity: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === availableMonths.length - 1 ? 0.5 : 1
+                            gap: '4px'
                         }}
                     >
                         {!isMobile && 'Наступний'}
