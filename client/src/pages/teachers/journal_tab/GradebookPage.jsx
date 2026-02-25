@@ -3,8 +3,7 @@ import axios from 'axios';
 import JournalHeader from './JournalHeader';
 import JournalTable from './JournalTable';
 import GradeModal from './GradeModal';
-import HomeworkModal from './HomeworkModal';
-import { FaBook, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [loading, setLoading] = useState(true);
@@ -12,17 +11,20 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [currentLesson, setCurrentLesson] = useState(null);
     const [students, setStudents] = useState([]);
     const [grades, setGrades] = useState([]);
-    const [homeworks, setHomeworks] = useState([]);
     const [dates, setDates] = useState([]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [availableMonths, setAvailableMonths] = useState([]);
 
-    // Стан модальних вікон
+    // Стан модального вікна
     const [showGradeModal, setShowGradeModal] = useState(false);
-    const [showHomeworkModal, setShowHomeworkModal] = useState(false);
     const [selectedCell, setSelectedCell] = useState(null);
     const [selectedGrade, setSelectedGrade] = useState(null);
-    const [selectedHomework, setSelectedHomework] = useState(null);
+
+    // Стан для семестрів та канікул
+    const [semesters, setSemesters] = useState([]);
+    const [selectedSemester, setSelectedSemester] = useState(null);
+    const [holidays, setHolidays] = useState([]);
+    const [loadingSemesters, setLoadingSemesters] = useState(true);
 
     useEffect(() => {
         if (scheduleId && databaseName) {
@@ -31,10 +33,16 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     }, [scheduleId, databaseName]);
 
     useEffect(() => {
-        if (currentLesson) {
+        if (currentLesson && selectedSemester) {
             generateDatesForMonth(currentMonth);
         }
-    }, [currentMonth, currentLesson]);
+    }, [currentMonth, currentLesson, selectedSemester, holidays]);
+
+    useEffect(() => {
+        if (databaseName) {
+            loadSemesters();
+        }
+    }, [databaseName]);
 
     const loadJournalData = async () => {
         setLoading(true);
@@ -67,15 +75,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     });
 
                     console.log('Відповідь від /api/groups/:', studentsResponse.data);
-                    console.log('Чи є studentsResponse.data.students?', studentsResponse.data.students ? 'Так' : 'Ні');
-                    console.log('Кількість студентів в групі:', studentsResponse.data.students?.length || 0);
-
-                    if (studentsResponse.data.subgroups) {
-                        console.log('Підгрупи:', studentsResponse.data.subgroups.map(sg => ({
-                            order: sg.order,
-                            studentsCount: sg.students?.length || 0
-                        })));
-                    }
 
                     let studentsList = [];
                     if (lessonResponse.data.subgroup && lessonResponse.data.subgroup !== 'all') {
@@ -102,17 +101,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     }
 
                     console.log('Кінцевий список студентів:', studentsList);
-                    if (studentsList.length > 0) {
-                        console.log('Перший студент:', studentsList[0]);
-                    }
-
                     setStudents(studentsList);
 
                 } catch (error) {
-                    console.error('Помилка при завантаженні студентів:');
-                    console.error('Статус:', error.response?.status);
-                    console.error('Дані:', error.response?.data);
-                    console.error('Повідомлення:', error.message);
+                    console.error('Помилка при завантаженні студентів:', error.message);
                 }
             } else {
                 console.log('Немає group._id в даних уроку');
@@ -131,60 +123,122 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 console.error('Помилка при завантаженні оцінок:', error.message);
             }
 
-            // Завантаження домашніх завдань
-            console.log('4. Завантаження домашніх завдань...');
-            try {
-                const homeworksResponse = await axios.get(`/api/homeworks/schedule/${scheduleId}`, {
-                    params: { databaseName }
-                });
-                console.log('Відповідь від /api/homeworks/schedule/:', homeworksResponse.data);
-                console.log('Знайдено ДЗ:', homeworksResponse.data?.length || 0);
-                setHomeworks(homeworksResponse.data || []);
-            } catch (error) {
-                console.error('Помилка при завантаженні ДЗ:', error.message);
-            }
-
-            // Генерація доступних місяців (наприклад, 6 місяців)
-            generateAvailableMonths();
-
         } catch (error) {
             console.error('!!! КРИТИЧНА ПОМИЛКА !!!');
             console.error('Статус:', error.response?.status);
             console.error('Дані:', error.response?.data);
             console.error('Повідомлення:', error.message);
-            console.error('Повний об\'єкт помилки:', error);
             setError(error.response?.data?.error || 'Не вдалося завантажити дані журналу');
         } finally {
             setLoading(false);
             console.log('=== ЗАВЕРШЕННЯ ЗАВАНТАЖЕННЯ ===');
-            console.log('Фінальний стан:');
-            console.log('- students:', students.length);
-            console.log('- grades:', grades.length);
-            console.log('- homeworks:', homeworks.length);
-            console.log('- dates:', dates.length);
         }
     };
 
-    const generateAvailableMonths = () => {
-        const months = [];
-        const today = new Date();
-
-        // Генеруємо 6 місяців (поточний + 5 вперед)
-        for (let i = 0; i < 6; i++) {
-            const date = new Date(today);
-            date.setMonth(today.getMonth() + i);
-            months.push({
-                value: i,
-                label: date.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }),
-                date: date
+    const loadSemesters = async () => {
+        setLoadingSemesters(true);
+        try {
+            const response = await axios.get('/api/study-calendar/semesters', {
+                params: { databaseName }
             });
+
+            console.log('Завантажені семестри:', response.data);
+            setSemesters(response.data);
+
+            // Знаходимо активний семестр або вибираємо перший
+            const activeSemester = response.data.find(s => s.isActive) || response.data[0];
+            if (activeSemester) {
+                setSelectedSemester(activeSemester);
+                // Завантажуємо канікули для вибраного семестру
+                await loadHolidays(activeSemester._id);
+                // Генеруємо доступні місяці на основі семестру
+                generateAvailableMonthsForSemester(activeSemester);
+            }
+        } catch (error) {
+            console.error('Помилка завантаження семестрів:', error);
+        } finally {
+            setLoadingSemesters(false);
         }
+    };
+
+    const loadHolidays = async (semesterId) => {
+        try {
+            const response = await axios.get('/api/study-calendar/holidays', {
+                params: { databaseName }
+            });
+
+            console.log('Всі канікули з API:', response.data);
+
+            // Фільтруємо канікули, що належать до чвертей вибраного семестру
+            const semesterHolidays = response.data.filter(holiday => {
+                const belongsToSemester = holiday.quarter?.semester?._id === semesterId;
+                if (belongsToSemester) {
+                    console.log('Канікули в семестрі:', {
+                        name: holiday.name,
+                        start: holiday.startDate,
+                        end: holiday.endDate,
+                        type: holiday.type
+                    });
+                }
+                return belongsToSemester;
+            });
+
+            console.log('Канікули для семестру після фільтрації:', semesterHolidays);
+            setHolidays(semesterHolidays);
+        } catch (error) {
+            console.error('Помилка завантаження канікул:', error);
+        }
+    };
+
+    const handleSemesterChange = async (semesterId) => {
+        const semester = semesters.find(s => s._id === semesterId);
+        setSelectedSemester(semester);
+        await loadHolidays(semesterId);
+
+        // Генеруємо доступні місяці для нового семестру
+        generateAvailableMonthsForSemester(semester);
+
+        // Встановлюємо поточний місяць на перший місяць семестру
+        const semesterStart = new Date(semester.startDate);
+        setCurrentMonth(semesterStart);
+    };
+
+    const generateAvailableMonthsForSemester = (semester) => {
+        const months = [];
+        const startDate = new Date(semester.startDate);
+        const endDate = new Date(semester.endDate);
+
+        // Визначаємо перший і останній місяць семестру
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth();
+        const endYear = endDate.getFullYear();
+        const endMonth = endDate.getMonth();
+
+        // Генеруємо всі місяці від початку до кінця семестру
+        let currentDate = new Date(startYear, startMonth, 1);
+        while (currentDate <= endDate) {
+            months.push({
+                value: months.length,
+                label: currentDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }),
+                date: new Date(currentDate)
+            });
+
+            // Переходимо до наступного місяця
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+
+        console.log('Згенеровано місяці для семестру:', months);
         setAvailableMonths(months);
+
+        // Встановлюємо поточний місяць на перший місяць семестру, якщо він ще не встановлений
+        if (months.length > 0) {
+            setCurrentMonth(months[0].date);
+        }
     };
 
     const generateDatesForMonth = (monthDate) => {
-        if (!currentLesson?.dayOfWeek?.order) {
-            console.log('Немає інформації про день тижня');
+        if (!currentLesson?.dayOfWeek?.order || !selectedSemester) {
+            console.log('Немає інформації про день тижня або семестр');
             return;
         }
 
@@ -201,6 +255,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
         console.log('Генерація дат для місяця:', monthDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }));
         console.log('День тижня уроку (order):', dayOfWeekOrder);
+        console.log('Межі семестру:', {
+            start: selectedSemester.startDate,
+            end: selectedSemester.endDate
+        });
 
         // Конвертуємо order в день тижня JS (0-6, де 0 - неділя)
         let targetDayOfWeek;
@@ -212,11 +270,39 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
         console.log('Цільовий день тижня JS:', targetDayOfWeek);
 
+        // Межі семестру
+        const semesterStart = new Date(selectedSemester.startDate);
+        const semesterEnd = new Date(selectedSemester.endDate);
+
+        // Встановлюємо час на початок дня для коректного порівняння
+        semesterStart.setHours(0, 0, 0, 0);
+        semesterEnd.setHours(23, 59, 59, 999);
+
         // Проходимо по всіх днях місяця
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            const currentDayOfWeek = d.getDay();
+            const currentDate = new Date(d);
+            currentDate.setHours(0, 0, 0, 0);
 
-            if (currentDayOfWeek === targetDayOfWeek) {
+            // Перевіряємо, чи дата в межах семестру
+            if (currentDate < semesterStart || currentDate > semesterEnd) {
+                continue; // Пропускаємо дати поза семестром
+            }
+
+            // Перевіряємо, чи це день уроку
+            if (currentDate.getDay() === targetDayOfWeek) {
+                // Перевіряємо, чи це не канікули
+                const isHoliday = holidays.some(holiday => {
+                    const holidayStart = new Date(holiday.startDate);
+                    const holidayEnd = new Date(holiday.endDate);
+
+                    // Встановлюємо час на початок/кінець дня для коректного порівняння
+                    holidayStart.setHours(0, 0, 0, 0);
+                    holidayEnd.setHours(23, 59, 59, 999);
+
+                    // Дата в межах канікул (включно)
+                    return currentDate >= holidayStart && currentDate <= holidayEnd;
+                });
+
                 dates.push({
                     date: new Date(d),
                     formatted: d.toLocaleDateString('uk-UA', {
@@ -224,58 +310,100 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                         month: '2-digit'
                     }),
                     fullDate: d.toISOString().split('T')[0],
-                    dayOfWeek: d.toLocaleDateString('uk-UA', { weekday: 'short' })
+                    dayOfWeek: d.toLocaleDateString('uk-UA', { weekday: 'short' }),
+                    isHoliday: isHoliday
                 });
             }
         }
 
-        console.log(`Згенеровано ${dates.length} дат для місяця`);
+        console.log(`Згенеровано ${dates.length} дат для місяця (з урахуванням семестру та канікул)`);
+        console.log('Дата першого дня після канікул:', dates.find(d => !d.isHoliday)?.fullDate);
         setDates(dates);
     };
 
     const handlePrevMonth = () => {
-        const newMonth = new Date(currentMonth);
-        newMonth.setMonth(currentMonth.getMonth() - 1);
-        setCurrentMonth(newMonth);
+        // Знаходимо індекс поточного місяця в списку доступних
+        const currentIndex = availableMonths.findIndex(m =>
+            m.date.getMonth() === currentMonth.getMonth() &&
+            m.date.getFullYear() === currentMonth.getFullYear()
+        );
+
+        // Якщо це не перший місяць, переходимо до попереднього
+        if (currentIndex > 0) {
+            setCurrentMonth(availableMonths[currentIndex - 1].date);
+        }
     };
 
     const handleNextMonth = () => {
-        const newMonth = new Date(currentMonth);
-        newMonth.setMonth(currentMonth.getMonth() + 1);
-        setCurrentMonth(newMonth);
+        // Знаходимо індекс поточного місяця в списку доступних
+        const currentIndex = availableMonths.findIndex(m =>
+            m.date.getMonth() === currentMonth.getMonth() &&
+            m.date.getFullYear() === currentMonth.getFullYear()
+        );
+
+        // Якщо це не останній місяць, переходимо до наступного
+        if (currentIndex < availableMonths.length - 1) {
+            setCurrentMonth(availableMonths[currentIndex + 1].date);
+        }
     };
 
     const handleMonthSelect = (index) => {
-        const newMonth = new Date(availableMonths[index].date);
-        setCurrentMonth(newMonth);
+        if (index >= 0 && index < availableMonths.length) {
+            setCurrentMonth(availableMonths[index].date);
+        }
     };
 
     const handleCellClick = (studentId, date) => {
-        console.log('Клік на клітинку:', { studentId, date });
+        // Логування для діагностики
+        console.log('Клік на клітинку:', {
+            studentId,
+            date: date.fullDate,
+            isHoliday: date.isHoliday,
+            dayOfWeek: date.dayOfWeek
+        });
+
+        // Не дозволяємо клікати на клітинки під час канікул
+        if (date.isHoliday) {
+            console.log('Клік на канікули - блокуємо');
+            return;
+        }
 
         const existingGrade = grades.find(
             g => g.student === studentId && g.date.split('T')[0] === date.fullDate
         );
 
-        const existingHomework = homeworks.find(
-            h => h.date.split('T')[0] === date.fullDate
-        );
-
         console.log('Існуюча оцінка:', existingGrade);
-        console.log('Існуюче ДЗ:', existingHomework);
 
         setSelectedCell({ studentId, date });
         setSelectedGrade(existingGrade || null);
-        setSelectedHomework(existingHomework || null);
         setShowGradeModal(true);
-    };
-
-    const handleAddHomework = () => {
-        setShowHomeworkModal(true);
     };
 
     const handleSaveGrade = async (gradeData) => {
         try {
+            // Перевіряємо, чи не припадає дата на канікули
+            const isHoliday = holidays.some(holiday => {
+                const holidayStart = new Date(holiday.startDate);
+                const holidayEnd = new Date(holiday.endDate);
+                const targetDate = new Date(selectedCell.date.fullDate);
+                return targetDate >= holidayStart && targetDate <= holidayEnd;
+            });
+
+            if (isHoliday) {
+                alert('Не можна виставляти оцінки на період канікул');
+                return;
+            }
+
+            // Перевіряємо, чи дата в межах семестру
+            const semesterStart = new Date(selectedSemester.startDate);
+            const semesterEnd = new Date(selectedSemester.endDate);
+            const targetDate = new Date(selectedCell.date.fullDate);
+
+            if (targetDate < semesterStart || targetDate > semesterEnd) {
+                alert('Дата знаходиться поза межами вибраного семестру');
+                return;
+            }
+
             if (selectedGrade) {
                 // Оновлення
                 const response = await axios.put(`/api/grades/${selectedGrade._id}`, {
@@ -302,33 +430,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     };
 
-    const handleSaveHomework = async (homeworkText) => {
-        try {
-            if (selectedHomework) {
-                // Оновлення
-                const response = await axios.put(`/api/homeworks/${selectedHomework._id}`, {
-                    text: homeworkText,
-                    databaseName
-                });
-                setHomeworks(homeworks.map(h => h._id === selectedHomework._id ? response.data : h));
-            } else {
-                // Створення
-                const response = await axios.post('/api/homeworks', {
-                    text: homeworkText,
-                    databaseName,
-                    schedule: scheduleId,
-                    date: selectedCell.date.fullDate
-                });
-                setHomeworks([...homeworks, response.data]);
-            }
-            setShowHomeworkModal(false);
-            setSelectedCell(null);
-        } catch (error) {
-            console.error('Помилка збереження ДЗ:', error);
-            alert('Помилка при збереженні домашнього завдання');
-        }
-    };
-
     const handleDeleteGrade = async () => {
         if (!selectedGrade) return;
 
@@ -344,21 +445,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     };
 
-    const handleDeleteHomework = async () => {
-        if (!selectedHomework) return;
-
-        try {
-            await axios.delete(`/api/homeworks/${selectedHomework._id}`, {
-                data: { databaseName }
-            });
-            setHomeworks(homeworks.filter(h => h._id !== selectedHomework._id));
-            setShowHomeworkModal(false);
-            setSelectedCell(null);
-        } catch (error) {
-            console.error('Помилка видалення ДЗ:', error);
-        }
-    };
-
     const getGradeForStudentAndDate = (studentId, date) => {
         const grade = grades.find(
             g => g.student === studentId && g.date.split('T')[0] === date.fullDate
@@ -366,16 +452,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         return grade?.value;
     };
 
-    const getHomeworkForDate = (date) => {
-        const homework = homeworks.find(h => h.date.split('T')[0] === date.fullDate);
-        return homework?.text;
-    };
-
-    const formatMonthYear = (date) => {
-        return date.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' });
-    };
-
-    if (loading) {
+    if (loading || loadingSemesters) {
         return (
             <div style={{
                 display: 'flex',
@@ -417,102 +494,182 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 isMobile={isMobile}
             />
 
-            {/* Навігація по місяцях */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
-                backgroundColor: 'white',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
-            }}>
-                <button
-                    onClick={handlePrevMonth}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        color: '#6b7280',
+            {/* Вибір семестру */}
+            {!loadingSemesters && semesters.length > 0 && (
+                <div style={{
+                    marginBottom: '20px',
+                    backgroundColor: 'white',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                }}>
+                    <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
-                    }}
-                >
-                    <FaChevronLeft />
-                    {!isMobile && 'Попередній'}
-                </button>
+                        gap: '12px',
+                        flexWrap: 'wrap'
+                    }}>
+                        <label style={{
+                            fontWeight: '500',
+                            color: '#374151'
+                        }}>
+                            Навчальний семестр:
+                        </label>
+                        <select
+                            value={selectedSemester?._id || ''}
+                            onChange={(e) => handleSemesterChange(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                border: '1px solid #e5e7eb',
+                                fontSize: '14px',
+                                minWidth: '200px'
+                            }}
+                        >
+                            {semesters.map(semester => (
+                                <option key={semester._id} value={semester._id}>
+                                    {semester.name} {semester.year} {semester.isActive ? '(активний)' : ''}
+                                </option>
+                            ))}
+                        </select>
+                        {selectedSemester && (
+                            <div style={{
+                                fontSize: '13px',
+                                color: '#6b7280'
+                            }}>
+                                {new Date(selectedSemester.startDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })} - {new Date(selectedSemester.endDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
-                {isMobile ? (
-                    <select
-                        value={availableMonths.findIndex(m =>
+            {/* Навігація по місяцях (тільки в межах семестру) */}
+            {availableMonths.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '20px',
+                    backgroundColor: 'white',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                }}>
+                    <button
+                        onClick={handlePrevMonth}
+                        disabled={availableMonths.findIndex(m =>
                             m.date.getMonth() === currentMonth.getMonth() &&
                             m.date.getFullYear() === currentMonth.getFullYear()
-                        )}
-                        onChange={(e) => handleMonthSelect(e.target.value)}
+                        ) === 0}
                         style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === 0 ? 'not-allowed' : 'pointer',
                             padding: '8px',
-                            borderRadius: '6px',
-                            border: '1px solid #e5e7eb',
-                            fontSize: '16px'
+                            color: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === 0 ? '#d1d5db' : '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            opacity: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === 0 ? 0.5 : 1
                         }}
                     >
-                        {availableMonths.map((month, index) => (
-                            <option key={index} value={index}>
-                                {month.label}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {availableMonths.map((month, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleMonthSelect(index)}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    backgroundColor: currentMonth.getMonth() === month.date.getMonth() &&
-                                        currentMonth.getFullYear() === month.date.getFullYear()
-                                        ? 'rgba(105, 180, 185, 1)'
-                                        : '#f3f4f6',
-                                    color: currentMonth.getMonth() === month.date.getMonth() &&
-                                        currentMonth.getFullYear() === month.date.getFullYear()
-                                        ? 'white'
-                                        : '#374151',
-                                    cursor: 'pointer',
-                                    fontWeight: currentMonth.getMonth() === month.date.getMonth() &&
-                                        currentMonth.getFullYear() === month.date.getFullYear()
-                                        ? '600'
-                                        : 'normal'
-                                }}
-                            >
-                                {month.label}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                        <FaChevronLeft />
+                        {!isMobile && 'Попередній'}
+                    </button>
 
-                <button
-                    onClick={handleNextMonth}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        color: '#6b7280',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                    }}
-                >
-                    {!isMobile && 'Наступний'}
-                    <FaChevronRight />
-                </button>
-            </div>
+                    {isMobile ? (
+                        <select
+                            value={availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            )}
+                            onChange={(e) => handleMonthSelect(parseInt(e.target.value))}
+                            style={{
+                                padding: '8px',
+                                borderRadius: '6px',
+                                border: '1px solid #e5e7eb',
+                                fontSize: '16px'
+                            }}
+                        >
+                            {availableMonths.map((month, index) => (
+                                <option key={index} value={index}>
+                                    {month.label}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {availableMonths.map((month, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleMonthSelect(index)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        backgroundColor: currentMonth.getMonth() === month.date.getMonth() &&
+                                            currentMonth.getFullYear() === month.date.getFullYear()
+                                            ? 'rgba(105, 180, 185, 1)'
+                                            : '#f3f4f6',
+                                        color: currentMonth.getMonth() === month.date.getMonth() &&
+                                            currentMonth.getFullYear() === month.date.getFullYear()
+                                            ? 'white'
+                                            : '#374151',
+                                        cursor: 'pointer',
+                                        fontWeight: currentMonth.getMonth() === month.date.getMonth() &&
+                                            currentMonth.getFullYear() === month.date.getFullYear()
+                                            ? '600'
+                                            : 'normal'
+                                    }}
+                                >
+                                    {month.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleNextMonth}
+                        disabled={availableMonths.findIndex(m =>
+                            m.date.getMonth() === currentMonth.getMonth() &&
+                            m.date.getFullYear() === currentMonth.getFullYear()
+                        ) === availableMonths.length - 1}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === availableMonths.length - 1 ? 'not-allowed' : 'pointer',
+                            padding: '8px',
+                            color: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === availableMonths.length - 1 ? '#d1d5db' : '#6b7280',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            opacity: availableMonths.findIndex(m =>
+                                m.date.getMonth() === currentMonth.getMonth() &&
+                                m.date.getFullYear() === currentMonth.getFullYear()
+                            ) === availableMonths.length - 1 ? 0.5 : 1
+                        }}
+                    >
+                        {!isMobile && 'Наступний'}
+                        <FaChevronRight />
+                    </button>
+                </div>
+            )}
 
             {students.length === 0 ? (
                 <div style={{
@@ -543,36 +700,13 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     </button>
                 </div>
             ) : (
-                <>
-                    <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
-                        <button
-                            onClick={handleAddHomework}
-                            style={{
-                                backgroundColor: 'transparent',
-                                border: '1px solid rgba(105, 180, 185, 1)',
-                                color: 'rgba(105, 180, 185, 1)',
-                                padding: '8px 16px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}
-                        >
-                            <FaBook />
-                            Додати ДЗ
-                        </button>
-                    </div>
-
-                    <JournalTable
-                        students={students}
-                        dates={dates}
-                        getGradeForStudentAndDate={getGradeForStudentAndDate}
-                        getHomeworkForDate={getHomeworkForDate}
-                        onCellClick={handleCellClick}
-                        isMobile={isMobile}
-                    />
-                </>
+                <JournalTable
+                    students={students}
+                    dates={dates}
+                    getGradeForStudentAndDate={getGradeForStudentAndDate}
+                    onCellClick={handleCellClick}
+                    isMobile={isMobile}
+                />
             )}
 
             <GradeModal
@@ -581,15 +715,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 onSave={handleSaveGrade}
                 onDelete={handleDeleteGrade}
                 existingGrade={selectedGrade}
-                isMobile={isMobile}
-            />
-
-            <HomeworkModal
-                show={showHomeworkModal}
-                onHide={() => setShowHomeworkModal(false)}
-                onSave={handleSaveHomework}
-                onDelete={handleDeleteHomework}
-                existingHomework={selectedHomework}
                 isMobile={isMobile}
             />
         </div>

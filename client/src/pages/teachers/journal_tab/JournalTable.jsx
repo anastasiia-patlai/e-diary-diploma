@@ -4,7 +4,6 @@ const JournalTable = ({
     students,
     dates,
     getGradeForStudentAndDate,
-    getHomeworkForDate,
     onCellClick,
     isMobile
 }) => {
@@ -60,19 +59,23 @@ const JournalTable = ({
                                 borderLeft: '1px solid #e5e7eb',
                                 position: 'sticky',
                                 top: 0,
-                                backgroundColor: '#f9fafb',
+                                backgroundColor: date.isHoliday ? '#fff3f0' : '#f9fafb',
                                 zIndex: 1,
-                                minWidth: '100px'
+                                minWidth: '100px',
+                                color: date.isHoliday ? '#ef4444' : 'inherit'
                             }}>
                                 <div>{date.formatted}</div>
-                                <div style={{ fontSize: '11px', color: '#6b7280' }}>{date.dayOfWeek}</div>
-                                {getHomeworkForDate(date) && (
+                                <div style={{ fontSize: '11px', color: date.isHoliday ? '#ef4444' : '#6b7280' }}>
+                                    {date.dayOfWeek}
+                                </div>
+                                {date.isHoliday && (
                                     <div style={{
-                                        fontSize: '11px',
-                                        color: 'rgba(105, 180, 185, 1)',
-                                        marginTop: '4px'
+                                        fontSize: '10px',
+                                        color: '#ef4444',
+                                        fontWeight: '600',
+                                        marginTop: '2px'
                                     }}>
-                                        Є ДЗ
+                                        Канікули
                                     </div>
                                 )}
                             </th>
@@ -96,6 +99,28 @@ const JournalTable = ({
                             </td>
                             {dates.map((date, colIndex) => {
                                 const grade = getGradeForStudentAndDate(student._id, date);
+
+                                // Якщо це канікули - відображаємо неактивну клітинку
+                                if (date.isHoliday) {
+                                    return (
+                                        <td
+                                            key={`${rowIndex}-${colIndex}`}
+                                            style={{
+                                                padding: '8px',
+                                                textAlign: 'center',
+                                                borderBottom: '1px solid #e5e7eb',
+                                                borderLeft: '1px solid #e5e7eb',
+                                                backgroundColor: '#fff3f0',
+                                                color: '#d1d5db',
+                                                cursor: 'not-allowed'
+                                            }}
+                                        >
+                                            <span style={{ color: '#ef4444', fontSize: '12px' }}>✕</span>
+                                        </td>
+                                    );
+                                }
+
+                                // Звичайна клітинка
                                 return (
                                     <td
                                         key={`${rowIndex}-${colIndex}`}
