@@ -262,77 +262,99 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth();
 
-        // Перший день місяця
         const firstDay = new Date(year, month, 1);
-        // Останній день місяця
         const lastDay = new Date(year, month + 1, 0);
 
-        const dayOfWeekOrder = currentLesson.dayOfWeek.order; // 1-7 (понеділок-неділя)
+        const dayOfWeekOrder = currentLesson.dayOfWeek.order;
 
-        console.log('Генерація дат для місяця:', monthDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }));
-        console.log('День тижня уроку (order):', dayOfWeekOrder);
-        console.log('Межі семестру:', {
-            start: selectedSemester.startDate,
-            end: selectedSemester.endDate
-        });
-
-        // Конвертуємо order в день тижня JS (0-6, де 0 - неділя)
+        // Конвертуємо order в день тижня JS
         let targetDayOfWeek;
         if (dayOfWeekOrder === 7) {
             targetDayOfWeek = 0; // неділя
         } else {
-            targetDayOfWeek = dayOfWeekOrder; // понеділок-субота (1-6)
+            targetDayOfWeek = dayOfWeekOrder; // понеділок-субота
         }
 
-        console.log('Цільовий день тижня JS:', targetDayOfWeek);
-
         // Межі семестру
-        const semesterStart = new Date(selectedSemester.startDate);
-        const semesterEnd = new Date(selectedSemester.endDate);
+        const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
+        const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
 
-        // Встановлюємо час на початок дня для коректного порівняння
-        semesterStart.setHours(0, 0, 0, 0);
-        semesterEnd.setHours(23, 59, 59, 999);
+        const semesterStart = new Date(
+            parseInt(semesterStartParts[0]),
+            parseInt(semesterStartParts[1]) - 1,
+            parseInt(semesterStartParts[2]),
+            12, 0, 0, 0
+        );
+
+        const semesterEnd = new Date(
+            parseInt(semesterEndParts[0]),
+            parseInt(semesterEndParts[1]) - 1,
+            parseInt(semesterEndParts[2]),
+            12, 0, 0, 0
+        );
+
+        console.log('Генерація дат для місяця:', monthDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }));
+        console.log('Межі семестру:', {
+            start: semesterStart.toLocaleDateString('uk-UA'),
+            end: semesterEnd.toLocaleDateString('uk-UA')
+        });
 
         // Проходимо по всіх днях місяця
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            const currentDate = new Date(d);
-            currentDate.setHours(0, 0, 0, 0);
+            // Створюємо дату з фіксованим часом (полудень)
+            const currentDate = new Date(
+                d.getFullYear(),
+                d.getMonth(),
+                d.getDate(),
+                12, 0, 0, 0
+            );
 
             // Перевіряємо, чи дата в межах семестру
             if (currentDate < semesterStart || currentDate > semesterEnd) {
-                continue; // Пропускаємо дати поза семестром
+                continue;
             }
 
             // Перевіряємо, чи це день уроку
             if (currentDate.getDay() === targetDayOfWeek) {
                 // Перевіряємо, чи це не канікули
                 const isHoliday = holidays.some(holiday => {
-                    const holidayStart = new Date(holiday.startDate);
-                    const holidayEnd = new Date(holiday.endDate);
+                    const holidayStartParts = holiday.startDate.split('T')[0].split('-');
+                    const holidayEndParts = holiday.endDate.split('T')[0].split('-');
 
-                    // Встановлюємо час на початок/кінець дня для коректного порівняння
-                    holidayStart.setHours(0, 0, 0, 0);
-                    holidayEnd.setHours(23, 59, 59, 999);
+                    const holidayStart = new Date(
+                        parseInt(holidayStartParts[0]),
+                        parseInt(holidayStartParts[1]) - 1,
+                        parseInt(holidayStartParts[2]),
+                        12, 0, 0, 0
+                    );
 
-                    // Дата в межах канікул (включно)
+                    const holidayEnd = new Date(
+                        parseInt(holidayEndParts[0]),
+                        parseInt(holidayEndParts[1]) - 1,
+                        parseInt(holidayEndParts[2]),
+                        12, 0, 0, 0
+                    );
+
                     return currentDate >= holidayStart && currentDate <= holidayEnd;
                 });
 
+                // Форматуємо дату для відображення
+                const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
                 dates.push({
-                    date: new Date(d),
+                    date: currentDate,
                     formatted: d.toLocaleDateString('uk-UA', {
                         day: '2-digit',
                         month: '2-digit'
                     }),
-                    fullDate: d.toISOString().split('T')[0],
+                    fullDate: formattedDate,
                     dayOfWeek: d.toLocaleDateString('uk-UA', { weekday: 'short' }),
                     isHoliday: isHoliday
                 });
             }
         }
 
-        console.log(`Згенеровано ${dates.length} дат для місяця (з урахуванням семестру та канікул)`);
+        console.log(`Згенеровано ${dates.length} дат для місяця`);
         setDates(dates);
     };
 
@@ -423,15 +445,72 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 return;
             }
 
-            // Перевіряємо, чи не припадає дата на канікули
-            const targetDate = new Date(selectedCell.date.fullDate);
-            targetDate.setHours(0, 0, 0, 0);
+            // ВИПРАВЛЕНО: Створюємо дату БЕЗ часового поясу, використовуючи компоненти
+            const dateParts = selectedCell.date.fullDate.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; // місяць 0-11
+            const day = parseInt(dateParts[2]);
 
+            // Створюємо дату в локальному часовому поясі
+            const targetDate = new Date(year, month, day, 12, 0, 0, 0);
+
+            console.log('=== ДІАГНОСТИКА ДАТИ ===');
+            console.log('fullDate з selectedCell:', selectedCell.date.fullDate);
+            console.log('Розібрана дата - рік:', year, 'місяць:', month + 1, 'день:', day);
+            console.log('targetDate (об\'єкт Date):', targetDate);
+            console.log('targetDate (локальна):', targetDate.toLocaleDateString('uk-UA'));
+            console.log('targetDate (ISO):', targetDate.toISOString());
+            console.log('targetDate (UTC день):', targetDate.getUTCDate());
+            console.log('targetDate (локальний день):', targetDate.getDate());
+
+            // Межі семестру - також створюємо з компонентів
+            const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
+            const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
+
+            const semesterStart = new Date(
+                parseInt(semesterStartParts[0]),
+                parseInt(semesterStartParts[1]) - 1,
+                parseInt(semesterStartParts[2]),
+                12, 0, 0, 0
+            );
+
+            const semesterEnd = new Date(
+                parseInt(semesterEndParts[0]),
+                parseInt(semesterEndParts[1]) - 1,
+                parseInt(semesterEndParts[2]),
+                12, 0, 0, 0
+            );
+
+            console.log('Початок семестру:', semesterStart.toLocaleDateString('uk-UA'));
+            console.log('Кінець семестру:', semesterEnd.toLocaleDateString('uk-UA'));
+            console.log('Цільова дата:', targetDate.toLocaleDateString('uk-UA'));
+            console.log('В межах семестру:', targetDate >= semesterStart && targetDate <= semesterEnd);
+
+            // Перевіряємо, чи дата в межах семестру
+            if (targetDate < semesterStart || targetDate > semesterEnd) {
+                alert(`Дата ${targetDate.toLocaleDateString('uk-UA')} знаходиться поза межами вибраного семестру (${semesterStart.toLocaleDateString('uk-UA')} - ${semesterEnd.toLocaleDateString('uk-UA')})`);
+                return;
+            }
+
+            // Перевіряємо, чи не припадає дата на канікули
             const isHoliday = holidays.some(holiday => {
-                const holidayStart = new Date(holiday.startDate);
-                const holidayEnd = new Date(holiday.endDate);
-                holidayStart.setHours(0, 0, 0, 0);
-                holidayEnd.setHours(23, 59, 59, 999);
+                const holidayStartParts = holiday.startDate.split('T')[0].split('-');
+                const holidayEndParts = holiday.endDate.split('T')[0].split('-');
+
+                const holidayStart = new Date(
+                    parseInt(holidayStartParts[0]),
+                    parseInt(holidayStartParts[1]) - 1,
+                    parseInt(holidayStartParts[2]),
+                    12, 0, 0, 0
+                );
+
+                const holidayEnd = new Date(
+                    parseInt(holidayEndParts[0]),
+                    parseInt(holidayEndParts[1]) - 1,
+                    parseInt(holidayEndParts[2]),
+                    12, 0, 0, 0
+                );
+
                 return targetDate >= holidayStart && targetDate <= holidayEnd;
             });
 
@@ -440,19 +519,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 return;
             }
 
-            // Перевіряємо, чи дата в межах семестру
-            const semesterStart = new Date(selectedSemester.startDate);
-            const semesterEnd = new Date(selectedSemester.endDate);
-            semesterStart.setHours(0, 0, 0, 0);
-            semesterEnd.setHours(23, 59, 59, 999);
-
-            if (targetDate < semesterStart || targetDate > semesterEnd) {
-                alert('Дата знаходиться поза межами вибраного семестру');
-                return;
-            }
-
-            // Форматуємо дату в потрібний формат (YYYY-MM-DD)
-            const formattedDate = selectedCell.date.fullDate;
+            // Форматуємо дату для відправки на сервер (YYYY-MM-DD)
+            const formattedDate = selectedCell.date.fullDate; // Вже в правильному форматі
 
             const gradePayload = {
                 value: gradeData.value,
@@ -466,45 +534,28 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
             let response;
             if (selectedGrade) {
-                // Оновлення
                 response = await axios.put(`/api/grades/${selectedGrade._id}`, gradePayload);
-                console.log('Відповідь від сервера (оновлення):', response.data);
-
-                // Оновлюємо стан використовуючи функціональне оновлення
                 setGrades(prevGrades =>
                     prevGrades.map(g => g._id === selectedGrade._id ? response.data : g)
                 );
             } else {
-                // Створення
                 response = await axios.post('/api/grades', gradePayload);
-                console.log('Відповідь від сервера (створення):', response.data);
-
-                // Додаємо нову оцінку до стану
                 setGrades(prevGrades => [...prevGrades, response.data]);
             }
 
-            // Закриваємо модальне вікно
             setShowGradeModal(false);
             setSelectedCell(null);
             setSelectedGrade(null);
 
         } catch (error) {
             console.error('Помилка збереження оцінки:', error);
-
-            // Виводимо детальну інформацію про помилку
             if (error.response) {
                 console.error('Статус помилки:', error.response.status);
                 console.error('Дані помилки:', error.response.data);
-
-                const errorMessage = error.response.data?.error ||
-                    error.response.data?.message ||
-                    'Помилка при збереженні оцінки';
-                alert(`Помилка: ${errorMessage}`);
+                alert(`Помилка: ${error.response.data?.error || 'Помилка при збереженні оцінки'}`);
             } else if (error.request) {
-                console.error('Немає відповіді від сервера:', error.request);
                 alert('Сервер не відповідає. Перевірте з\'єднання.');
             } else {
-                console.error('Помилка запиту:', error.message);
                 alert('Помилка при відправці запиту');
             }
         }
