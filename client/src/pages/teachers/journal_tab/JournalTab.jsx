@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBook, FaUsers, FaChevronDown, FaChevronRight, FaBookOpen } from 'react-icons/fa';
+import { FaBook, FaUsers, FaBookOpen, FaGraduationCap } from 'react-icons/fa';
 
 const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
     const [loading, setLoading] = useState(true);
-    const [subjects, setSubjects] = useState([]);
-    const [expandedSubjects, setExpandedSubjects] = useState({});
+    const [journals, setJournals] = useState([]);
 
     useEffect(() => {
         if (databaseName) {
@@ -26,43 +25,42 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
                 }
             });
 
-            // Групуємо уроки за предметами
-            const groupedBySubject = {};
+            console.log('Завантажені уроки:', response.data);
 
-            response.data.forEach(lesson => {
-                const subject = lesson.subject;
-                if (!groupedBySubject[subject]) {
-                    groupedBySubject[subject] = {
-                        name: subject,
-                        lessons: []
-                    };
+            // Форматуємо дані для відображення
+            const formattedJournals = response.data.map(lesson => {
+                // Витягуємо номер класу з назви групи (наприклад, "5-А" -> 5)
+                let classNumber = 999; // велике число для груп без номера
+                const groupName = lesson.group?.name || '';
+                const match = groupName.match(/^(\d+)/);
+                if (match) {
+                    classNumber = parseInt(match[1], 10);
                 }
 
-                // Додаємо урок з потрібною інформацією
-                groupedBySubject[subject].lessons.push({
+                return {
                     _id: lesson._id,
-                    groupName: lesson.group?.name,
+                    subject: lesson.subject,
+                    groupName: groupName,
                     subgroup: lesson.subgroup || 'all',
-                    dayOfWeek: lesson.dayOfWeek?.name,
-                    timeSlot: lesson.timeSlot,
-                    classroom: lesson.classroom?.name
-                });
+                    groupId: lesson.group?._id,
+                    teacherId: lesson.teacher?._id,
+                    semesterId: lesson.semester?._id,
+                    classNumber: classNumber
+                };
             });
 
-            // Сортуємо предмети за алфавітом
-            const sortedSubjects = Object.values(groupedBySubject).sort((a, b) =>
-                a.name.localeCompare(b.name, 'uk')
-            );
-
-            setSubjects(sortedSubjects);
-
-            // Спочатку всі предмети згорнуті
-            const initialExpanded = {};
-            sortedSubjects.forEach(subject => {
-                initialExpanded[subject.name] = false;
+            // Сортуємо за предметом, потім за номером класу
+            formattedJournals.sort((a, b) => {
+                // Спочатку за предметом
+                const subjectCompare = a.subject.localeCompare(b.subject, 'uk');
+                if (subjectCompare !== 0) {
+                    return subjectCompare;
+                }
+                // Потім за номером класу (від меншого до більшого)
+                return a.classNumber - b.classNumber;
             });
-            setExpandedSubjects(initialExpanded);
 
+            setJournals(formattedJournals);
         } catch (error) {
             console.error('Помилка завантаження журналів:', error);
         } finally {
@@ -70,26 +68,23 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
         }
     };
 
-    const toggleSubject = (subjectName) => {
-        setExpandedSubjects(prev => ({
-            ...prev,
-            [subjectName]: !prev[subjectName]
-        }));
-    };
-
-    const getSubgroupLabel = (subgroup) => {
-        switch (subgroup) {
-            case 'all': return '';
-            case '1': return '(Підгрупа 1)';
-            case '2': return '(Підгрупа 2)';
-            case '3': return '(Підгрупа 3)';
-            default: return '';
+    const getGroupDisplayName = (journal) => {
+        if (journal.subgroup && journal.subgroup !== 'all') {
+            return `${journal.groupName} (Підгрупа ${journal.subgroup})`;
         }
+        return journal.groupName;
     };
 
-    const formatTime = (timeSlot) => {
-        if (!timeSlot) return '';
-        return `${timeSlot.startTime?.slice(0, 5)}-${timeSlot.endTime?.slice(0, 5)}`;
+    // Групуємо журнали за предметами для відображення
+    const groupBySubject = () => {
+        const grouped = {};
+        journals.forEach(journal => {
+            if (!grouped[journal.subject]) {
+                grouped[journal.subject] = [];
+            }
+            grouped[journal.subject].push(journal);
+        });
+        return grouped;
     };
 
     if (loading) {
@@ -112,7 +107,7 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
         );
     }
 
-    if (subjects.length === 0) {
+    if (journals.length === 0) {
         return (
             <div style={{
                 backgroundColor: 'white',
@@ -132,6 +127,8 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
         );
     }
 
+    const groupedJournals = groupBySubject();
+
     return (
         <div>
             <h3 style={{
@@ -139,166 +136,214 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
                 marginBottom: '24px',
                 color: '#374151'
             }}>
-                Журнали за предметами
+                Мої журнали
             </h3>
 
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px'
+                gap: '20px'
             }}>
-                {subjects.map(subject => (
-                    <div
-                        key={subject.name}
-                        style={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '12px',
-                            overflow: 'hidden'
-                        }}
-                    >
+                {Object.keys(groupedJournals).sort().map(subject => (
+                    <div key={subject} style={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        overflow: 'hidden'
+                    }}>
                         {/* Заголовок предмета */}
-                        <div
-                            onClick={() => toggleSubject(subject.name)}
-                            style={{
-                                padding: '16px 20px',
-                                backgroundColor: expandedSubjects[subject.name] ? '#f9fafb' : 'white',
-                                cursor: 'pointer',
+                        <div style={{
+                            padding: '16px 20px',
+                            backgroundColor: '#f8fafc',
+                            borderBottom: '2px solid rgba(105, 180, 185, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                        }}>
+                            <div style={{
+                                backgroundColor: 'rgba(105, 180, 185, 0.15)',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderBottom: expandedSubjects[subject.name] ? '1px solid #e5e7eb' : 'none',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                {expandedSubjects[subject.name] ? (
-                                    <FaChevronDown style={{ color: '#9ca3af' }} />
-                                ) : (
-                                    <FaChevronRight style={{ color: '#9ca3af' }} />
-                                )}
-                                <FaBook style={{ color: 'rgba(105, 180, 185, 1)' }} />
+                                gap: '8px'
+                            }}>
+                                <FaBook style={{ color: 'rgba(105, 180, 185, 1)', fontSize: '18px' }} />
                                 <span style={{
                                     fontWeight: '600',
                                     fontSize: isMobile ? '16px' : '18px',
-                                    color: '#374151'
+                                    color: '#1f2937'
                                 }}>
-                                    {subject.name}
-                                </span>
-                                <span style={{
-                                    backgroundColor: '#e5e7eb',
-                                    color: '#4b5563',
-                                    padding: '2px 10px',
-                                    borderRadius: '20px',
-                                    fontSize: '14px'
-                                }}>
-                                    {subject.lessons.length} {subject.lessons.length === 1 ? 'урок' :
-                                        subject.lessons.length < 5 ? 'уроки' : 'уроків'}
+                                    {subject}
                                 </span>
                             </div>
+                            <span style={{
+                                backgroundColor: '#e5e7eb',
+                                color: '#4b5563',
+                                padding: '4px 12px',
+                                borderRadius: '20px',
+                                fontSize: '14px',
+                                fontWeight: '500'
+                            }}>
+                                {groupedJournals[subject].length} {groupedJournals[subject].length === 1 ? 'клас' : 'класів'}
+                            </span>
                         </div>
 
-                        {/* Список уроків предмета */}
-                        {expandedSubjects[subject.name] && (
-                            <div style={{
-                                padding: '8px'
-                            }}>
-                                {subject.lessons.map(lesson => (
-                                    <div
-                                        key={lesson._id}
-                                        style={{
-                                            padding: '12px 16px',
-                                            margin: '4px 8px',
+                        {/* Список класів для предмета */}
+                        <div style={{
+                            padding: '12px'
+                        }}>
+                            {groupedJournals[subject].map(journal => (
+                                <div
+                                    key={journal._id}
+                                    style={{
+                                        backgroundColor: 'white',
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '10px',
+                                        padding: '16px 20px',
+                                        marginBottom: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                    }}
+                                >
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '16px',
+                                        flex: 1
+                                    }}>
+                                        <div style={{
+                                            backgroundColor: 'rgba(105, 180, 185, 0.1)',
+                                            padding: '10px',
                                             borderRadius: '8px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            backgroundColor: '#f9fafb',
-                                            border: '1px solid #e5e7eb'
-                                        }}
-                                    >
-                                        <div style={{ flex: 1 }}>
+                                            justifyContent: 'center'
+                                        }}>
+                                            <FaGraduationCap style={{ color: 'rgba(105, 180, 185, 1)', fontSize: '20px' }} />
+                                        </div>
+
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '6px'
+                                        }}>
                                             <div style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '8px',
                                                 flexWrap: 'wrap'
                                             }}>
-                                                <FaUsers style={{ color: '#6b7280' }} />
                                                 <span style={{
-                                                    fontWeight: '500',
-                                                    color: '#374151'
+                                                    fontWeight: '600',
+                                                    fontSize: isMobile ? '16px' : '18px',
+                                                    color: '#1f2937'
                                                 }}>
-                                                    {lesson.groupName}
+                                                    {getGroupDisplayName(journal)}
                                                 </span>
-                                                {lesson.subgroup && lesson.subgroup !== 'all' && (
+                                                {journal.subgroup && journal.subgroup !== 'all' && (
                                                     <span style={{
                                                         backgroundColor: 'rgba(105, 180, 185, 0.1)',
                                                         color: 'rgba(105, 180, 185, 1)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '12px'
+                                                        padding: '4px 10px',
+                                                        borderRadius: '20px',
+                                                        fontSize: '12px',
+                                                        fontWeight: '600',
+                                                        border: '1px solid rgba(105, 180, 185, 0.3)'
                                                     }}>
-                                                        Підгрупа {lesson.subgroup}
-                                                    </span>
-                                                )}
-                                                <span style={{
-                                                    color: '#6b7280',
-                                                    fontSize: '14px'
-                                                }}>
-                                                    {lesson.dayOfWeek}
-                                                </span>
-                                                <span style={{
-                                                    color: '#6b7280',
-                                                    fontSize: '14px'
-                                                }}>
-                                                    {formatTime(lesson.timeSlot)}
-                                                </span>
-                                                {lesson.classroom && (
-                                                    <span style={{
-                                                        color: '#6b7280',
-                                                        fontSize: '14px'
-                                                    }}>
-                                                        • {lesson.classroom}
+                                                        Підгрупа {journal.subgroup}
                                                     </span>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        <button
-                                            onClick={() => onOpenGradebook(lesson._id)}
-                                            style={{
-                                                backgroundColor: 'rgba(105, 180, 185, 1)',
-                                                color: 'white',
-                                                border: 'none',
-                                                padding: '8px 16px',
-                                                borderRadius: '6px',
-                                                cursor: 'pointer',
+                                            <div style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '8px',
-                                                fontSize: '14px',
-                                                transition: 'background-color 0.2s',
-                                                whiteSpace: 'nowrap',
-                                                marginLeft: '16px'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                            }}
-                                            onMouseOut={(e) => {
-                                                e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                            }}
-                                        >
-                                            <FaBookOpen />
-                                            {isMobile ? 'Журнал' : 'Відкрити журнал'}
-                                        </button>
+                                                color: '#4b5563',
+                                                fontSize: isMobile ? '13px' : '14px'
+                                            }}>
+                                                <FaUsers style={{ fontSize: '14px', color: '#9ca3af' }} />
+                                                <span style={{
+                                                    backgroundColor: '#f3f4f6',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    color: '#374151'
+                                                }}>
+                                                    {journal.groupName}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+
+                                    <button
+                                        onClick={() => onOpenGradebook(journal._id)}
+                                        style={{
+                                            backgroundColor: 'rgba(105, 180, 185, 1)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '10px 20px',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            transition: 'all 0.2s',
+                                            whiteSpace: 'nowrap',
+                                            marginLeft: '16px',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
+                                            e.target.style.transform = 'translateY(-1px)';
+                                            e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.15)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                                        }}
+                                    >
+                                        <FaBookOpen />
+                                        {isMobile ? 'Відкрити' : 'Журнал'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ))}
             </div>
+
+            {journals.length > 0 && (
+                <div style={{
+                    marginTop: '24px',
+                    padding: '16px 20px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '10px',
+                    border: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '14px',
+                    color: '#4b5563'
+                }}>
+                    <span>Всього журналів: <strong>{journals.length}</strong></span>
+                    <span style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        color: '#6b7280'
+                    }}>
+                        <FaBook style={{ fontSize: '14px' }} />
+                        <span>Предметів: <strong>{Object.keys(groupedJournals).length}</strong></span>
+                    </span>
+                </div>
+            )}
         </div>
     );
 };

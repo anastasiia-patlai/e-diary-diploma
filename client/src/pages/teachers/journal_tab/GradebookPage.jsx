@@ -782,9 +782,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     color: '#6b7280'
                 }}>
                     <h3>Немає учнів для відображення</h3>
-                    <p style={{ marginTop: '10px' }}>
-                        Перевірте консоль розробника (F12) для детальної інформації
-                    </p>
                     <button
                         onClick={() => loadJournalData()}
                         style={{
