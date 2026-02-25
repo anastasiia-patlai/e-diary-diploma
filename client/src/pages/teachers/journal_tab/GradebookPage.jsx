@@ -44,110 +44,57 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     }, [databaseName]);
 
-    // Логування змін grades для діагностики
-    useEffect(() => {
-        console.log('Стан grades оновлено:', grades);
-    }, [grades]);
-
     const loadJournalData = async () => {
         setLoading(true);
         try {
-            console.log('=== ПОЧАТОК ЗАВАНТАЖЕННЯ ЖУРНАЛУ ===');
-            console.log('scheduleId:', scheduleId);
-            console.log('databaseName:', databaseName);
-
-            // Завантаження інформації про урок
-            console.log('1. Завантаження інформації про урок...');
             const lessonResponse = await axios.get(`/api/schedule/${scheduleId}`, {
                 params: { databaseName }
             });
-
-            console.log('Відповідь від /api/schedule/:', lessonResponse.data);
-            console.log('Group ID:', lessonResponse.data.group?._id);
-            console.log('Group name:', lessonResponse.data.group?.name);
-            console.log('Subgroup:', lessonResponse.data.subgroup);
-            console.log('Day of week order:', lessonResponse.data.dayOfWeek?.order);
 
             setCurrentLesson(lessonResponse.data);
 
             // Завантаження студентів
             if (lessonResponse.data.group?._id) {
-                console.log('2. Завантаження студентів для групи:', lessonResponse.data.group._id);
-
                 try {
                     const studentsResponse = await axios.get(`/api/groups/${lessonResponse.data.group._id}`, {
                         params: { databaseName }
                     });
 
-                    console.log('Відповідь від /api/groups/:', studentsResponse.data);
-
                     let studentsList = [];
                     if (lessonResponse.data.subgroup && lessonResponse.data.subgroup !== 'all') {
-                        // Якщо це підгрупа - знаходимо студентів в підгрупі
                         const subgroupNumber = parseInt(lessonResponse.data.subgroup);
-                        console.log(`Шукаємо підгрупу з номером ${subgroupNumber}`);
-
                         const subgroup = studentsResponse.data.subgroups?.find(
                             sg => sg.order === subgroupNumber
                         );
 
-                        console.log('Знайдена підгрупа:', subgroup);
-
                         if (subgroup && subgroup.students) {
                             studentsList = subgroup.students;
-                            console.log(`Знайдено ${studentsList.length} студентів у підгрупі ${lessonResponse.data.subgroup}`);
-                        } else {
-                            console.log('Підгрупу не знайдено або вона не має студентів');
                         }
                     } else {
-                        // Якщо вся група - беремо всіх студентів
                         studentsList = studentsResponse.data.students || [];
-                        console.log(`Знайдено ${studentsList.length} студентів у всій групі`);
                     }
 
-                    console.log('Кінцевий список студентів:', studentsList);
                     setStudents(studentsList);
-
                 } catch (error) {
                     console.error('Помилка при завантаженні студентів:', error.message);
                 }
-            } else {
-                console.log('Немає group._id в даних уроку');
             }
 
             // Завантаження оцінок
-            console.log('3. Завантаження оцінок...');
             try {
                 const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, {
                     params: { databaseName }
                 });
-                console.log('Відповідь від /api/grades/schedule/:', gradesResponse.data);
-                console.log('Знайдено оцінок:', gradesResponse.data?.length || 0);
-
-                // Детальне логування завантажених оцінок
-                if (gradesResponse.data && gradesResponse.data.length > 0) {
-                    console.log('Деталі оцінок:', gradesResponse.data.map(g => ({
-                        id: g._id,
-                        student: g.student?._id || g.student,
-                        value: g.value,
-                        date: g.date
-                    })));
-                }
-
                 setGrades(gradesResponse.data || []);
             } catch (error) {
                 console.error('Помилка при завантаженні оцінок:', error.message);
             }
 
         } catch (error) {
-            console.error('!!! КРИТИЧНА ПОМИЛКА !!!');
-            console.error('Статус:', error.response?.status);
-            console.error('Дані:', error.response?.data);
-            console.error('Повідомлення:', error.message);
+            console.error('Помилка завантаження журналу:', error);
             setError(error.response?.data?.error || 'Не вдалося завантажити дані журналу');
         } finally {
             setLoading(false);
-            console.log('=== ЗАВЕРШЕННЯ ЗАВАНТАЖЕННЯ ===');
         }
     };
 
@@ -158,16 +105,12 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 params: { databaseName }
             });
 
-            console.log('Завантажені семестри:', response.data);
             setSemesters(response.data);
 
-            // Знаходимо активний семестр або вибираємо перший
             const activeSemester = response.data.find(s => s.isActive) || response.data[0];
             if (activeSemester) {
                 setSelectedSemester(activeSemester);
-                // Завантажуємо канікули для вибраного семестру
                 await loadHolidays(activeSemester._id);
-                // Генеруємо доступні місяці на основі семестру
                 generateAvailableMonthsForSemester(activeSemester);
             }
         } catch (error) {
@@ -183,23 +126,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 params: { databaseName }
             });
 
-            console.log('Всі канікули з API:', response.data);
+            const semesterHolidays = response.data.filter(holiday =>
+                holiday.quarter?.semester?._id === semesterId
+            );
 
-            // Фільтруємо канікули, що належать до чвертей вибраного семестру
-            const semesterHolidays = response.data.filter(holiday => {
-                const belongsToSemester = holiday.quarter?.semester?._id === semesterId;
-                if (belongsToSemester) {
-                    console.log('Канікули в семестрі:', {
-                        name: holiday.name,
-                        start: holiday.startDate,
-                        end: holiday.endDate,
-                        type: holiday.type
-                    });
-                }
-                return belongsToSemester;
-            });
-
-            console.log('Канікули для семестру після фільтрації:', semesterHolidays);
             setHolidays(semesterHolidays);
         } catch (error) {
             console.error('Помилка завантаження канікул:', error);
@@ -210,11 +140,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const semester = semesters.find(s => s._id === semesterId);
         setSelectedSemester(semester);
         await loadHolidays(semesterId);
-
-        // Генеруємо доступні місяці для нового семестру
         generateAvailableMonthsForSemester(semester);
 
-        // Встановлюємо поточний місяць на перший місяць семестру
         const semesterStart = new Date(semester.startDate);
         setCurrentMonth(semesterStart);
     };
@@ -224,13 +151,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const startDate = new Date(semester.startDate);
         const endDate = new Date(semester.endDate);
 
-        // Визначаємо перший і останній місяць семестру
         const startYear = startDate.getFullYear();
         const startMonth = startDate.getMonth();
-        const endYear = endDate.getFullYear();
-        const endMonth = endDate.getMonth();
 
-        // Генеруємо всі місяці від початку до кінця семестру
         let currentDate = new Date(startYear, startMonth, 1);
         while (currentDate <= endDate) {
             months.push({
@@ -238,25 +161,18 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 label: currentDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }),
                 date: new Date(currentDate)
             });
-
-            // Переходимо до наступного місяця
             currentDate.setMonth(currentDate.getMonth() + 1);
         }
 
-        console.log('Згенеровано місяці для семестру:', months);
         setAvailableMonths(months);
 
-        // Встановлюємо поточний місяць на перший місяць семестру, якщо він ще не встановлений
         if (months.length > 0) {
             setCurrentMonth(months[0].date);
         }
     };
 
     const generateDatesForMonth = (monthDate) => {
-        if (!currentLesson?.dayOfWeek?.order || !selectedSemester) {
-            console.log('Немає інформації про день тижня або семестр');
-            return;
-        }
+        if (!currentLesson?.dayOfWeek?.order || !selectedSemester) return;
 
         const dates = [];
         const year = monthDate.getFullYear();
@@ -266,16 +182,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const lastDay = new Date(year, month + 1, 0);
 
         const dayOfWeekOrder = currentLesson.dayOfWeek.order;
+        let targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
 
-        // Конвертуємо order в день тижня JS
-        let targetDayOfWeek;
-        if (dayOfWeekOrder === 7) {
-            targetDayOfWeek = 0; // неділя
-        } else {
-            targetDayOfWeek = dayOfWeekOrder; // понеділок-субота
-        }
-
-        // Межі семестру
         const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
         const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
 
@@ -293,15 +201,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             12, 0, 0, 0
         );
 
-        console.log('Генерація дат для місяця:', monthDate.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }));
-        console.log('Межі семестру:', {
-            start: semesterStart.toLocaleDateString('uk-UA'),
-            end: semesterEnd.toLocaleDateString('uk-UA')
-        });
-
-        // Проходимо по всіх днях місяця
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            // Створюємо дату з фіксованим часом (полудень)
             const currentDate = new Date(
                 d.getFullYear(),
                 d.getMonth(),
@@ -309,14 +209,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 12, 0, 0, 0
             );
 
-            // Перевіряємо, чи дата в межах семестру
-            if (currentDate < semesterStart || currentDate > semesterEnd) {
-                continue;
-            }
+            if (currentDate < semesterStart || currentDate > semesterEnd) continue;
 
-            // Перевіряємо, чи це день уроку
             if (currentDate.getDay() === targetDayOfWeek) {
-                // Перевіряємо, чи це не канікули
                 const isHoliday = holidays.some(holiday => {
                     const holidayStartParts = holiday.startDate.split('T')[0].split('-');
                     const holidayEndParts = holiday.endDate.split('T')[0].split('-');
@@ -338,7 +233,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     return currentDate >= holidayStart && currentDate <= holidayEnd;
                 });
 
-                // Форматуємо дату для відображення
                 const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
                 dates.push({
@@ -354,31 +248,26 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             }
         }
 
-        console.log(`Згенеровано ${dates.length} дат для місяця`);
         setDates(dates);
     };
 
     const handlePrevMonth = () => {
-        // Знаходимо індекс поточного місяця в списку доступних
         const currentIndex = availableMonths.findIndex(m =>
             m.date.getMonth() === currentMonth.getMonth() &&
             m.date.getFullYear() === currentMonth.getFullYear()
         );
 
-        // Якщо це не перший місяць, переходимо до попереднього
         if (currentIndex > 0) {
             setCurrentMonth(availableMonths[currentIndex - 1].date);
         }
     };
 
     const handleNextMonth = () => {
-        // Знаходимо індекс поточного місяця в списку доступних
         const currentIndex = availableMonths.findIndex(m =>
             m.date.getMonth() === currentMonth.getMonth() &&
             m.date.getFullYear() === currentMonth.getFullYear()
         );
 
-        // Якщо це не останній місяць, переходимо до наступного
         if (currentIndex < availableMonths.length - 1) {
             setCurrentMonth(availableMonths[currentIndex + 1].date);
         }
@@ -391,26 +280,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const handleCellClick = (studentId, date) => {
-        // Логування для діагностики
-        console.log('Клік на клітинку:', {
-            studentId,
-            date: date.fullDate,
-            isHoliday: date.isHoliday,
-            dayOfWeek: date.dayOfWeek
-        });
+        if (date.isHoliday) return;
 
-        // Не дозволяємо клікати на клітинки під час канікул
-        if (date.isHoliday) {
-            console.log('Клік на канікули - блокуємо');
-            return;
-        }
-
-        // Пошук існуючої оцінки з правильною обробкою форматів
         const existingGrade = grades.find(g => {
-            // Перевіряємо studentId (може бути об'єктом або рядком)
             const studentMatch = g.student === studentId || g.student?._id === studentId;
 
-            // Нормалізуємо дату
             let gradeDate;
             if (g.date instanceof Date) {
                 gradeDate = g.date.toISOString().split('T')[0];
@@ -420,12 +294,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 gradeDate = String(g.date);
             }
 
-            const dateMatch = gradeDate === date.fullDate;
-
-            return studentMatch && dateMatch;
+            return studentMatch && gradeDate === date.fullDate;
         });
-
-        console.log('Існуюча оцінка:', existingGrade);
 
         setSelectedCell({ studentId, date });
         setSelectedGrade(existingGrade || null);
@@ -434,7 +304,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     const handleSaveGrade = async (gradeData) => {
         try {
-            // Перевіряємо наявність всіх необхідних даних
             if (!selectedCell || !selectedCell.studentId || !selectedCell.date) {
                 alert('Відсутні дані для збереження оцінки');
                 return;
@@ -445,25 +314,13 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 return;
             }
 
-            // ВИПРАВЛЕНО: Створюємо дату БЕЗ часового поясу, використовуючи компоненти
             const dateParts = selectedCell.date.fullDate.split('-');
             const year = parseInt(dateParts[0]);
-            const month = parseInt(dateParts[1]) - 1; // місяць 0-11
+            const month = parseInt(dateParts[1]) - 1;
             const day = parseInt(dateParts[2]);
 
-            // Створюємо дату в локальному часовому поясі
             const targetDate = new Date(year, month, day, 12, 0, 0, 0);
 
-            console.log('=== ДІАГНОСТИКА ДАТИ ===');
-            console.log('fullDate з selectedCell:', selectedCell.date.fullDate);
-            console.log('Розібрана дата - рік:', year, 'місяць:', month + 1, 'день:', day);
-            console.log('targetDate (об\'єкт Date):', targetDate);
-            console.log('targetDate (локальна):', targetDate.toLocaleDateString('uk-UA'));
-            console.log('targetDate (ISO):', targetDate.toISOString());
-            console.log('targetDate (UTC день):', targetDate.getUTCDate());
-            console.log('targetDate (локальний день):', targetDate.getDate());
-
-            // Межі семестру - також створюємо з компонентів
             const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
             const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
 
@@ -481,18 +338,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 12, 0, 0, 0
             );
 
-            console.log('Початок семестру:', semesterStart.toLocaleDateString('uk-UA'));
-            console.log('Кінець семестру:', semesterEnd.toLocaleDateString('uk-UA'));
-            console.log('Цільова дата:', targetDate.toLocaleDateString('uk-UA'));
-            console.log('В межах семестру:', targetDate >= semesterStart && targetDate <= semesterEnd);
-
-            // Перевіряємо, чи дата в межах семестру
             if (targetDate < semesterStart || targetDate > semesterEnd) {
-                alert(`Дата ${targetDate.toLocaleDateString('uk-UA')} знаходиться поза межами вибраного семестру (${semesterStart.toLocaleDateString('uk-UA')} - ${semesterEnd.toLocaleDateString('uk-UA')})`);
+                alert(`Дата ${targetDate.toLocaleDateString('uk-UA')} знаходиться поза межами вибраного семестру`);
                 return;
             }
 
-            // Перевіряємо, чи не припадає дата на канікули
             const isHoliday = holidays.some(holiday => {
                 const holidayStartParts = holiday.startDate.split('T')[0].split('-');
                 const holidayEndParts = holiday.endDate.split('T')[0].split('-');
@@ -519,18 +369,13 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 return;
             }
 
-            // Форматуємо дату для відправки на сервер (YYYY-MM-DD)
-            const formattedDate = selectedCell.date.fullDate; // Вже в правильному форматі
-
             const gradePayload = {
                 value: gradeData.value,
                 databaseName,
                 schedule: scheduleId,
                 student: selectedCell.studentId,
-                date: formattedDate
+                date: selectedCell.date.fullDate
             };
-
-            console.log('Відправка даних для збереження оцінки:', gradePayload);
 
             let response;
             if (selectedGrade) {
@@ -550,8 +395,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         } catch (error) {
             console.error('Помилка збереження оцінки:', error);
             if (error.response) {
-                console.error('Статус помилки:', error.response.status);
-                console.error('Дані помилки:', error.response.data);
                 alert(`Помилка: ${error.response.data?.error || 'Помилка при збереженні оцінки'}`);
             } else if (error.request) {
                 alert('Сервер не відповідає. Перевірте з\'єднання.');
@@ -569,9 +412,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 data: { databaseName }
             });
 
-            // Видаляємо оцінку зі стану
             setGrades(prevGrades => prevGrades.filter(g => g._id !== selectedGrade._id));
-
             setShowGradeModal(false);
             setSelectedCell(null);
             setSelectedGrade(null);
@@ -582,19 +423,13 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const getGradeForStudentAndDate = (studentId, date) => {
-        if (!grades || !Array.isArray(grades) || grades.length === 0) {
-            return null;
-        }
+        if (!grades || !Array.isArray(grades) || grades.length === 0) return null;
 
-        // Нормалізуємо цільову дату
         const targetDate = date.fullDate || date;
 
-        // Шукаємо оцінку
         const grade = grades.find(g => {
-            // Перевіряємо studentId (може бути об'єктом або рядком)
             const studentMatch = g.student === studentId || g.student?._id === studentId;
 
-            // Нормалізуємо дату оцінки
             let gradeDate;
             if (g.date instanceof Date) {
                 gradeDate = g.date.toISOString().split('T')[0];
@@ -604,9 +439,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 gradeDate = String(g.date);
             }
 
-            const dateMatch = gradeDate === targetDate;
-
-            return studentMatch && dateMatch;
+            return studentMatch && gradeDate === targetDate;
         });
 
         return grade?.value || null;
@@ -654,7 +487,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 isMobile={isMobile}
             />
 
-            {/* Вибір семестру */}
             {!loadingSemesters && semesters.length > 0 && (
                 <div style={{
                     marginBottom: '20px',
@@ -704,7 +536,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 </div>
             )}
 
-            {/* Навігація по місяцях */}
             {availableMonths.length > 0 && (
                 <div style={{
                     display: 'flex',
