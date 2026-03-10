@@ -52,6 +52,24 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         otherDays: 0
     });
 
+    // Таймери для повідомлень
+    useEffect(() => {
+        let errorTimer, successTimer;
+
+        if (error) {
+            errorTimer = setTimeout(() => setError(null), 4000);
+        }
+
+        if (success) {
+            successTimer = setTimeout(() => setSuccess(null), 4000);
+        }
+
+        return () => {
+            clearTimeout(errorTimer);
+            clearTimeout(successTimer);
+        };
+    }, [error, success]);
+
     useEffect(() => {
         if (databaseName && groupId && teacherId) {
             loadGroupData();
@@ -271,25 +289,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         setSelectedCell({ studentId, date });
         setSelectedAttendance(existing || {
             status: 'absent',
-            reason: '',
             reasonType: 'other',
             certificate: null,
-            note: '',
             lessonsAbsent: 0,
             totalLessons: 0
         });
         setShowReasonModal(true);
-    };
-
-    const encodeUserInfo = (userInfo) => {
-        if (!userInfo) return '{}';
-        try {
-            const userInfoObj = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo;
-            return JSON.stringify(userInfoObj);
-        } catch (e) {
-            console.error('Помилка кодування userInfo:', e);
-            return '{}';
-        }
     };
 
     const handleSaveAttendance = async (attendanceData) => {
@@ -388,7 +393,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 setSelectedAttendance(null);
             } else {
                 const errorText = await response.text();
-                console.error('Помилка відповіді:', errorText);
                 try {
                     const errorData = JSON.parse(errorText);
                     setError(errorData.message || errorData.error || 'Помилка при видаленні');
@@ -634,20 +638,36 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </select>
             </div>
 
-            {/* Повідомлення */}
+            {/* Повідомлення з можливістю закриття */}
             {error && (
                 <div style={{
                     backgroundColor: '#fee2e2',
                     color: '#dc2626',
-                    padding: '12px',
+                    padding: '12px 16px',
                     borderRadius: '6px',
                     marginBottom: '20px',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: '10px'
                 }}>
-                    <FaExclamationTriangle />
-                    {error}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FaExclamationTriangle />
+                        <span>{error}</span>
+                    </div>
+                    <button
+                        onClick={() => setError(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#dc2626',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            padding: '0 4px'
+                        }}
+                    >
+                        <FaTimes />
+                    </button>
                 </div>
             )}
 
@@ -655,11 +675,28 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 <div style={{
                     backgroundColor: '#d1fae5',
                     color: '#065f46',
-                    padding: '12px',
+                    padding: '12px 16px',
                     borderRadius: '6px',
-                    marginBottom: '20px'
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px'
                 }}>
-                    {success}
+                    <span>{success}</span>
+                    <button
+                        onClick={() => setSuccess(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#065f46',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            padding: '0 4px'
+                        }}
+                    >
+                        <FaTimes />
+                    </button>
                 </div>
             )}
 
