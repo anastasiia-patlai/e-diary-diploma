@@ -18,6 +18,7 @@ import {
     FaCalendarWeek
 } from 'react-icons/fa';
 import AttendanceReasonModal from './AttendanceReasonModal';
+import axios from 'axios'; // Додаємо імпорт axios
 
 const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const [loading, setLoading] = useState(false);
@@ -205,6 +206,24 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!selectedQuarter?._id || !groupId) return;
 
         try {
+            // Спочатку отримуємо розклад для всіх днів, щоб знати реальну кількість уроків
+            const scheduleResponse = await fetch(
+                `/api/schedule?databaseName=${databaseName}&group=${groupId}&semester=${selectedQuarter.semester?._id}`
+            );
+            const schedules = await scheduleResponse.json();
+
+            // Групуємо розклад по днях тижня
+            const lessonsByDay = {};
+            schedules.forEach(schedule => {
+                const dayOfWeek = schedule.dayOfWeek?.order; // 1-7
+                if (!lessonsByDay[dayOfWeek]) {
+                    lessonsByDay[dayOfWeek] = [];
+                }
+                lessonsByDay[dayOfWeek].push(schedule);
+            });
+
+            console.log('Розклад по днях:', lessonsByDay);
+
             const response = await fetch(
                 `/api/attendance/class/group/${groupId}?quarter=${selectedQuarter._id}&databaseName=${databaseName}`,
                 {
@@ -219,6 +238,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 setExistingAttendance(data);
 
                 const attendanceMap = {};
+
                 data.forEach(record => {
                     const studentId = record.student?._id || record.student;
 
@@ -227,15 +247,25 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         return;
                     }
 
-                    const recordDate = new Date(record.date).toISOString().split('T')[0];
-                    const key = `${studentId}_${recordDate}`;
+                    const recordDate = new Date(record.date);
+                    const recordDateStr = recordDate.toISOString().split('T')[0];
+                    const key = `${studentId}_${recordDateStr}`;
+
+                    // Отримуємо день тижня для цієї дати
+                    const dayOfWeek = recordDate.getDay() === 0 ? 7 : recordDate.getDay();
+
+                    // Отримуємо реальну кількість уроків у цей день
+                    const actualTotalLessons = lessonsByDay[dayOfWeek]?.length || 0;
+
+                    console.log(`Для дати ${recordDateStr}, день ${dayOfWeek}, уроків: ${actualTotalLessons}`);
 
                     attendanceMap[key] = {
                         status: record.status,
                         reasonType: record.reasonType || 'other',
                         certificate: record.certificate || null,
                         lessonsAbsent: record.lessonsAbsent || 0,
-                        totalLessons: record.totalLessons || 0,
+                        totalLessons: actualTotalLessons, // Використовуємо реальну кількість з розкладу
+                        lessonDetails: record.lessonDetails || [],
                         _id: record._id
                     };
                 });
@@ -292,7 +322,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             reasonType: 'other',
             certificate: null,
             lessonsAbsent: 0,
-            totalLessons: 0
+            totalLessons: 0,
+            lessonDetails: []
         });
         setShowReasonModal(true);
     };
@@ -301,36 +332,74 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!selectedCell || !groupId) return;
 
         try {
+            // Спочатку отримуємо актуальний розклад для цього дня
+            const dateObj = new Date(selectedCell.date.fullDate);
+            const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
+
+            const scheduleResponse = await fetch(
+                `/api/schedule?databaseName=${databaseName}&group=${groupId}&semester=${selectedQuarter.semester?._id}`
+            );
+            const schedules = await scheduleResponse.json();
+
+            const lessonsByDay = {};
+            schedules.forEach(schedule => {
+                const day = schedule.dayOfWeek?.order;
+                if (!lessonsByDay[day]) {
+                    lessonsByDay[day] = [];
+                }
+                lessonsByDay[day].push(schedule);
+            });
+
+            const actualTotalLessons = lessonsByDay[dayOfWeek]?.length || 0;
+
             // Спочатку зберігаємо/оновлюємо записи для кожного уроку
             if (attendanceData.lessonDetails) {
                 const lessonPromises = attendanceData.lessonDetails.map(async (lesson) => {
-                    const payload = {
-                        databaseName,
-                        scheduleId: lesson.scheduleId,
-                        studentId: selectedCell.studentId,
-                        date: selectedCell.date.fullDate,
-                        status: lesson.status,
-                        reason: attendanceData.reason || ''
-                    };
-
-                    // Перевіряємо, чи є вже запис для цього уроку
-                    const existingRecord = await axios.get(
-                        `/api/attendance/lesson/schedule/${lesson.scheduleId}?date=${selectedCell.date.fullDate}&studentId=${selectedCell.studentId}&databaseName=${databaseName}`
-                    );
-
-                    if (existingRecord.data) {
-                        return axios.put(`/api/attendance/lesson/${existingRecord.data._id}`, payload);
-                    } else {
-                        return axios.post('/api/attendance/lesson', {
-                            ...payload,
+                    if (lesson.markedBy === 'class_teacher' && lesson.status === 'absent') {
+                        const payload = {
+                            databaseName,
+                            scheduleId: lesson.scheduleId,
+                            date: selectedCell.date.fullDate,
                             records: [{
                                 student: selectedCell.studentId,
-                                status: lesson.status,
-                                reason: attendanceData.reason || ''
+                                status: 'absent',
+                                reason: attendanceData.reasonType === 'sick' ? 'Хвороба' :
+                                    attendanceData.reasonType === 'family' ? 'Сімейні обставини' : ''
                             }]
+                        };
+
+                        // Перевіряємо, чи є вже запис для цього уроку
+                        try {
+                            const existingRecord = await fetch(
+                                `/api/attendance/lesson/schedule/${lesson.scheduleId}?date=${selectedCell.date.fullDate}&databaseName=${databaseName}`
+                            );
+                            const existingData = await existingRecord.json();
+
+                            if (existingData && existingData.records) {
+                                const studentRecord = existingData.records.find(r =>
+                                    r.student === selectedCell.studentId || r.student?._id === selectedCell.studentId
+                                );
+
+                                if (studentRecord && studentRecord._id) {
+                                    return fetch(`/api/attendance/lesson/${studentRecord._id}`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload)
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            // Запис не знайдено, створюємо новий
+                        }
+
+                        return fetch('/api/attendance/lesson', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
                         });
                     }
-                });
+                    return null;
+                }).filter(p => p !== null);
 
                 await Promise.all(lessonPromises);
             }
@@ -345,7 +414,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 status: attendanceData.status,
                 reasonType: attendanceData.reasonType,
                 lessonsAbsent: attendanceData.lessonsAbsent,
-                totalLessons: attendanceData.totalLessons,
+                totalLessons: actualTotalLessons, // Використовуємо актуальну кількість
                 lessonDetails: attendanceData.lessonDetails,
                 certificate: attendanceData.certificate
             };
@@ -378,8 +447,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         reasonType: savedRecord.reasonType || 'other',
                         certificate: savedRecord.certificate,
                         lessonsAbsent: savedRecord.lessonsAbsent || 0,
-                        totalLessons: savedRecord.totalLessons || 0,
-                        lessonDetails: savedRecord.lessonDetails,
+                        totalLessons: actualTotalLessons, // Оновлюємо в стані
+                        lessonDetails: savedRecord.lessonDetails || [],
                         _id: savedRecord._id
                     }
                 }));
@@ -394,6 +463,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 setError(errorData.message || errorData.error || 'Помилка при збереженні');
             }
         } catch (err) {
+            console.error('Помилка збереження:', err);
             setError('Помилка при збереженні: ' + err.message);
         }
     };
@@ -732,7 +802,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </div>
             )}
 
-            {/* Статистика - тепер тільки 3 блоки */}
+            {/* Статистика */}
             {quarterDates.length > 0 && (
                 <div style={{
                     display: 'grid',
@@ -776,7 +846,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </div>
             )}
 
-            {/* Таблиця відвідуваності з розділенням на тижні */}
+            {/* Таблиця відвідуваності */}
             {students.length > 0 && quarterDates.length > 0 ? (
                 <div style={{
                     border: '1px solid #e5e7eb',
@@ -961,7 +1031,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </div>
             )}
 
-            {/* Легенда - завжди після таблиці */}
+            {/* Легенда */}
             {students.length > 0 && quarterDates.length > 0 && (
                 <div style={{
                     marginTop: '20px',
@@ -1009,7 +1079,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         }}>
                             2/8
                         </span>
-                        <span style={{ fontSize: '14px', color: '#4b5563' }}>часткова відсутність (пропущено уроків/всього)</span>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>часткова відсутність</span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1047,7 +1117,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                                 ✓
                             </span>
                         </div>
-                        <span style={{ fontSize: '14px', color: '#4b5563' }}>є довідка/записка</span>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>є довідка</span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1080,6 +1150,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 attendance={selectedAttendance}
                 date={selectedCell?.date}
                 studentName={students.find(s => s._id === selectedCell?.studentId)?.fullName}
+                studentId={selectedCell?.studentId}
                 groupId={groupId}
                 databaseName={databaseName}
                 selectedQuarter={selectedQuarter}

@@ -19,7 +19,7 @@ const AttendanceReasonModal = ({
     attendance,
     date,
     studentName,
-    studentId, // Додано цей проп
+    studentId,
     groupId,
     databaseName,
     selectedQuarter,
@@ -53,79 +53,101 @@ const AttendanceReasonModal = ({
     }, [attendance, show]);
 
     useEffect(() => {
-        if (show && databaseName && groupId && date && selectedQuarter && studentId) {
+        if (show && databaseName && groupId && date && selectedQuarter) {
             loadData();
         }
-    }, [show, databaseName, groupId, date, selectedQuarter, studentId]);
+    }, [show, databaseName, groupId, date, selectedQuarter]);
 
     const loadData = async () => {
         setLoading(true);
         try {
             console.log('Loading data for:', { studentId, date, groupId });
 
-            // 1. Завантажуємо розклад групи на день
+            // Отримуємо день тижня з дати
+            const dateObj = new Date(date.fullDate);
+            const dayOfWeek = dateObj.getDay();
+            const dbDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+            // Отримуємо ID дня тижня
+            const dayResponse = await axios.get('/api/days/by-id/' + dbDayOfWeek, {
+                params: { databaseName }
+            });
+
+            if (!dayResponse.data) {
+                console.error('День тижня не знайдено');
+                return;
+            }
+
+            const dayOfWeekId = dayResponse.data._id;
+            console.log('Day of week ID:', dayOfWeekId);
+
+            // Отримуємо розклад групи на цей день
             const scheduleResponse = await axios.get('/api/schedule', {
                 params: {
                     databaseName,
                     group: groupId,
-                    date: date.fullDate
+                    dayOfWeek: dayOfWeekId,
+                    semester: selectedQuarter?.semester?._id
                 }
             });
 
-            const dayOfWeek = new Date(date.fullDate).getDay();
-            const lessons = scheduleResponse.data.filter(lesson => {
-                const lessonDay = lesson.dayOfWeek?.order === 7 ? 0 : lesson.dayOfWeek?.order;
-                return lessonDay === dayOfWeek;
-            });
+            console.log('Schedule response:', scheduleResponse.data);
+            console.log(`Знайдено ${scheduleResponse.data.length} уроків на цей день`);
 
-            setDaySchedule(lessons);
-            setTotalLessons(lessons.length);
+            setDaySchedule(scheduleResponse.data);
+            setTotalLessons(scheduleResponse.data.length);
 
-            // 2. Завантажуємо вже існуючі записи відвідуваності для цього студента на цю дату
-            const attendancePromises = lessons.map(async (lesson) => {
-                try {
-                    const response = await axios.get(
-                        `/api/attendance/lesson/schedule/${lesson._id}`,
-                        {
-                            params: {
-                                databaseName,
-                                date: date.fullDate
+            // Завантажуємо вже існуючі записи відвідуваності для цього студента
+            if (studentId) {
+                const attendancePromises = scheduleResponse.data.map(async (lesson) => {
+                    try {
+                        const response = await axios.get(
+                            `/api/attendance/lesson/schedule/${lesson._id}`,
+                            {
+                                params: {
+                                    databaseName,
+                                    date: date.fullDate
+                                }
                             }
-                        }
-                    );
-
-                    if (response.data && response.data.records) {
-                        const studentRecord = response.data.records.find(r =>
-                            (r.student?._id === studentId || r.student === studentId)
                         );
-                        return { lesson, record: studentRecord };
+
+                        if (response.data && response.data.records) {
+                            const studentRecord = response.data.records.find(r =>
+                                (r.student?._id === studentId || r.student === studentId)
+                            );
+                            return { lesson, record: studentRecord };
+                        }
+                        return { lesson, record: null };
+                    } catch (error) {
+                        console.error(`Помилка завантаження для уроку ${lesson._id}:`, error);
+                        return { lesson, record: null };
                     }
-                    return { lesson, record: null };
-                } catch (error) {
-                    console.error(`Помилка завантаження для уроку ${lesson._id}:`, error);
-                    return { lesson, record: null };
-                }
-            });
+                });
 
-            const results = await Promise.all(attendancePromises);
+                const results = await Promise.all(attendancePromises);
 
-            // Збираємо ID уроків, де студент відсутній
-            const absentLessons = [];
-            const attendanceMap = {};
+                // Збираємо ID уроків, де студент відсутній
+                const absentLessons = [];
+                const attendanceMap = {};
 
-            results.forEach(({ lesson, record }) => {
-                if (record && record.status === 'absent') {
-                    absentLessons.push(lesson._id);
-                    attendanceMap[lesson._id] = record;
-                }
-            });
+                results.forEach(({ lesson, record }) => {
+                    if (record && record.status === 'absent') {
+                        absentLessons.push(lesson._id);
+                        attendanceMap[lesson._id] = record;
+                    }
+                });
 
-            setSelectedLessons(absentLessons);
-            setLessonAttendanceData(attendanceMap);
-            setIsReadOnly(absentLessons.length > 0);
+                console.log('Знайдено відсутніх уроків:', absentLessons.length);
+                setSelectedLessons(absentLessons);
+                setLessonAttendanceData(attendanceMap);
+                setIsReadOnly(absentLessons.length > 0);
+            }
 
         } catch (error) {
             console.error('Помилка завантаження даних:', error);
+            if (error.response) {
+                console.error('Server response:', error.response.data);
+            }
         } finally {
             setLoading(false);
         }
@@ -145,17 +167,6 @@ const AttendanceReasonModal = ({
         });
     };
 
-    const getLessonStatus = (scheduleId) => {
-        if (lessonAttendanceData[scheduleId]) {
-            return {
-                text: 'Відмічено вчителем',
-                color: '#10b981',
-                icon: <FaCheckCircle />
-            };
-        }
-        return null;
-    };
-
     const handleSave = () => {
         const lessonDetails = daySchedule.map(lesson => {
             const teacherRecord = lessonAttendanceData[lesson._id];
@@ -165,8 +176,7 @@ const AttendanceReasonModal = ({
                     subject: lesson.subject,
                     timeSlot: lesson.timeSlot,
                     status: 'absent',
-                    markedBy: 'teacher',
-                    teacherName: lesson.teacher?.fullName
+                    markedBy: 'teacher'
                 };
             } else {
                 return {
@@ -183,12 +193,14 @@ const AttendanceReasonModal = ({
 
         const attendanceData = {
             status: totalAbsent > 0 ? 'absent' : 'present',
-            reasonType: totalAbsent > 0 ? reasonType : 'other',
+            reasonType,
             lessonsAbsent: totalAbsent,
-            totalLessons,
+            totalLessons: daySchedule.length, // Використовуємо актуальну кількість уроків
             lessonDetails,
             certificate: hasCertificate
         };
+
+        console.log('Збереження даних:', attendanceData);
         onSave(attendanceData);
     };
 
@@ -255,7 +267,7 @@ const AttendanceReasonModal = ({
                 {/* Список уроків */}
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                        Уроки на цей день:
+                        Позначте уроки, на яких учень був відсутній:
                     </label>
 
                     {loading ? (
@@ -281,7 +293,6 @@ const AttendanceReasonModal = ({
                             {daySchedule.map((lesson, index) => {
                                 const teacherMarked = lessonAttendanceData[lesson._id];
                                 const isSelected = selectedLessons.includes(lesson._id);
-                                const status = getLessonStatus(lesson._id);
 
                                 return (
                                     <div
@@ -373,7 +384,7 @@ const AttendanceReasonModal = ({
                     )}
                 </div>
 
-                {/* Блок причини (тільки якщо є пропуски) */}
+                {/* Блок причини */}
                 {selectedLessons.length > 0 && (
                     <>
                         <div style={{ marginBottom: '20px' }}>
