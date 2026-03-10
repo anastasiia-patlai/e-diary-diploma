@@ -214,11 +214,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
                     attendanceMap[key] = {
                         status: record.status,
-                        reason: record.reason || '',
                         reasonType: record.reasonType || 'other',
-                        // Спрощене поле для довідки
-                        certificate: record.certificate ? { has: true } : null,
-                        note: record.note || '',
+                        certificate: record.certificate || null,
                         lessonsAbsent: record.lessonsAbsent || 0,
                         totalLessons: record.totalLessons || 0,
                         _id: record._id
@@ -434,7 +431,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        position: 'relative'
                     }}>
                         <span style={{
                             backgroundColor: '#ef4444',
@@ -450,6 +448,26 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         }}>
                             Н
                         </span>
+                        {record.certificate && (
+                            <span style={{
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '-5px',
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                width: '14px',
+                                height: '14px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                border: '1px solid white'
+                            }}>
+                                ✓
+                            </span>
+                        )}
                     </div>
                 );
             }
@@ -462,7 +480,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        position: 'relative'
                     }}>
                         <span style={{
                             backgroundColor: '#f59e0b',
@@ -478,6 +497,26 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         }}>
                             {record.lessonsAbsent}/{record.totalLessons}
                         </span>
+                        {record.certificate && (
+                            <span style={{
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '-5px',
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                width: '14px',
+                                height: '14px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                border: '1px solid white'
+                            }}>
+                                ✓
+                            </span>
+                        )}
                     </div>
                 );
             }
@@ -850,6 +889,113 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     color: '#6b7280'
                 }}>
                     {students.length === 0 ? 'Немає учнів у класі' : 'Виберіть чверть для відображення'}
+                </div>
+            )}
+
+            {/* Легенда - завжди після таблиці */}
+            {students.length > 0 && quarterDates.length > 0 && (
+                <div style={{
+                    marginTop: '20px',
+                    padding: '16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '24px',
+                    alignItems: 'center'
+                }}>
+                    <div style={{ fontWeight: '500', color: '#374151' }}>Позначення:</div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '14px'
+                        }}>
+                            Н
+                        </span>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>повна відсутність</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '12px'
+                        }}>
+                            2/8
+                        </span>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>часткова відсутність (пропущено уроків/всього)</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ position: 'relative', width: '24px', height: '24px' }}>
+                            <span style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '14px'
+                            }}>
+                                Н
+                            </span>
+                            <span style={{
+                                position: 'absolute',
+                                top: '-5px',
+                                right: '-5px',
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                width: '14px',
+                                height: '14px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '10px',
+                                fontWeight: 'bold',
+                                border: '1px solid white'
+                            }}>
+                                ✓
+                            </span>
+                        </div>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>є довідка/записка</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#d1d5db',
+                            fontSize: '16px',
+                            fontWeight: '500'
+                        }}>
+                            —
+                        </span>
+                        <span style={{ fontSize: '14px', color: '#4b5563' }}>присутній</span>
+                    </div>
                 </div>
             )}
 
