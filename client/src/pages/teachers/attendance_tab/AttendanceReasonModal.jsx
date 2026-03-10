@@ -4,7 +4,6 @@ import {
     FaStethoscope,
     FaHome,
     FaFileMedical,
-    FaRegFile,
     FaExclamationTriangle,
     FaTrash
 } from 'react-icons/fa';
@@ -20,36 +19,24 @@ const AttendanceReasonModal = ({
     isMobile
 }) => {
     const [reasonType, setReasonType] = useState('other');
-    const [reason, setReason] = useState('');
     const [hasCertificate, setHasCertificate] = useState(false);
-    const [certificateNumber, setCertificateNumber] = useState('');
-    const [certificateDate, setCertificateDate] = useState('');
-    const [note, setNote] = useState('');
     const [lessonsAbsent, setLessonsAbsent] = useState(0);
-    const [totalLessons, setTotalLessons] = useState(0);
+    const [totalLessons, setTotalLessons] = useState(8);
     const [absenceType, setAbsenceType] = useState('full'); // 'full' або 'partial'
 
     useEffect(() => {
         if (attendance) {
             setReasonType(attendance.reasonType || 'other');
-            setReason(attendance.reason || '');
             setHasCertificate(!!attendance.certificate);
-            setCertificateNumber(attendance.certificate?.number || '');
-            setCertificateDate(attendance.certificate?.date || '');
-            setNote(attendance.note || '');
             setLessonsAbsent(attendance.lessonsAbsent || 0);
-            setTotalLessons(attendance.totalLessons || 0);
+            setTotalLessons(attendance.totalLessons || 8);
             setAbsenceType(attendance.lessonsAbsent === attendance.totalLessons ? 'full' : 'partial');
         } else {
             // Значення за замовчуванням для нового запису
             setReasonType('other');
-            setReason('');
             setHasCertificate(false);
-            setCertificateNumber('');
-            setCertificateDate('');
-            setNote('');
             setLessonsAbsent(0);
-            setTotalLessons(8); // За замовчуванням 8 уроків у день
+            setTotalLessons(8);
             setAbsenceType('full');
         }
     }, [attendance, show]);
@@ -60,14 +47,9 @@ const AttendanceReasonModal = ({
         const attendanceData = {
             status: 'absent',
             reasonType,
-            reason: reason || getReasonTypeLabel(reasonType),
             lessonsAbsent: absenceType === 'full' ? totalLessons : lessonsAbsent,
             totalLessons,
-            certificate: hasCertificate ? {
-                number: certificateNumber,
-                date: certificateDate
-            } : null,
-            note
+            certificate: hasCertificate ? { has: true } : null
         };
         onSave(attendanceData);
     };
@@ -77,14 +59,6 @@ const AttendanceReasonModal = ({
             case 'sick': return 'Хвороба';
             case 'family': return 'Сімейні обставини';
             default: return 'Інша причина';
-        }
-    };
-
-    const getReasonIcon = (type) => {
-        switch (type) {
-            case 'sick': return <FaStethoscope />;
-            case 'family': return <FaHome />;
-            default: return <FaExclamationTriangle />;
         }
     };
 
@@ -171,7 +145,7 @@ const AttendanceReasonModal = ({
                                 fontWeight: absenceType === 'full' ? '600' : 'normal'
                             }}
                         >
-                            Повна відсутність (Н)
+                            Повна відсутність
                         </button>
                         <button
                             onClick={() => setAbsenceType('partial')}
@@ -230,7 +204,7 @@ const AttendanceReasonModal = ({
                     </div>
                 )}
 
-                {/* Причина відсутності */}
+                {/* Причина відсутності (спрощена) */}
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
                         Причина відсутності:
@@ -268,19 +242,6 @@ const AttendanceReasonModal = ({
                             </button>
                         ))}
                     </div>
-                    <textarea
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        placeholder="Детальний опис причини..."
-                        rows="2"
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '6px',
-                            resize: 'vertical'
-                        }}
-                    />
                 </div>
 
                 {/* Довідка/записка */}
@@ -299,52 +260,9 @@ const AttendanceReasonModal = ({
                         />
                         <FaFileMedical style={{ color: hasCertificate ? '#10b981' : '#9ca3af' }} />
                         <span style={{ fontWeight: '500' }}>
-                            {reasonType === 'sick' ? 'Є медична довідка' : 'Є записка від батьків'}
+                            {reasonType === 'sick' ? 'Медична довідка' : 'Записка від батьків'}
                         </span>
                     </label>
-
-                    {hasCertificate && (
-                        <div style={{
-                            backgroundColor: '#f9fafb',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            marginTop: '8px'
-                        }}>
-                            <div style={{ marginBottom: '10px' }}>
-                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                                    Номер документа:
-                                </label>
-                                <input
-                                    type="text"
-                                    value={certificateNumber}
-                                    onChange={(e) => setCertificateNumber(e.target.value)}
-                                    placeholder="Наприклад: №123 від 15.03.2024"
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '4px'
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                                    Дата документа:
-                                </label>
-                                <input
-                                    type="date"
-                                    value={certificateDate}
-                                    onChange={(e) => setCertificateDate(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '4px'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Кнопки */}

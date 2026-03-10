@@ -187,12 +187,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!selectedQuarter?._id || !groupId) return;
 
         try {
-            console.log('Loading attendance for quarter:', {
-                groupId,
-                quarterId: selectedQuarter._id,
-                databaseName
-            });
-
             const response = await fetch(
                 `/api/attendance/class/group/${groupId}?quarter=${selectedQuarter._id}&databaseName=${databaseName}`,
                 {
@@ -202,15 +196,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 }
             );
 
-            console.log('Load response status:', response.status);
-
             if (response.ok) {
                 const data = await response.json();
-                console.log('Loaded attendance data:', data);
+                setExistingAttendance(data);
 
                 const attendanceMap = {};
                 data.forEach(record => {
-                    // Отримуємо ID студента (може бути об'єктом або рядком)
                     const studentId = record.student?._id || record.student;
 
                     if (!studentId) {
@@ -221,19 +212,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     const recordDate = new Date(record.date).toISOString().split('T')[0];
                     const key = `${studentId}_${recordDate}`;
 
-                    console.log('Mapping record:', {
-                        studentId,
-                        recordDate,
-                        key,
-                        record,
-                        studentObj: record.student
-                    });
-
                     attendanceMap[key] = {
                         status: record.status,
                         reason: record.reason || '',
                         reasonType: record.reasonType || 'other',
-                        certificate: record.certificate || null,
+                        // Спрощене поле для довідки
+                        certificate: record.certificate ? { has: true } : null,
                         note: record.note || '',
                         lessonsAbsent: record.lessonsAbsent || 0,
                         totalLessons: record.totalLessons || 0,
@@ -241,15 +225,11 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     };
                 });
 
-                console.log('Final attendance map:', attendanceMap);
                 setAttendance(attendanceMap);
                 setIsEditing(false);
-            } else {
-                const errorText = await response.text();
-                console.error('Error loading attendance:', errorText);
             }
         } catch (err) {
-            console.error('Exception in loadAttendanceForQuarter:', err);
+            console.error('Помилка завантаження відвідуваності:', err);
         }
     };
 
@@ -325,10 +305,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 studentId: selectedCell.studentId,
                 date: selectedCell.date.fullDate,
                 quarter: selectedQuarter._id,
-                ...attendanceData
+                status: 'absent',
+                reasonType: attendanceData.reasonType,
+                lessonsAbsent: attendanceData.lessonsAbsent,
+                totalLessons: attendanceData.totalLessons,
+                certificate: attendanceData.certificate
             };
-
-            console.log('Sending payload to server:', payload);
 
             let response;
             const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
@@ -339,14 +321,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             };
 
             if (existingRecord?._id) {
-                console.log('Updating existing record:', existingRecord._id);
                 response = await fetch(`/api/attendance/class/${existingRecord._id}`, {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify(payload)
                 });
             } else {
-                console.log('Creating new record');
                 response = await fetch('/api/attendance/class/', {
                     method: 'POST',
                     headers,
@@ -354,50 +334,31 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 });
             }
 
-            console.log('Response status:', response.status);
-
             if (response.ok) {
                 const savedRecord = await response.json();
-                console.log('Saved record from server:', savedRecord);
 
-                // Оновлюємо стан з правильним ключем
-                setAttendance(prev => {
-                    const newAttendance = { ...prev };
-                    newAttendance[key] = {
+                setAttendance(prev => ({
+                    ...prev,
+                    [key]: {
                         status: savedRecord.status,
-                        reason: savedRecord.reason || '',
                         reasonType: savedRecord.reasonType || 'other',
-                        certificate: savedRecord.certificate || null,
-                        note: savedRecord.note || '',
+                        certificate: savedRecord.certificate,
                         lessonsAbsent: savedRecord.lessonsAbsent || 0,
                         totalLessons: savedRecord.totalLessons || 0,
                         _id: savedRecord._id
-                    };
-                    return newAttendance;
-                });
+                    }
+                }));
 
                 setSuccess('Дані відвідуваності збережено');
                 setShowReasonModal(false);
                 setSelectedCell(null);
                 setSelectedAttendance(null);
                 setIsEditing(true);
-
-                // Примусово перезавантажуємо дані після збереження
-                setTimeout(() => {
-                    loadAttendanceForQuarter();
-                }, 500);
             } else {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                try {
-                    const errorData = JSON.parse(errorText);
-                    setError(errorData.message || errorData.error || 'Помилка при збереженні');
-                } catch {
-                    setError('Помилка при збереженні: ' + errorText);
-                }
+                const errorData = await response.json();
+                setError(errorData.message || errorData.error || 'Помилка при збереженні');
             }
         } catch (err) {
-            console.error('Exception in handleSaveAttendance:', err);
             setError('Помилка при збереженні: ' + err.message);
         }
     };
@@ -463,83 +424,77 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             );
         }
 
-        if (record.lessonsAbsent === record.totalLessons && record.totalLessons > 0) {
-            return (
-                <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <span style={{
-                        backgroundColor: '#34d246',
-                        color: 'white',
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '4px',
+        // Якщо є запис про відсутність
+        if (record.status === 'absent') {
+            // Повна відсутність (Н)
+            if (record.lessonsAbsent === record.totalLessons && record.totalLessons > 0) {
+                return (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold',
-                        fontSize: '14px'
+                        justifyContent: 'center'
                     }}>
-                        Н
-                    </span>
-                </div>
-            );
-        }
+                        <span style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '14px'
+                        }}>
+                            Н
+                        </span>
+                    </div>
+                );
+            }
 
-        if (record.lessonsAbsent > 0 && record.totalLessons > 0) {
-            return (
-                <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <span style={{
-                        backgroundColor: '#f59e0b',
-                        color: 'white',
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '4px',
+            // Часткова відсутність (дріб)
+            if (record.lessonsAbsent > 0 && record.totalLessons > 0) {
+                return (
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 'bold',
-                        fontSize: '14px'
+                        justifyContent: 'center'
                     }}>
-                        {record.lessonsAbsent}/{record.totalLessons}
-                    </span>
-                </div>
-            );
+                        <span style={{
+                            backgroundColor: '#f59e0b',
+                            color: 'white',
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '12px'
+                        }}>
+                            {record.lessonsAbsent}/{record.totalLessons}
+                        </span>
+                    </div>
+                );
+            }
         }
 
-        // Якщо студент був присутній (немає запису про відсутність)
+        // Якщо студент був присутній - показуємо прочерк
         return (
             <div style={{
                 width: '100%',
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                color: '#d1d5db',
+                fontSize: '14px'
             }}>
-                <span style={{
-                    backgroundColor: '#f76060',
-                    color: 'white',
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '14px'
-                }}>
-                    н
-                </span>
+                —
             </div>
         );
     };
