@@ -44,7 +44,10 @@ const daysOfWeekRoutes = require('./routes/daysOfWeek');
 const studyCalendar = require('./routes/studyCalendar');
 const availableResourcesRoutes = require('./routes/availableResources');
 const gradeRoutes = require('./routes/grades');
-const homeworkRoutes = require('./routes/homeworks');
+const classAttendanceRoutes = require('./routes/classAttendance');
+const lessonAttendanceRoutes = require('./routes/lessonAttendance');
+
+// const homeworkRoutes = require('./routes/homeworks');
 
 console.log('Перевірка завантаження маршрутів...');
 
@@ -62,7 +65,11 @@ app.use('/api/days', daysOfWeekRoutes);
 app.use('/api/study-calendar', studyCalendar);
 app.use('/api/available', availableResourcesRoutes);
 app.use('/api/grades', gradeRoutes);
-app.use('/api/homeworks', homeworkRoutes);
+app.use('/api/attendance/class', classAttendanceRoutes);  // для класного керівника
+app.use('/api/attendance/lesson', lessonAttendanceRoutes); // для вчителів
+app.use('/api/attendance', lessonAttendanceRoutes);         // для сумісності
+
+// app.use('/api/homeworks', homeworkRoutes);
 
 console.log('Всі маршрути зареєстровано!');
 

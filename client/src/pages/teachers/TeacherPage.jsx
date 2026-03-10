@@ -26,12 +26,15 @@ import TeacherInfo from "./teacher_info/TeacherInfo";
 import MyStudents from "./my_students_tab/MyStudents";
 import TeacherScheduleTab from "./schedule_tab/TeacherScheduleTab";
 import JournalTab from './journal_tab/JournalTab';
-import GradebookPage from './journal_tab/GradebookPage'; // Імпортуємо компонент журналу
+import GradebookPage from './journal_tab/GradebookPage';
+import AttendanceTab from "./attendance_tab/AttendanceTab";
+import ClassAttendance from "./attendance_tab/ClassAttendance";
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const [activeSection, setActiveSection] = useState("Головна");
     const [showGradebook, setShowGradebook] = useState(false); // Новий стан для відображення журналу
     const [activeGradebookSchedule, setActiveGradebookSchedule] = useState(null);
+    const [curatorGroupId, setCuratorGroupId] = useState(null);
     const [userData, setUserData] = useState(null);
     const [databaseName, setDatabaseName] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -57,6 +60,8 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
             const { databaseName: dbName, userId } = userInfo;
 
+            console.log('userInfo з localStorage:', userInfo);
+
             setDatabaseName(dbName);
 
             if (dbName && userId) {
@@ -66,14 +71,51 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     const data = await response.json();
 
                     if (data.success) {
+                        // Додаємо userId до даних
+                        if (!data.user._id && userId) {
+                            data.user._id = userId;
+                        }
+
+                        // Окремий запит для отримання групи, де вчитель є куратором
+                        try {
+                            const groupsResponse = await fetch(`/api/groups?databaseName=${dbName}`);
+                            if (groupsResponse.ok) {
+                                const groups = await groupsResponse.json();
+                                console.log('Всі групи для перевірки куратора:', groups);
+
+                                // Шукаємо групу, де curator співпадає з userId
+                                const curatorGroup = groups.find(g => {
+                                    // Перевіряємо різні формати
+                                    if (g.curator && typeof g.curator === 'object' && g.curator._id === userId) {
+                                        return true;
+                                    }
+                                    if (g.curator && typeof g.curator === 'string' && g.curator === userId) {
+                                        return true;
+                                    }
+                                    return false;
+                                });
+
+                                console.log('Знайдена група куратора:', curatorGroup);
+
+                                if (curatorGroup) {
+                                    data.user.curatorGroup = curatorGroup;
+                                    setCuratorGroupId(curatorGroup._id); // Зберігаємо ID групи
+                                }
+                            }
+                        } catch (groupError) {
+                            console.error('Помилка отримання груп:', groupError);
+                        }
+
+                        console.log('Фінальні дані користувача:', data.user);
                         setUserData(data.user);
                         return;
                     }
                 }
             }
 
-            // Запасний варіант з localStorage
+            // Запасний варіант
             setUserData({
+                _id: userId,
                 fullName: userInfo.fullName || userFullName,
                 role: userInfo.role || 'teacher',
                 position: userInfo.position || 'Вчитель',
@@ -226,13 +268,15 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 );
 
             case "Відвідуваність":
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
                 return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Відвідуваність</h3>
-                        <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Тут можна відмічати присутність учнів на уроках
-                        </p>
-                    </div>
+                    <ClassAttendance
+                        databaseName={databaseName}
+                        isMobile={isMobile}
+                        teacherId={userInfo.userId} // Беремо безпосередньо з localStorage
+                        groupId={curatorGroupId || userData?.curatorGroup?._id}
+                    />
                 );
 
             case "Домашні завдання":
