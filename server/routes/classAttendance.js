@@ -3,36 +3,31 @@ const router = express.Router();
 const { getSchoolDBConnection } = require('../config/databaseManager');
 
 // Отримати відвідуваність для групи за чверть
+// GET /api/attendance/class/group/:groupId
 router.get('/group/:groupId', async (req, res) => {
     try {
         const { groupId } = req.params;
         const { databaseName, quarter } = req.query;
 
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
+        console.log('GET /api/attendance/class/group/:groupId', { groupId, databaseName, quarter });
 
         const connection = getSchoolDBConnection(databaseName);
         const ClassAttendance = require('../models/ClassAttendance')(connection);
 
-        let query = { group: groupId };
-        if (quarter) {
-            query.quarter = quarter;
-        }
+        const attendance = await ClassAttendance.find({
+            group: groupId,
+            quarter: quarter
+        }).populate('student', 'fullName');
 
-        const attendance = await ClassAttendance.find(query)
-            .populate('student', 'fullName')
-            .populate('createdBy', 'fullName')
-            .populate('updatedBy', 'fullName');
-
+        console.log(`Found ${attendance.length} records`);
         res.json(attendance);
     } catch (error) {
-        console.error('Error fetching class attendance:', error);
+        console.error('Error in GET /group/:groupId:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Створити запис відвідуваності
+// POST /api/attendance/class/
 router.post('/', async (req, res) => {
     try {
         const {
@@ -49,16 +44,10 @@ router.post('/', async (req, res) => {
             note
         } = req.body;
 
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
+        console.log('POST /api/attendance/class/', req.body);
 
         const connection = getSchoolDBConnection(databaseName);
         const ClassAttendance = require('../models/ClassAttendance')(connection);
-
-        // Отримуємо інформацію про користувача
-        const userInfo = JSON.parse(req.headers['user-info'] || '{}');
-        const userId = userInfo.userId;
 
         // Перевіряємо чи існує запис
         let attendance = await ClassAttendance.findOne({
@@ -75,10 +64,9 @@ router.post('/', async (req, res) => {
             attendance.totalLessons = totalLessons || 0;
             attendance.certificate = certificate;
             attendance.note = note;
-            attendance.updatedBy = userId;
-            attendance.status = 'absent';
 
             await attendance.save();
+            console.log('Updated existing record:', attendance);
         } else {
             // Створюємо новий запис
             attendance = new ClassAttendance({
@@ -92,26 +80,17 @@ router.post('/', async (req, res) => {
                 lessonsAbsent: lessonsAbsent || 0,
                 totalLessons: totalLessons || 0,
                 certificate,
-                note,
-                createdBy: userId,
-                updatedBy: userId
+                note
             });
 
             await attendance.save();
+            console.log('Created new record:', attendance);
         }
 
         await attendance.populate('student', 'fullName');
-
         res.status(201).json(attendance);
     } catch (error) {
-        console.error('Error saving class attendance:', error);
-
-        if (error.code === 11000) {
-            return res.status(409).json({
-                error: 'Запис для цього учня на цю дату вже існує'
-            });
-        }
-
+        console.error('Error in POST /class:', error);
         res.status(500).json({ error: error.message });
     }
 });

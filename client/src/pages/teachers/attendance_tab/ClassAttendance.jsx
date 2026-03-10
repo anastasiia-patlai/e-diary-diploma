@@ -32,7 +32,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const [quarters, setQuarters] = useState([]);
     const [selectedQuarter, setSelectedQuarter] = useState(null);
     const [quarterDates, setQuarterDates] = useState([]);
-    const [weeks, setWeeks] = useState([]); // Новий стан для тижнів
+    const [weeks, setWeeks] = useState([]);
 
     // Дані про відвідуваність
     const [attendance, setAttendance] = useState({});
@@ -49,7 +49,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         totalDays: 0,
         totalAbsent: 0,
         sickDays: 0,
-        familyDays: 0,
         otherDays: 0
     });
 
@@ -89,67 +88,27 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const loadQuarters = async () => {
         try {
-            console.log('Завантаження чвертей для databaseName:', databaseName);
-
             const response = await fetch(`/api/study-calendar/quarters?databaseName=${databaseName}`);
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Отримані чверті з БД (сирі дані):', data);
-
-                // Виводимо детальну інформацію про кожну чверть з правильним форматуванням
-                data.forEach((q, index) => {
-                    // Конвертуємо UTC дати в локальний формат
-                    const startDate = new Date(q.startDate);
-                    const endDate = new Date(q.endDate);
-
-                    console.log(`Чверть ${index + 1}:`, {
-                        id: q._id,
-                        number: q.number,
-                        name: q.name,
-                        semester: q.semester?.name || 'Невідомо',
-                        startDateUTC: q.startDate,
-                        endDateUTC: q.endDate,
-                        startDateLocal: startDate.toLocaleDateString('uk-UA'),
-                        endDateLocal: endDate.toLocaleDateString('uk-UA'),
-                        isActive: q.isActive
-                    });
-                });
-
                 setQuarters(data);
 
                 // Знаходимо активну чверть
                 const now = new Date();
-                now.setHours(12, 0, 0, 0); // Встановлюємо середину дня для коректного порівняння
+                now.setHours(12, 0, 0, 0);
 
                 const activeQuarter = data.find(q => {
                     const start = new Date(q.startDate);
                     const end = new Date(q.endDate);
-                    // Встановлюємо час на 12:00 для коректного порівняння
                     start.setHours(12, 0, 0, 0);
                     end.setHours(12, 0, 0, 0);
                     return now >= start && now <= end;
                 }) || data.find(q => q.isActive) || data[0];
 
                 if (activeQuarter) {
-                    const startDate = new Date(activeQuarter.startDate);
-                    const endDate = new Date(activeQuarter.endDate);
-
-                    console.log('Вибрана активна чверть:', {
-                        id: activeQuarter._id,
-                        number: activeQuarter.number,
-                        name: activeQuarter.name,
-                        startDate: startDate.toLocaleDateString('uk-UA'),
-                        endDate: endDate.toLocaleDateString('uk-UA'),
-                        isActive: activeQuarter.isActive
-                    });
-
                     setSelectedQuarter(activeQuarter);
-                } else {
-                    console.log('Не знайдено активної чверті');
                 }
-            } else {
-                console.error('Помилка завантаження чвертей:', response.status);
             }
         } catch (err) {
             console.error('Помилка завантаження чвертей:', err);
@@ -157,52 +116,29 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     };
 
     const generateQuarterDates = () => {
-        if (!selectedQuarter) {
-            console.log('Немає вибраної чверті');
-            return;
-        }
-
-        console.log('Генерація дат для чверті:', {
-            id: selectedQuarter._id,
-            number: selectedQuarter.number,
-            name: selectedQuarter.name,
-            startDate: selectedQuarter.startDate,
-            endDate: selectedQuarter.endDate
-        });
+        if (!selectedQuarter) return;
 
         // Функція для конвертації UTC дати в локальну з правильним днем
         const convertUTCToLocalDate = (utcDateStr) => {
             const date = new Date(utcDateStr);
-            // Отримуємо компоненти UTC дати
             const year = date.getUTCFullYear();
             const month = date.getUTCMonth();
             const day = date.getUTCDate();
-            // Створюємо локальну дату з цими компонентами
             return new Date(year, month, day, 12, 0, 0, 0);
         };
 
         const startDate = convertUTCToLocalDate(selectedQuarter.startDate);
         const endDate = convertUTCToLocalDate(selectedQuarter.endDate);
 
-        console.log('Після конвертації:', {
-            startDate: startDate.toLocaleDateString('uk-UA'),
-            endDate: endDate.toLocaleDateString('uk-UA'),
-            startDateISO: startDate.toISOString(),
-            endDateISO: endDate.toISOString()
-        });
-
         const dates = [];
         const currentDate = new Date(startDate);
         let weekNumber = 1;
         let weekDates = [];
 
-        // Цикл по днях від початку до кінця чверті
         while (currentDate <= endDate) {
-            const dayOfWeek = currentDate.getDay(); // 0 - неділя, 1 - понеділок, ..., 6 - субота
+            const dayOfWeek = currentDate.getDay();
 
-            // Тільки робочі дні (понеділок - п'ятниця)
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                // Форматуємо дату в формат YYYY-MM-DD
                 const year = currentDate.getFullYear();
                 const month = String(currentDate.getMonth() + 1).padStart(2, '0');
                 const day = String(currentDate.getDate()).padStart(2, '0');
@@ -224,92 +160,23 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
                 dates.push(dateObj);
                 weekDates.push(dateObj);
-
-                // Логуємо перший день для перевірки
-                if (dates.length === 1) {
-                    console.log('Перший день чверті:', {
-                        date: dateObj.formatted,
-                        dayName: dateObj.dayName,
-                        fullDate: dateObj.fullDate,
-                        originalDate: currentDate.toLocaleDateString('uk-UA')
-                    });
-                }
             }
 
-            // Перевіряємо чи потрібно завершити тиждень
             const isFriday = dayOfWeek === 5;
             const isLastDay = currentDate.toDateString() === endDate.toDateString();
 
             if ((isFriday || isLastDay) && weekDates.length > 0) {
-                // Позначаємо перший і останній день тижня
                 weekDates[0].isFirstOfWeek = true;
                 weekDates[weekDates.length - 1].isLastOfWeek = true;
-
-                console.log(`Тиждень ${weekNumber}: ${weekDates[0].formatted} - ${weekDates[weekDates.length - 1].formatted}`);
-
                 weekDates = [];
                 weekNumber++;
             }
 
-            // Переходимо до наступного дня
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        console.log('Згенеровано дати для чверті:', {
-            першийДень: dates[0]?.formatted,
-            першийДеньТиждень: dates[0]?.dayName,
-            останнійДень: dates[dates.length - 1]?.formatted,
-            останнійДеньТиждень: dates[dates.length - 1]?.dayName,
-            кількістьДнів: dates.length,
-            кількістьТижнів: weekNumber - 1
-        });
-
-        // Виводимо перші 10 днів для перевірки
-        console.log('Перші 10 днів чверті:', dates.slice(0, 10).map(d => ({
-            дата: d.formatted,
-            день: d.dayName,
-            тиждень: d.weekNumber
-        })));
-
         setQuarterDates(dates);
     };
-
-    // Додайте цю функцію для тестування
-    const testQuarterDates = async () => {
-        if (!databaseName) return;
-
-        try {
-            const response = await fetch(`/api/study-calendar/quarters?databaseName=${databaseName}`);
-            const quarters = await response.json();
-
-            console.log('=== ТЕСТУВАННЯ ЧВЕРТЕЙ ===');
-            quarters.forEach((q, index) => {
-                const start = new Date(q.startDate);
-                const end = new Date(q.endDate);
-
-                console.log(`Чверть ${index + 1} (${q.name}):`);
-                console.log(`  ID: ${q._id}`);
-                console.log(`  startDate (raw): ${q.startDate}`);
-                console.log(`  endDate (raw): ${q.endDate}`);
-                console.log(`  startDate (UTC): ${start.toUTCString()}`);
-                console.log(`  endDate (UTC): ${end.toUTCString()}`);
-                console.log(`  startDate (local): ${start.toLocaleDateString('uk-UA')}`);
-                console.log(`  endDate (local): ${end.toLocaleDateString('uk-UA')}`);
-                console.log(`  startDate (ISO): ${start.toISOString()}`);
-                console.log(`  endDate (ISO): ${end.toISOString()}`);
-                console.log('---');
-            });
-        } catch (err) {
-            console.error('Помилка тестування:', err);
-        }
-    };
-
-    // Викличте це в useEffect
-    useEffect(() => {
-        if (databaseName) {
-            testQuarterDates();
-        }
-    }, [databaseName]);
 
     const getDayName = (dayOfWeek) => {
         const days = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -320,27 +187,48 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!selectedQuarter?._id || !groupId) return;
 
         try {
-            const userInfo = localStorage.getItem('userInfo');
-            const encodedUserInfo = userInfo ? btoa(encodeURIComponent(userInfo)) : '{}';
+            console.log('Loading attendance for quarter:', {
+                groupId,
+                quarterId: selectedQuarter._id,
+                databaseName
+            });
 
             const response = await fetch(
                 `/api/attendance/class/group/${groupId}?quarter=${selectedQuarter._id}&databaseName=${databaseName}`,
                 {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'user-info': encodedUserInfo
+                        'Content-Type': 'application/json'
                     }
                 }
             );
 
+            console.log('Load response status:', response.status);
+
             if (response.ok) {
                 const data = await response.json();
-                setExistingAttendance(data);
+                console.log('Loaded attendance data:', data);
 
                 const attendanceMap = {};
                 data.forEach(record => {
+                    // Отримуємо ID студента (може бути об'єктом або рядком)
+                    const studentId = record.student?._id || record.student;
+
+                    if (!studentId) {
+                        console.error('Record without student ID:', record);
+                        return;
+                    }
+
                     const recordDate = new Date(record.date).toISOString().split('T')[0];
-                    const key = `${record.student}_${recordDate}`;
+                    const key = `${studentId}_${recordDate}`;
+
+                    console.log('Mapping record:', {
+                        studentId,
+                        recordDate,
+                        key,
+                        record,
+                        studentObj: record.student
+                    });
+
                     attendanceMap[key] = {
                         status: record.status,
                         reason: record.reason || '',
@@ -352,11 +240,16 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         _id: record._id
                     };
                 });
+
+                console.log('Final attendance map:', attendanceMap);
                 setAttendance(attendanceMap);
                 setIsEditing(false);
+            } else {
+                const errorText = await response.text();
+                console.error('Error loading attendance:', errorText);
             }
         } catch (err) {
-            console.error('Помилка завантаження відвідуваності:', err);
+            console.error('Exception in loadAttendanceForQuarter:', err);
         }
     };
 
@@ -365,7 +258,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
         let totalAbsent = 0;
         let sickDays = 0;
-        let familyDays = 0;
         let otherDays = 0;
 
         students.forEach(student => {
@@ -380,9 +272,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         case 'sick':
                             sickDays++;
                             break;
-                        case 'family':
-                            familyDays++;
-                            break;
                         default:
                             otherDays++;
                     }
@@ -394,7 +283,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             totalDays: quarterDates.length,
             totalAbsent,
             sickDays,
-            familyDays,
             otherDays
         });
     };
@@ -416,6 +304,17 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         setShowReasonModal(true);
     };
 
+    const encodeUserInfo = (userInfo) => {
+        if (!userInfo) return '{}';
+        try {
+            const userInfoObj = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo;
+            return JSON.stringify(userInfoObj);
+        } catch (e) {
+            console.error('Помилка кодування userInfo:', e);
+            return '{}';
+        }
+    };
+
     const handleSaveAttendance = async (attendanceData) => {
         if (!selectedCell || !groupId) return;
 
@@ -429,25 +328,25 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 ...attendanceData
             };
 
+            console.log('Sending payload to server:', payload);
+
             let response;
             const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
             const existingRecord = attendance[key];
 
-            const userInfo = localStorage.getItem('userInfo');
-            const encodedUserInfo = userInfo ? btoa(encodeURIComponent(userInfo)) : '{}';
-
             const headers = {
-                'Content-Type': 'application/json',
-                'user-info': encodedUserInfo
+                'Content-Type': 'application/json'
             };
 
             if (existingRecord?._id) {
+                console.log('Updating existing record:', existingRecord._id);
                 response = await fetch(`/api/attendance/class/${existingRecord._id}`, {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify(payload)
                 });
             } else {
+                console.log('Creating new record');
                 response = await fetch('/api/attendance/class/', {
                     method: 'POST',
                     headers,
@@ -455,27 +354,50 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 });
             }
 
+            console.log('Response status:', response.status);
+
             if (response.ok) {
                 const savedRecord = await response.json();
+                console.log('Saved record from server:', savedRecord);
 
-                setAttendance(prev => ({
-                    ...prev,
-                    [key]: {
-                        ...savedRecord,
-                        status: 'absent'
-                    }
-                }));
+                // Оновлюємо стан з правильним ключем
+                setAttendance(prev => {
+                    const newAttendance = { ...prev };
+                    newAttendance[key] = {
+                        status: savedRecord.status,
+                        reason: savedRecord.reason || '',
+                        reasonType: savedRecord.reasonType || 'other',
+                        certificate: savedRecord.certificate || null,
+                        note: savedRecord.note || '',
+                        lessonsAbsent: savedRecord.lessonsAbsent || 0,
+                        totalLessons: savedRecord.totalLessons || 0,
+                        _id: savedRecord._id
+                    };
+                    return newAttendance;
+                });
 
                 setSuccess('Дані відвідуваності збережено');
                 setShowReasonModal(false);
                 setSelectedCell(null);
                 setSelectedAttendance(null);
                 setIsEditing(true);
+
+                // Примусово перезавантажуємо дані після збереження
+                setTimeout(() => {
+                    loadAttendanceForQuarter();
+                }, 500);
             } else {
-                const errorData = await response.json();
-                setError(errorData.message || errorData.error || 'Помилка при збереженні');
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                try {
+                    const errorData = JSON.parse(errorText);
+                    setError(errorData.message || errorData.error || 'Помилка при збереженні');
+                } catch {
+                    setError('Помилка при збереженні: ' + errorText);
+                }
             }
         } catch (err) {
+            console.error('Exception in handleSaveAttendance:', err);
             setError('Помилка при збереженні: ' + err.message);
         }
     };
@@ -489,14 +411,10 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!record?._id) return;
 
         try {
-            const userInfo = localStorage.getItem('userInfo');
-            const encodedUserInfo = userInfo ? btoa(encodeURIComponent(userInfo)) : '{}';
-
             const response = await fetch(`/api/attendance/class/${record._id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'user-info': encodedUserInfo
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ databaseName })
             });
@@ -510,6 +428,15 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 setShowReasonModal(false);
                 setSelectedCell(null);
                 setSelectedAttendance(null);
+            } else {
+                const errorText = await response.text();
+                console.error('Помилка відповіді:', errorText);
+                try {
+                    const errorData = JSON.parse(errorText);
+                    setError(errorData.message || errorData.error || 'Помилка при видаленні');
+                } catch {
+                    setError('Помилка при видаленні: ' + errorText);
+                }
             }
         } catch (err) {
             setError('Помилка при видаленні: ' + err.message);
@@ -543,11 +470,10 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px'
+                    justifyContent: 'center'
                 }}>
                     <span style={{
-                        backgroundColor: '#ef4444',
+                        backgroundColor: '#34d246',
                         color: 'white',
                         width: '28px',
                         height: '28px',
@@ -560,15 +486,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     }}>
                         Н
                     </span>
-                    {record.reasonType === 'sick' && (
-                        <FaStethoscope style={{ color: '#ef4444', fontSize: '14px' }} title="Хвороба" />
-                    )}
-                    {record.reasonType === 'family' && (
-                        <FaHome style={{ color: '#f59e0b', fontSize: '14px' }} title="Сімейні обставини" />
-                    )}
-                    {record.certificate && (
-                        <FaFileMedical style={{ color: '#10b981', fontSize: '14px' }} title="Є довідка" />
-                    )}
                 </div>
             );
         }
@@ -580,8 +497,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px'
+                    justifyContent: 'center'
                 }}>
                     <span style={{
                         backgroundColor: '#f59e0b',
@@ -597,26 +513,33 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     }}>
                         {record.lessonsAbsent}/{record.totalLessons}
                     </span>
-                    {record.reasonType === 'sick' && (
-                        <FaStethoscope style={{ color: '#ef4444', fontSize: '14px' }} title="Хвороба" />
-                    )}
-                    {record.reasonType === 'family' && (
-                        <FaHome style={{ color: '#f59e0b', fontSize: '14px' }} title="Сімейні обставини" />
-                    )}
                 </div>
             );
         }
 
+        // Якщо студент був присутній (немає запису про відсутність)
         return (
             <div style={{
                 width: '100%',
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: '#10b981'
+                justifyContent: 'center'
             }}>
-                <FaCheck size={16} />
+                <span style={{
+                    backgroundColor: '#f76060',
+                    color: 'white',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                }}>
+                    н
+                </span>
             </div>
         );
     };
@@ -674,52 +597,47 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     return (
         <div>
             {/* Заголовок */}
-            <div>
-                <h3 style={{
-                    fontSize: isMobile ? '18px' : '24px',
-                    fontWeight: '500',
-                    color: '#1f2937',
-                    marginBottom: '20px'
-                }}>
-                    Відвідуваність
-                </h3>
-            </div>
-
-            {/* Вибір чверті та статистика */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
-                flexWrap: 'wrap',
-                gap: '10px'
+            <h3 style={{
+                fontSize: isMobile ? '18px' : '24px',
+                fontWeight: '500',
+                color: '#1f2937',
+                marginBottom: '20px'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-                    <label style={{ fontWeight: '500', color: '#374151' }}>
-                        Навчальна чверть:
-                    </label>
-                    <select
-                        value={selectedQuarter?._id || ''}
-                        onChange={(e) => {
-                            const quarter = quarters.find(q => q._id === e.target.value);
-                            setSelectedQuarter(quarter);
-                        }}
-                        style={{
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid #e5e7eb',
-                            fontSize: '14px',
-                            minWidth: '200px'
-                        }}
-                    >
-                        {quarters.map(quarter => (
-                            <option key={quarter._id} value={quarter._id}>
-                                {quarter.name} ({new Date(quarter.startDate).toLocaleDateString('uk-UA')} - {new Date(quarter.endDate).toLocaleDateString('uk-UA')})
-                                {quarter.isActive ? ' (активна)' : ''}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                Відвідуваність
+            </h3>
+
+            {/* Вибір чверті */}
+            <div style={{
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+                flexWrap: 'wrap'
+            }}>
+                <label style={{ fontWeight: '500', color: '#374151' }}>
+                    Навчальна чверть:
+                </label>
+                <select
+                    value={selectedQuarter?._id || ''}
+                    onChange={(e) => {
+                        const quarter = quarters.find(q => q._id === e.target.value);
+                        setSelectedQuarter(quarter);
+                    }}
+                    style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #e5e7eb',
+                        fontSize: '14px',
+                        minWidth: '200px'
+                    }}
+                >
+                    {quarters.map(quarter => (
+                        <option key={quarter._id} value={quarter._id}>
+                            {quarter.name} ({new Date(quarter.startDate).toLocaleDateString('uk-UA')} - {new Date(quarter.endDate).toLocaleDateString('uk-UA')})
+                            {quarter.isActive ? ' (активна)' : ''}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             {/* Повідомлення */}
@@ -751,11 +669,11 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </div>
             )}
 
-            {/* Статистика */}
+            {/* Статистика - тепер тільки 3 блоки */}
             {quarterDates.length > 0 && (
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+                    gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)',
                     gap: '15px',
                     marginBottom: '20px'
                 }}>
@@ -792,17 +710,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                             {stats.sickDays}
                         </div>
                     </div>
-                    <div style={{
-                        padding: '15px',
-                        backgroundColor: '#f3e8ff',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{ fontSize: '14px', color: '#6b21a8' }}>Сімейні обставини</div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#9333ea' }}>
-                            {stats.familyDays}
-                        </div>
-                    </div>
                 </div>
             )}
 
@@ -836,7 +743,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                                     Учень
                                 </th>
                                 {quarterDates.map((date, index) => {
-                                    // Визначаємо стиль для першого дня тижня
                                     const isFirstOfWeek = date.isFirstOfWeek;
                                     const isLastOfWeek = date.isLastOfWeek;
 
@@ -863,16 +769,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                                             <div style={{ fontSize: '11px', color: '#6b7280' }}>
                                                 {date.dayName}
                                             </div>
-                                            {isFirstOfWeek && (
-                                                <div style={{
-                                                    fontSize: '10px',
-                                                    fontWeight: 'bold',
-                                                    color: '#6b7280',
-                                                    marginTop: '2px'
-                                                }}>
-                                                    Тиждень {date.weekNumber}
-                                                </div>
-                                            )}
                                         </th>
                                     );
                                 })}

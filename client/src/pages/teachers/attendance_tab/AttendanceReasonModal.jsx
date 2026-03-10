@@ -347,26 +347,6 @@ const AttendanceReasonModal = ({
                     )}
                 </div>
 
-                {/* Додаткова примітка */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                        Додаткова примітка:
-                    </label>
-                    <textarea
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="Наприклад: пішов з 3-го уроку, був присутній тільки на 1-2 уроках..."
-                        rows="2"
-                        style={{
-                            width: '100%',
-                            padding: '10px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '6px',
-                            resize: 'vertical'
-                        }}
-                    />
-                </div>
-
                 {/* Кнопки */}
                 <div style={{
                     display: 'flex',
