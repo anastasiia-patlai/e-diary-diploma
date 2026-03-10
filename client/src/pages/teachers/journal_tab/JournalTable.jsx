@@ -1,40 +1,63 @@
-import React from 'react';
-
 const JournalTable = ({
     students,
     dates,
     getGradeForStudentAndDate,
+    getAttendanceForStudentAndDate,
     onCellClick,
     isMobile
 }) => {
-    if (students.length === 0) {
-        return (
-            <div style={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '40px',
-                textAlign: 'center',
-                color: '#6b7280'
-            }}>
-                Немає учнів для відображення
-            </div>
-        );
-    }
+    // Функція для відображення статусу відвідуваності
+    const renderAttendanceStatus = (attendance) => {
+        if (!attendance) return null;
 
-    console.log('JournalTable рендериться з даними:', {
-        studentsCount: students.length,
-        datesCount: dates.length,
-        firstStudent: students[0]?._id
-    });
+        if (attendance.lessonsAbsent === attendance.totalLessons && attendance.totalLessons > 0) {
+            // Повна відсутність
+            return (
+                <span style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                }}>
+                    Н
+                </span>
+            );
+        } else if (attendance.lessonsAbsent > 0) {
+            // Часткова відсутність
+            return (
+                <span style={{
+                    backgroundColor: '#f59e0b',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '12px'
+                }}>
+                    {attendance.lessonsAbsent}/{attendance.totalLessons}
+                </span>
+            );
+        }
+
+        return null;
+    };
 
     return (
         <div style={{
-            backgroundColor: 'white',
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
             overflow: 'auto',
-            maxHeight: '70vh'
+            maxHeight: '70vh',
+            backgroundColor: 'white'
         }}>
             <table style={{
                 width: '100%',
@@ -58,7 +81,7 @@ const JournalTable = ({
                             Учень
                         </th>
                         {dates.map((date, index) => (
-                            <th key={index} style={{
+                            <th key={date.fullDate} style={{
                                 padding: '12px',
                                 textAlign: 'center',
                                 borderBottom: '2px solid #e5e7eb',
@@ -90,36 +113,31 @@ const JournalTable = ({
                 </thead>
                 <tbody>
                     {students.map((student, rowIndex) => (
-                        <tr key={student._id}>
+                        <tr key={student._id} style={{
+                            borderBottom: '1px solid #e5e7eb',
+                            backgroundColor: rowIndex % 2 === 0 ? 'white' : '#fafafa'
+                        }}>
                             <td style={{
                                 padding: '10px 12px',
                                 borderBottom: '1px solid #e5e7eb',
                                 position: 'sticky',
                                 left: 0,
-                                backgroundColor: 'white',
+                                backgroundColor: 'inherit',
                                 fontWeight: '500',
                                 boxShadow: '2px 0 0 #e5e7eb',
                                 zIndex: 1
                             }}>
-                                {student.fullName || student.name || 'Без імені'}
+                                {student.fullName}
                             </td>
-                            {dates.map((date, colIndex) => {
+                            {dates.map(date => {
                                 const grade = getGradeForStudentAndDate(student._id, date);
-
-                                // Логування для першого студента і першої дати (для діагностики)
-                                if (rowIndex === 0 && colIndex === 0) {
-                                    console.log('Перевірка оцінки:', {
-                                        studentId: student._id,
-                                        date: date.fullDate,
-                                        gradeFound: grade
-                                    });
-                                }
+                                const attendance = getAttendanceForStudentAndDate(student._id, date);
 
                                 // Якщо це канікули - відображаємо неактивну клітинку
                                 if (date.isHoliday) {
                                     return (
                                         <td
-                                            key={`${rowIndex}-${colIndex}`}
+                                            key={date.fullDate}
                                             style={{
                                                 padding: '8px',
                                                 textAlign: 'center',
@@ -138,7 +156,7 @@ const JournalTable = ({
                                 // Звичайна клітинка
                                 return (
                                     <td
-                                        key={`${rowIndex}-${colIndex}`}
+                                        key={date.fullDate}
                                         onClick={() => onCellClick(student._id, date)}
                                         style={{
                                             padding: '8px',
@@ -146,14 +164,14 @@ const JournalTable = ({
                                             borderBottom: '1px solid #e5e7eb',
                                             borderLeft: '1px solid #e5e7eb',
                                             cursor: 'pointer',
-                                            backgroundColor: grade ? '#f0f9ff' : 'white',
+                                            backgroundColor: attendance ? '#fff3e0' : 'white',
                                             transition: 'background-color 0.2s'
                                         }}
                                         onMouseOver={(e) => {
-                                            if (!grade) e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                            e.currentTarget.style.backgroundColor = attendance ? '#ffe4cc' : '#f3f4f6';
                                         }}
                                         onMouseOut={(e) => {
-                                            if (!grade) e.currentTarget.style.backgroundColor = 'white';
+                                            e.currentTarget.style.backgroundColor = attendance ? '#fff3e0' : 'white';
                                         }}
                                     >
                                         {grade ? (
@@ -171,7 +189,7 @@ const JournalTable = ({
                                             }}>
                                                 {grade}
                                             </span>
-                                        ) : (
+                                        ) : renderAttendanceStatus(attendance) || (
                                             <span style={{ color: '#d1d5db' }}>—</span>
                                         )}
                                     </td>

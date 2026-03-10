@@ -46,6 +46,7 @@ const availableResourcesRoutes = require('./routes/availableResources');
 const gradeRoutes = require('./routes/grades');
 const classAttendanceRoutes = require('./routes/classAttendance');
 const lessonAttendanceRoutes = require('./routes/lessonAttendance');
+const attendanceAggregationRoutes = require('./routes/attendanceAggregation');
 
 // const homeworkRoutes = require('./routes/homeworks');
 
@@ -67,7 +68,7 @@ app.use('/api/available', availableResourcesRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/attendance/class', classAttendanceRoutes);  // для класного керівника
 app.use('/api/attendance/lesson', lessonAttendanceRoutes); // для вчителів
-app.use('/api/attendance', lessonAttendanceRoutes);         // для сумісності
+app.use('/api/attendance', attendanceAggregationRoutes);         // для сумісності
 
 // app.use('/api/homeworks', homeworkRoutes);
 

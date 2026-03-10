@@ -31,11 +31,6 @@ const classAttendanceSchema = new mongoose.Schema({
         enum: ['sick', 'family', 'other'],
         default: 'other'
     },
-    // Текст причини
-    reason: {
-        type: String,
-        default: ''
-    },
     // Кількість пропущених уроків (для часткової відсутності)
     lessonsAbsent: {
         type: Number,
@@ -48,18 +43,28 @@ const classAttendanceSchema = new mongoose.Schema({
         default: 0,
         min: 0
     },
-    // Інформація про довідку/записку
-    certificate: {
-        number: String,      // Номер документа
-        date: Date,          // Дата документа
-        type: {
+    // Деталі по уроках (НОВЕ)
+    lessonDetails: [{
+        scheduleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Schedule'
+        },
+        subject: String,
+        timeSlot: {
+            startTime: String,
+            endTime: String
+        },
+        status: {
             type: String,
-            enum: ['medical', 'parent'],  // медична або батьківська
-            default: 'parent'
+            enum: ['present', 'absent'],
+            default: 'present'
         }
+    }],
+    // Інформація про довідку/записку (СПРОЩЕНО)
+    certificate: {
+        type: Boolean,
+        default: false
     },
-    // Додаткова примітка
-    note: String,
     // Хто створив/оновив запис
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

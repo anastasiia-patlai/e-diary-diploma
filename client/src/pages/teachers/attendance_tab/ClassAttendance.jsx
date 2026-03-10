@@ -301,16 +301,52 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!selectedCell || !groupId) return;
 
         try {
+            // Спочатку зберігаємо/оновлюємо записи для кожного уроку
+            if (attendanceData.lessonDetails) {
+                const lessonPromises = attendanceData.lessonDetails.map(async (lesson) => {
+                    const payload = {
+                        databaseName,
+                        scheduleId: lesson.scheduleId,
+                        studentId: selectedCell.studentId,
+                        date: selectedCell.date.fullDate,
+                        status: lesson.status,
+                        reason: attendanceData.reason || ''
+                    };
+
+                    // Перевіряємо, чи є вже запис для цього уроку
+                    const existingRecord = await axios.get(
+                        `/api/attendance/lesson/schedule/${lesson.scheduleId}?date=${selectedCell.date.fullDate}&studentId=${selectedCell.studentId}&databaseName=${databaseName}`
+                    );
+
+                    if (existingRecord.data) {
+                        return axios.put(`/api/attendance/lesson/${existingRecord.data._id}`, payload);
+                    } else {
+                        return axios.post('/api/attendance/lesson', {
+                            ...payload,
+                            records: [{
+                                student: selectedCell.studentId,
+                                status: lesson.status,
+                                reason: attendanceData.reason || ''
+                            }]
+                        });
+                    }
+                });
+
+                await Promise.all(lessonPromises);
+            }
+
+            // Потім зберігаємо агрегований запис для класного керівника
             const payload = {
                 databaseName,
                 groupId,
                 studentId: selectedCell.studentId,
                 date: selectedCell.date.fullDate,
                 quarter: selectedQuarter._id,
-                status: 'absent',
+                status: attendanceData.status,
                 reasonType: attendanceData.reasonType,
                 lessonsAbsent: attendanceData.lessonsAbsent,
                 totalLessons: attendanceData.totalLessons,
+                lessonDetails: attendanceData.lessonDetails,
                 certificate: attendanceData.certificate
             };
 
@@ -318,20 +354,16 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
             const existingRecord = attendance[key];
 
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-
             if (existingRecord?._id) {
                 response = await fetch(`/api/attendance/class/${existingRecord._id}`, {
                     method: 'PUT',
-                    headers,
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
             } else {
                 response = await fetch('/api/attendance/class/', {
                     method: 'POST',
-                    headers,
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
             }
@@ -347,6 +379,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         certificate: savedRecord.certificate,
                         lessonsAbsent: savedRecord.lessonsAbsent || 0,
                         totalLessons: savedRecord.totalLessons || 0,
+                        lessonDetails: savedRecord.lessonDetails,
                         _id: savedRecord._id
                     }
                 }));
@@ -425,9 +458,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             );
         }
 
-        // Якщо є запис про відсутність
         if (record.status === 'absent') {
-            // Повна відсутність (Н)
+            // Повна відсутність
             if (record.lessonsAbsent === record.totalLessons && record.totalLessons > 0) {
                 return (
                     <div style={{
@@ -476,7 +508,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 );
             }
 
-            // Часткова відсутність (дріб)
+            // Часткова відсутність
             if (record.lessonsAbsent > 0 && record.totalLessons > 0) {
                 return (
                     <div style={{
@@ -526,7 +558,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             }
         }
 
-        // Якщо студент був присутній - показуємо прочерк
+        // Присутній
         return (
             <div style={{
                 width: '100%',
@@ -1048,6 +1080,9 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 attendance={selectedAttendance}
                 date={selectedCell?.date}
                 studentName={students.find(s => s._id === selectedCell?.studentId)?.fullName}
+                groupId={groupId}
+                databaseName={databaseName}
+                selectedQuarter={selectedQuarter}
                 isMobile={isMobile}
             />
         </div>

@@ -138,6 +138,36 @@ router.get('/teacher/:teacherId', async (req, res) => {
     }
 });
 
+// Отримати всі записи відвідуваності за дату
+router.get('/date/:date', async (req, res) => {
+    try {
+        const { date } = req.params;
+        const { databaseName } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const connection = getSchoolDBConnection(databaseName);
+        const LessonAttendance = require('../models/LessonAttendance')(connection);
+
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const attendances = await LessonAttendance.find({
+            date: { $gte: startDate, $lte: endDate }
+        }).populate('records.student', 'fullName');
+
+        res.json(attendances);
+    } catch (error) {
+        console.error('Error fetching attendances by date:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Видалити запис відвідуваності для уроку
 router.delete('/:id', async (req, res) => {
     try {

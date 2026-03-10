@@ -5,8 +5,11 @@ import {
     FaHome,
     FaFileMedical,
     FaExclamationTriangle,
-    FaTrash
+    FaTrash,
+    FaBook,
+    FaCheckCircle
 } from 'react-icons/fa';
+import axios from 'axios';
 
 const AttendanceReasonModal = ({
     show,
@@ -16,51 +19,180 @@ const AttendanceReasonModal = ({
     attendance,
     date,
     studentName,
+    studentId, // Додано цей проп
+    groupId,
+    databaseName,
+    selectedQuarter,
     isMobile
 }) => {
     const [reasonType, setReasonType] = useState('other');
     const [hasCertificate, setHasCertificate] = useState(false);
-    const [lessonsAbsent, setLessonsAbsent] = useState(0);
-    const [totalLessons, setTotalLessons] = useState(8);
-    const [absenceType, setAbsenceType] = useState('full'); // 'full' або 'partial'
+    const [daySchedule, setDaySchedule] = useState([]);
+    const [selectedLessons, setSelectedLessons] = useState([]);
+    const [lessonAttendanceData, setLessonAttendanceData] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [totalLessons, setTotalLessons] = useState(0);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     useEffect(() => {
         if (attendance) {
             setReasonType(attendance.reasonType || 'other');
             setHasCertificate(!!attendance.certificate);
-            setLessonsAbsent(attendance.lessonsAbsent || 0);
-            setTotalLessons(attendance.totalLessons || 8);
-            setAbsenceType(attendance.lessonsAbsent === attendance.totalLessons ? 'full' : 'partial');
+
+            if (attendance.lessonDetails) {
+                const absentLessons = attendance.lessonDetails
+                    .filter(d => d.status === 'absent')
+                    .map(d => d.scheduleId);
+                setSelectedLessons(absentLessons);
+            }
         } else {
-            // Значення за замовчуванням для нового запису
             setReasonType('other');
             setHasCertificate(false);
-            setLessonsAbsent(0);
-            setTotalLessons(8);
-            setAbsenceType('full');
+            setSelectedLessons([]);
         }
     }, [attendance, show]);
 
-    if (!show) return null;
+    useEffect(() => {
+        if (show && databaseName && groupId && date && selectedQuarter && studentId) {
+            loadData();
+        }
+    }, [show, databaseName, groupId, date, selectedQuarter, studentId]);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            console.log('Loading data for:', { studentId, date, groupId });
+
+            // 1. Завантажуємо розклад групи на день
+            const scheduleResponse = await axios.get('/api/schedule', {
+                params: {
+                    databaseName,
+                    group: groupId,
+                    date: date.fullDate
+                }
+            });
+
+            const dayOfWeek = new Date(date.fullDate).getDay();
+            const lessons = scheduleResponse.data.filter(lesson => {
+                const lessonDay = lesson.dayOfWeek?.order === 7 ? 0 : lesson.dayOfWeek?.order;
+                return lessonDay === dayOfWeek;
+            });
+
+            setDaySchedule(lessons);
+            setTotalLessons(lessons.length);
+
+            // 2. Завантажуємо вже існуючі записи відвідуваності для цього студента на цю дату
+            const attendancePromises = lessons.map(async (lesson) => {
+                try {
+                    const response = await axios.get(
+                        `/api/attendance/lesson/schedule/${lesson._id}`,
+                        {
+                            params: {
+                                databaseName,
+                                date: date.fullDate
+                            }
+                        }
+                    );
+
+                    if (response.data && response.data.records) {
+                        const studentRecord = response.data.records.find(r =>
+                            (r.student?._id === studentId || r.student === studentId)
+                        );
+                        return { lesson, record: studentRecord };
+                    }
+                    return { lesson, record: null };
+                } catch (error) {
+                    console.error(`Помилка завантаження для уроку ${lesson._id}:`, error);
+                    return { lesson, record: null };
+                }
+            });
+
+            const results = await Promise.all(attendancePromises);
+
+            // Збираємо ID уроків, де студент відсутній
+            const absentLessons = [];
+            const attendanceMap = {};
+
+            results.forEach(({ lesson, record }) => {
+                if (record && record.status === 'absent') {
+                    absentLessons.push(lesson._id);
+                    attendanceMap[lesson._id] = record;
+                }
+            });
+
+            setSelectedLessons(absentLessons);
+            setLessonAttendanceData(attendanceMap);
+            setIsReadOnly(absentLessons.length > 0);
+
+        } catch (error) {
+            console.error('Помилка завантаження даних:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLessonToggle = (scheduleId) => {
+        if (lessonAttendanceData[scheduleId]) {
+            alert('Цей урок вже відмічений вчителем-предметником. Змінити можна тільки в журналі вчителя.');
+            return;
+        }
+
+        setSelectedLessons(prev => {
+            const newSelected = prev.includes(scheduleId)
+                ? prev.filter(id => id !== scheduleId)
+                : [...prev, scheduleId];
+            return newSelected;
+        });
+    };
+
+    const getLessonStatus = (scheduleId) => {
+        if (lessonAttendanceData[scheduleId]) {
+            return {
+                text: 'Відмічено вчителем',
+                color: '#10b981',
+                icon: <FaCheckCircle />
+            };
+        }
+        return null;
+    };
 
     const handleSave = () => {
+        const lessonDetails = daySchedule.map(lesson => {
+            const teacherRecord = lessonAttendanceData[lesson._id];
+            if (teacherRecord) {
+                return {
+                    scheduleId: lesson._id,
+                    subject: lesson.subject,
+                    timeSlot: lesson.timeSlot,
+                    status: 'absent',
+                    markedBy: 'teacher',
+                    teacherName: lesson.teacher?.fullName
+                };
+            } else {
+                return {
+                    scheduleId: lesson._id,
+                    subject: lesson.subject,
+                    timeSlot: lesson.timeSlot,
+                    status: selectedLessons.includes(lesson._id) ? 'absent' : 'present',
+                    markedBy: 'class_teacher'
+                };
+            }
+        });
+
+        const totalAbsent = lessonDetails.filter(l => l.status === 'absent').length;
+
         const attendanceData = {
-            status: 'absent',
-            reasonType,
-            lessonsAbsent: absenceType === 'full' ? totalLessons : lessonsAbsent,
+            status: totalAbsent > 0 ? 'absent' : 'present',
+            reasonType: totalAbsent > 0 ? reasonType : 'other',
+            lessonsAbsent: totalAbsent,
             totalLessons,
-            certificate: hasCertificate ? { has: true } : null
+            lessonDetails,
+            certificate: hasCertificate
         };
         onSave(attendanceData);
     };
 
-    const getReasonTypeLabel = (type) => {
-        switch (type) {
-            case 'sick': return 'Хвороба';
-            case 'family': return 'Сімейні обставини';
-            default: return 'Інша причина';
-        }
-    };
+    if (!show) return null;
 
     return (
         <div style={{
@@ -79,8 +211,8 @@ const AttendanceReasonModal = ({
                 backgroundColor: 'white',
                 borderRadius: '12px',
                 padding: isMobile ? '20px' : '24px',
-                width: isMobile ? '95%' : '500px',
-                maxWidth: '500px',
+                width: isMobile ? '95%' : '600px',
+                maxWidth: '600px',
                 maxHeight: '90vh',
                 overflowY: 'auto'
             }}>
@@ -92,7 +224,7 @@ const AttendanceReasonModal = ({
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0 }}>
-                        Відсутність учня
+                        Відвідуваність: {studentName}
                     </h3>
                     <button
                         onClick={onHide}
@@ -108,161 +240,233 @@ const AttendanceReasonModal = ({
                     </button>
                 </div>
 
-                {/* Інформація про учня та дату */}
+                {/* Інформація про дату */}
                 <div style={{
                     backgroundColor: '#f0f9ff',
                     padding: '12px',
                     borderRadius: '8px',
                     marginBottom: '20px'
                 }}>
-                    <div style={{ fontWeight: '600', fontSize: '16px' }}>
-                        {studentName}
-                    </div>
                     <div style={{ fontSize: '14px', color: '#0369a1' }}>
                         {date?.formatted} ({date?.dayName})
                     </div>
                 </div>
 
-                {/* Тип відсутності */}
+                {/* Список уроків */}
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                        Тип відсутності:
+                        Уроки на цей день:
                     </label>
-                    <div style={{
-                        display: 'flex',
-                        gap: '10px'
-                    }}>
-                        <button
-                            onClick={() => setAbsenceType('full')}
-                            style={{
-                                flex: 1,
-                                padding: '10px',
-                                border: `2px solid ${absenceType === 'full' ? '#ef4444' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                backgroundColor: absenceType === 'full' ? '#fee2e2' : 'white',
-                                color: absenceType === 'full' ? '#dc2626' : '#374151',
-                                cursor: 'pointer',
-                                fontWeight: absenceType === 'full' ? '600' : 'normal'
-                            }}
-                        >
-                            Повна відсутність
-                        </button>
-                        <button
-                            onClick={() => setAbsenceType('partial')}
-                            style={{
-                                flex: 1,
-                                padding: '10px',
-                                border: `2px solid ${absenceType === 'partial' ? '#f59e0b' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                backgroundColor: absenceType === 'partial' ? '#fffbeb' : 'white',
-                                color: absenceType === 'partial' ? '#d97706' : '#374151',
-                                cursor: 'pointer',
-                                fontWeight: absenceType === 'partial' ? '600' : 'normal'
-                            }}
-                        >
-                            Часткова відсутність
-                        </button>
-                    </div>
+
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            Завантаження розкладу...
+                        </div>
+                    ) : daySchedule.length === 0 ? (
+                        <div style={{
+                            backgroundColor: '#f9fafb',
+                            padding: '20px',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            color: '#6b7280'
+                        }}>
+                            На цей день немає уроків у розкладі
+                        </div>
+                    ) : (
+                        <div style={{
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                        }}>
+                            {daySchedule.map((lesson, index) => {
+                                const teacherMarked = lessonAttendanceData[lesson._id];
+                                const isSelected = selectedLessons.includes(lesson._id);
+                                const status = getLessonStatus(lesson._id);
+
+                                return (
+                                    <div
+                                        key={lesson._id}
+                                        style={{
+                                            padding: '12px',
+                                            borderBottom: index < daySchedule.length - 1 ? '1px solid #e5e7eb' : 'none',
+                                            backgroundColor: teacherMarked ? '#f0fdf4' : (isSelected ? '#fee2e2' : 'white'),
+                                            opacity: teacherMarked ? 0.8 : 1
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                            {!teacherMarked ? (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleLessonToggle(lesson._id)}
+                                                    style={{
+                                                        marginTop: '2px',
+                                                        width: '18px',
+                                                        height: '18px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    color: '#10b981',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <FaCheckCircle size={16} />
+                                                </div>
+                                            )}
+
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    flexWrap: 'wrap'
+                                                }}>
+                                                    <FaBook style={{
+                                                        color: teacherMarked ? '#10b981' : (isSelected ? '#ef4444' : '#9ca3af')
+                                                    }} />
+                                                    <span style={{ fontWeight: '500' }}>{lesson.subject}</span>
+                                                    {teacherMarked && (
+                                                        <span style={{
+                                                            backgroundColor: '#10b981',
+                                                            color: 'white',
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            fontSize: '11px'
+                                                        }}>
+                                                            Відмічено вчителем
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{
+                                                    fontSize: '12px',
+                                                    color: teacherMarked ? '#047857' : '#6b7280',
+                                                    marginTop: '4px',
+                                                    display: 'flex',
+                                                    gap: '12px'
+                                                }}>
+                                                    <span>{lesson.timeSlot?.startTime} - {lesson.timeSlot?.endTime}</span>
+                                                    {lesson.teacher && (
+                                                        <span>• {lesson.teacher.fullName}</span>
+                                                    )}
+                                                </div>
+                                                {teacherMarked && lessonAttendanceData[lesson._id]?.reason && (
+                                                    <div style={{
+                                                        fontSize: '12px',
+                                                        color: '#6b7280',
+                                                        marginTop: '4px',
+                                                        fontStyle: 'italic'
+                                                    }}>
+                                                        Причина: {lessonAttendanceData[lesson._id].reason}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
-                {/* Кількість уроків (для часткової відсутності) */}
-                {absenceType === 'partial' && (
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                            Кількість пропущених уроків:
-                        </label>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <input
-                                type="number"
-                                min="1"
-                                max={totalLessons}
-                                value={lessonsAbsent}
-                                onChange={(e) => setLessonsAbsent(parseInt(e.target.value) || 0)}
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '6px'
-                                }}
-                            />
-                            <span>з</span>
-                            <input
-                                type="number"
-                                min="1"
-                                max="12"
-                                value={totalLessons}
-                                onChange={(e) => setTotalLessons(parseInt(e.target.value) || 1)}
-                                style={{
-                                    width: '80px',
-                                    padding: '10px',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '6px'
-                                }}
-                            />
-                            <span>уроків</span>
+                {/* Блок причини (тільки якщо є пропуски) */}
+                {selectedLessons.length > 0 && (
+                    <>
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                                Причина відсутності:
+                            </label>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '8px',
+                                marginBottom: '10px'
+                            }}>
+                                {[
+                                    { type: 'sick', label: 'Хвороба', icon: <FaStethoscope />, color: '#ef4444' },
+                                    { type: 'family', label: 'Сімейні', icon: <FaHome />, color: '#f59e0b' },
+                                    { type: 'other', label: 'Інше', icon: <FaExclamationTriangle />, color: '#6b7280' }
+                                ].map(option => (
+                                    <button
+                                        key={option.type}
+                                        onClick={() => setReasonType(option.type)}
+                                        style={{
+                                            padding: '10px',
+                                            border: `2px solid ${reasonType === option.type ? option.color : '#e5e7eb'}`,
+                                            borderRadius: '8px',
+                                            backgroundColor: reasonType === option.type ? `${option.color}20` : 'white',
+                                            color: reasonType === option.type ? option.color : '#374151',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            fontWeight: reasonType === option.type ? '600' : 'normal',
+                                            opacity: isReadOnly ? 0.6 : 1
+                                        }}
+                                        disabled={isReadOnly}
+                                    >
+                                        <span style={{ fontSize: '18px' }}>{option.icon}</span>
+                                        <span style={{ fontSize: '12px' }}>{option.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                marginBottom: '10px',
+                                cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                                opacity: isReadOnly ? 0.6 : 1
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    checked={hasCertificate}
+                                    onChange={(e) => setHasCertificate(e.target.checked)}
+                                    disabled={isReadOnly}
+                                />
+                                <FaFileMedical style={{ color: hasCertificate ? '#10b981' : '#9ca3af' }} />
+                                <span style={{ fontWeight: '500' }}>
+                                    {reasonType === 'sick' ? 'Медична довідка' : 'Записка від батьків'}
+                                </span>
+                            </label>
+                        </div>
+                    </>
                 )}
 
-                {/* Причина відсутності (спрощена) */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-                        Причина відсутності:
-                    </label>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
-                        gap: '8px',
-                        marginBottom: '10px'
-                    }}>
-                        {[
-                            { type: 'sick', label: 'Хвороба', icon: <FaStethoscope />, color: '#ef4444' },
-                            { type: 'family', label: 'Сімейні', icon: <FaHome />, color: '#f59e0b' },
-                            { type: 'other', label: 'Інше', icon: <FaExclamationTriangle />, color: '#6b7280' }
-                        ].map(option => (
-                            <button
-                                key={option.type}
-                                onClick={() => setReasonType(option.type)}
-                                style={{
-                                    padding: '10px',
-                                    border: `2px solid ${reasonType === option.type ? option.color : '#e5e7eb'}`,
-                                    borderRadius: '8px',
-                                    backgroundColor: reasonType === option.type ? `${option.color}20` : 'white',
-                                    color: reasonType === option.type ? option.color : '#374151',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    fontWeight: reasonType === option.type ? '600' : 'normal'
-                                }}
-                            >
-                                <span style={{ fontSize: '18px' }}>{option.icon}</span>
-                                <span style={{ fontSize: '12px' }}>{option.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Довідка/записка */}
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '10px',
-                        cursor: 'pointer'
-                    }}>
-                        <input
-                            type="checkbox"
-                            checked={hasCertificate}
-                            onChange={(e) => setHasCertificate(e.target.checked)}
-                        />
-                        <FaFileMedical style={{ color: hasCertificate ? '#10b981' : '#9ca3af' }} />
-                        <span style={{ fontWeight: '500' }}>
-                            {reasonType === 'sick' ? 'Медична довідка' : 'Записка від батьків'}
-                        </span>
-                    </label>
+                {/* Інформація про кількість пропусків */}
+                <div style={{
+                    padding: '12px',
+                    backgroundColor: selectedLessons.length === totalLessons && totalLessons > 0
+                        ? '#fee2e2'
+                        : selectedLessons.length > 0
+                            ? '#fffbeb'
+                            : '#f9fafb',
+                    borderRadius: '8px',
+                    marginBottom: '20px',
+                    fontSize: '14px',
+                    color: selectedLessons.length === totalLessons && totalLessons > 0
+                        ? '#dc2626'
+                        : selectedLessons.length > 0
+                            ? '#d97706'
+                            : '#6b7280'
+                }}>
+                    {totalLessons === 0 ? (
+                        'Немає уроків у розкладі'
+                    ) : selectedLessons.length === 0 ? (
+                        'Учень присутній на всіх уроках'
+                    ) : selectedLessons.length === totalLessons ? (
+                        'Учень відсутній на всіх уроках'
+                    ) : (
+                        `Часткова відсутність: ${selectedLessons.length} з ${totalLessons} уроків`
+                    )}
                 </div>
 
                 {/* Кнопки */}
@@ -289,7 +493,7 @@ const AttendanceReasonModal = ({
                             }}
                         >
                             <FaTrash />
-                            Видалити
+                            Видалити всі позначки
                         </button>
                     )}
                     <button

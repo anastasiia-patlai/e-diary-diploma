@@ -3,7 +3,7 @@ import axios from 'axios';
 import JournalHeader from './JournalHeader';
 import JournalTable from './JournalTable';
 import GradeModal from './GradeModal';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
 
 const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [loading, setLoading] = useState(true);
@@ -11,9 +11,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [currentLesson, setCurrentLesson] = useState(null);
     const [students, setStudents] = useState([]);
     const [grades, setGrades] = useState([]);
+    const [lessonAttendance, setLessonAttendance] = useState({});
     const [dates, setDates] = useState([]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [availableMonths, setAvailableMonths] = useState([]);
+    const [success, setSuccess] = useState(null);
 
     // Стан модального вікна
     const [showGradeModal, setShowGradeModal] = useState(false);
@@ -25,6 +27,15 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
+
+    // Таймер для повідомлень
+    useEffect(() => {
+        let timer;
+        if (success) {
+            timer = setTimeout(() => setSuccess(null), 3000);
+        }
+        return () => clearTimeout(timer);
+    }, [success]);
 
     useEffect(() => {
         if (scheduleId && databaseName) {
@@ -44,13 +55,20 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     }, [databaseName]);
 
+    // Завантажуємо відвідуваність після отримання дат та студентів
+    useEffect(() => {
+        if (students.length > 0 && dates.length > 0) {
+            loadAllAttendanceForMonth();
+        }
+    }, [students, dates]);
+
     const loadJournalData = async () => {
         setLoading(true);
         try {
+            // Завантаження інформації про урок
             const lessonResponse = await axios.get(`/api/schedule/${scheduleId}`, {
                 params: { databaseName }
             });
-
             setCurrentLesson(lessonResponse.data);
 
             // Завантаження студентів
@@ -136,25 +154,12 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     };
 
-    const handleSemesterChange = async (semesterId) => {
-        const semester = semesters.find(s => s._id === semesterId);
-        setSelectedSemester(semester);
-        await loadHolidays(semesterId);
-        generateAvailableMonthsForSemester(semester);
-
-        const semesterStart = new Date(semester.startDate);
-        setCurrentMonth(semesterStart);
-    };
-
     const generateAvailableMonthsForSemester = (semester) => {
         const months = [];
         const startDate = new Date(semester.startDate);
         const endDate = new Date(semester.endDate);
 
-        const startYear = startDate.getFullYear();
-        const startMonth = startDate.getMonth();
-
-        let currentDate = new Date(startYear, startMonth, 1);
+        let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
         while (currentDate <= endDate) {
             months.push({
                 value: months.length,
@@ -165,7 +170,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
 
         setAvailableMonths(months);
-
         if (months.length > 0) {
             setCurrentMonth(months[0].date);
         }
@@ -182,54 +186,23 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const lastDay = new Date(year, month + 1, 0);
 
         const dayOfWeekOrder = currentLesson.dayOfWeek.order;
-        let targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
+        const targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
 
-        const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
-        const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
-
-        const semesterStart = new Date(
-            parseInt(semesterStartParts[0]),
-            parseInt(semesterStartParts[1]) - 1,
-            parseInt(semesterStartParts[2]),
-            12, 0, 0, 0
-        );
-
-        const semesterEnd = new Date(
-            parseInt(semesterEndParts[0]),
-            parseInt(semesterEndParts[1]) - 1,
-            parseInt(semesterEndParts[2]),
-            12, 0, 0, 0
-        );
+        const semesterStart = new Date(selectedSemester.startDate);
+        const semesterEnd = new Date(selectedSemester.endDate);
 
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-            const currentDate = new Date(
-                d.getFullYear(),
-                d.getMonth(),
-                d.getDate(),
-                12, 0, 0, 0
-            );
+            const currentDate = new Date(d);
+            currentDate.setHours(12, 0, 0, 0);
 
             if (currentDate < semesterStart || currentDate > semesterEnd) continue;
 
             if (currentDate.getDay() === targetDayOfWeek) {
                 const isHoliday = holidays.some(holiday => {
-                    const holidayStartParts = holiday.startDate.split('T')[0].split('-');
-                    const holidayEndParts = holiday.endDate.split('T')[0].split('-');
-
-                    const holidayStart = new Date(
-                        parseInt(holidayStartParts[0]),
-                        parseInt(holidayStartParts[1]) - 1,
-                        parseInt(holidayStartParts[2]),
-                        12, 0, 0, 0
-                    );
-
-                    const holidayEnd = new Date(
-                        parseInt(holidayEndParts[0]),
-                        parseInt(holidayEndParts[1]) - 1,
-                        parseInt(holidayEndParts[2]),
-                        12, 0, 0, 0
-                    );
-
+                    const holidayStart = new Date(holiday.startDate);
+                    const holidayEnd = new Date(holiday.endDate);
+                    holidayStart.setHours(12, 0, 0, 0);
+                    holidayEnd.setHours(12, 0, 0, 0);
                     return currentDate >= holidayStart && currentDate <= holidayEnd;
                 });
 
@@ -249,6 +222,67 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
 
         setDates(dates);
+    };
+
+    const loadLessonAttendanceForDate = async (date) => {
+        if (!scheduleId) return;
+
+        try {
+            // Отримуємо всі записи відвідуваності для цієї дати
+            const response = await axios.get(
+                `/api/attendance/lesson/date/${date}?databaseName=${databaseName}`
+            );
+
+            if (response.data) {
+                setLessonAttendance(prev => {
+                    const newAttendance = { ...prev };
+                    response.data.forEach(record => {
+                        const studentId = record.student?._id || record.student;
+                        const key = `${studentId}_${date}`;
+
+                        // Групуємо записи по студентах
+                        if (!newAttendance[key]) {
+                            newAttendance[key] = {
+                                records: [],
+                                lessonsAbsent: 0,
+                                totalLessons: 0
+                            };
+                        }
+
+                        newAttendance[key].records.push(record);
+
+                        // Підраховуємо кількість відсутностей
+                        if (record.status === 'absent') {
+                            newAttendance[key].lessonsAbsent++;
+                        }
+                        newAttendance[key].totalLessons++;
+                    });
+
+                    return newAttendance;
+                });
+            }
+        } catch (error) {
+            console.error('Помилка завантаження відвідуваності:', error);
+        }
+    };
+
+    const loadAllAttendanceForMonth = async () => {
+        for (const date of dates) {
+            await loadLessonAttendanceForDate(date.fullDate);
+        }
+    };
+
+    const getAttendanceForStudentAndDate = (studentId, date) => {
+        const key = `${studentId}_${date.fullDate}`;
+        return lessonAttendance[key] || null;
+    };
+
+    const handleSemesterChange = async (semesterId) => {
+        const semester = semesters.find(s => s._id === semesterId);
+        setSelectedSemester(semester);
+        await loadHolidays(semesterId);
+        generateAvailableMonthsForSemester(semester);
+        setCurrentMonth(new Date(semester.startDate));
     };
 
     const handlePrevMonth = () => {
@@ -284,7 +318,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
         const existingGrade = grades.find(g => {
             const studentMatch = g.student === studentId || g.student?._id === studentId;
-
             let gradeDate;
             if (g.date instanceof Date) {
                 gradeDate = g.date.toISOString().split('T')[0];
@@ -293,7 +326,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             } else {
                 gradeDate = String(g.date);
             }
-
             return studentMatch && gradeDate === date.fullDate;
         });
 
@@ -302,90 +334,83 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         setShowGradeModal(true);
     };
 
-    const handleSaveGrade = async (gradeData) => {
+    const handleSaveGrade = async (data) => {
         try {
-            if (!selectedCell || !selectedCell.studentId || !selectedCell.date) {
-                alert('Відсутні дані для збереження оцінки');
-                return;
-            }
+            if (data.type === 'grade') {
+                // Збереження оцінки
+                if (!selectedCell || !selectedCell.studentId || !selectedCell.date) {
+                    alert('Відсутні дані для збереження оцінки');
+                    return;
+                }
 
-            if (!gradeData.value) {
-                alert('Виберіть оцінку');
-                return;
-            }
+                if (!data.value) {
+                    alert('Виберіть оцінку');
+                    return;
+                }
 
-            const dateParts = selectedCell.date.fullDate.split('-');
-            const year = parseInt(dateParts[0]);
-            const month = parseInt(dateParts[1]) - 1;
-            const day = parseInt(dateParts[2]);
+                const gradePayload = {
+                    value: data.value,
+                    databaseName,
+                    schedule: scheduleId,
+                    student: selectedCell.studentId,
+                    date: selectedCell.date.fullDate
+                };
 
-            const targetDate = new Date(year, month, day, 12, 0, 0, 0);
+                let response;
+                if (selectedGrade) {
+                    response = await axios.put(`/api/grades/${selectedGrade._id}`, gradePayload);
+                    setGrades(prevGrades =>
+                        prevGrades.map(g => g._id === selectedGrade._id ? response.data : g)
+                    );
+                } else {
+                    response = await axios.post('/api/grades', gradePayload);
+                    setGrades(prevGrades => [...prevGrades, response.data]);
+                }
 
-            const semesterStartParts = selectedSemester.startDate.split('T')[0].split('-');
-            const semesterEndParts = selectedSemester.endDate.split('T')[0].split('-');
-
-            const semesterStart = new Date(
-                parseInt(semesterStartParts[0]),
-                parseInt(semesterStartParts[1]) - 1,
-                parseInt(semesterStartParts[2]),
-                12, 0, 0, 0
-            );
-
-            const semesterEnd = new Date(
-                parseInt(semesterEndParts[0]),
-                parseInt(semesterEndParts[1]) - 1,
-                parseInt(semesterEndParts[2]),
-                12, 0, 0, 0
-            );
-
-            if (targetDate < semesterStart || targetDate > semesterEnd) {
-                alert(`Дата ${targetDate.toLocaleDateString('uk-UA')} знаходиться поза межами вибраного семестру`);
-                return;
-            }
-
-            const isHoliday = holidays.some(holiday => {
-                const holidayStartParts = holiday.startDate.split('T')[0].split('-');
-                const holidayEndParts = holiday.endDate.split('T')[0].split('-');
-
-                const holidayStart = new Date(
-                    parseInt(holidayStartParts[0]),
-                    parseInt(holidayStartParts[1]) - 1,
-                    parseInt(holidayStartParts[2]),
-                    12, 0, 0, 0
-                );
-
-                const holidayEnd = new Date(
-                    parseInt(holidayEndParts[0]),
-                    parseInt(holidayEndParts[1]) - 1,
-                    parseInt(holidayEndParts[2]),
-                    12, 0, 0, 0
-                );
-
-                return targetDate >= holidayStart && targetDate <= holidayEnd;
-            });
-
-            if (isHoliday) {
-                alert('Не можна виставляти оцінки на період канікул');
-                return;
-            }
-
-            const gradePayload = {
-                value: gradeData.value,
-                databaseName,
-                schedule: scheduleId,
-                student: selectedCell.studentId,
-                date: selectedCell.date.fullDate
-            };
-
-            let response;
-            if (selectedGrade) {
-                response = await axios.put(`/api/grades/${selectedGrade._id}`, gradePayload);
-                setGrades(prevGrades =>
-                    prevGrades.map(g => g._id === selectedGrade._id ? response.data : g)
-                );
+                setSuccess('Оцінку збережено');
             } else {
-                response = await axios.post('/api/grades', gradePayload);
-                setGrades(prevGrades => [...prevGrades, response.data]);
+                // Збереження відвідуваності для одного уроку
+                const attendancePayload = {
+                    databaseName,
+                    scheduleId: scheduleId,
+                    date: selectedCell.date.fullDate,
+                    records: [{
+                        student: selectedCell.studentId,
+                        status: data.status,
+                        reason: data.reason || ''
+                    }]
+                };
+
+                console.log('Saving attendance:', attendancePayload);
+                await axios.post('/api/attendance/lesson', attendancePayload);
+
+                // Оновлюємо локальний стан
+                const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
+                setLessonAttendance(prev => ({
+                    ...prev,
+                    [key]: {
+                        status: data.status,
+                        reason: data.reason,
+                        lessonsAbsent: data.status === 'absent' ? 1 : 0,
+                        totalLessons: 1
+                    }
+                }));
+
+                // Тригеримо агрегацію для класного керівника
+                if (currentLesson?.group?._id) {
+                    try {
+                        const aggResponse = await axios.post('/api/attendance/aggregate-daily', {
+                            databaseName,
+                            groupId: currentLesson.group._id,
+                            date: selectedCell.date.fullDate
+                        });
+                        console.log('Агрегацію запущено:', aggResponse.data);
+                    } catch (aggError) {
+                        console.error('Помилка агрегації:', aggError.response?.data || aggError.message);
+                    }
+                }
+
+                setSuccess('Відвідуваність збережено');
             }
 
             setShowGradeModal(false);
@@ -393,9 +418,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             setSelectedGrade(null);
 
         } catch (error) {
-            console.error('Помилка збереження оцінки:', error);
+            console.error('Помилка збереження:', error);
             if (error.response) {
-                alert(`Помилка: ${error.response.data?.error || 'Помилка при збереженні оцінки'}`);
+                alert(`Помилка: ${error.response.data?.error || 'Помилка при збереженні'}`);
             } else if (error.request) {
                 alert('Сервер не відповідає. Перевірте з\'єднання.');
             } else {
@@ -416,6 +441,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             setShowGradeModal(false);
             setSelectedCell(null);
             setSelectedGrade(null);
+            setSuccess('Оцінку видалено');
         } catch (error) {
             console.error('Помилка видалення оцінки:', error);
             alert('Помилка при видаленні оцінки');
@@ -482,11 +508,39 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     return (
         <div>
-            <JournalHeader
-                lesson={currentLesson}
-                isMobile={isMobile}
-            />
+            {/* Повідомлення про успіх */}
+            {success && (
+                <div style={{
+                    backgroundColor: '#d1fae5',
+                    color: '#065f46',
+                    padding: '12px 16px',
+                    borderRadius: '6px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px'
+                }}>
+                    <span>{success}</span>
+                    <button
+                        onClick={() => setSuccess(null)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#065f46',
+                            cursor: 'pointer',
+                            fontSize: '18px',
+                            padding: '0 4px'
+                        }}
+                    >
+                        <FaTimes />
+                    </button>
+                </div>
+            )}
 
+            <JournalHeader lesson={currentLesson} isMobile={isMobile} />
+
+            {/* Вибір семестру */}
             {!loadingSemesters && semesters.length > 0 && (
                 <div style={{
                     marginBottom: '20px',
@@ -501,10 +555,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                         gap: '12px',
                         flexWrap: 'wrap'
                     }}>
-                        <label style={{
-                            fontWeight: '500',
-                            color: '#374151'
-                        }}>
+                        <label style={{ fontWeight: '500', color: '#374151' }}>
                             Навчальний семестр:
                         </label>
                         <select
@@ -524,18 +575,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                                 </option>
                             ))}
                         </select>
-                        {selectedSemester && (
-                            <div style={{
-                                fontSize: '13px',
-                                color: '#6b7280'
-                            }}>
-                                {new Date(selectedSemester.startDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })} - {new Date(selectedSemester.endDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
 
+            {/* Навігація по місяцях */}
             {availableMonths.length > 0 && (
                 <div style={{
                     display: 'flex',
@@ -654,6 +698,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 </div>
             )}
 
+            {/* Таблиця журналу */}
             {students.length === 0 ? (
                 <div style={{
                     backgroundColor: 'white',
@@ -684,6 +729,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     students={students}
                     dates={dates}
                     getGradeForStudentAndDate={getGradeForStudentAndDate}
+                    getAttendanceForStudentAndDate={getAttendanceForStudentAndDate}
                     onCellClick={handleCellClick}
                     isMobile={isMobile}
                 />
@@ -696,6 +742,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 onDelete={handleDeleteGrade}
                 existingGrade={selectedGrade}
                 isMobile={isMobile}
+                scheduleId={scheduleId}
+                databaseName={databaseName}
+                date={selectedCell?.date}
+                studentId={selectedCell?.studentId}
+                studentName={students.find(s => s._id === selectedCell?.studentId)?.fullName}
             />
         </div>
     );
