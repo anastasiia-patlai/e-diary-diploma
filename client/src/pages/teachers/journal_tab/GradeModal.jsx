@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaUserClock, FaTimes } from 'react-icons/fa';
+import { FaStar, FaUserClock, FaTimes, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 
 const GradeModal = ({
@@ -7,18 +7,23 @@ const GradeModal = ({
     onHide,
     onSave,
     onDelete,
+    onDeleteAttendance,
     existingGrade,
     isMobile,
     scheduleId,
     databaseName,
     date,
     studentId,
-    studentName
+    studentName,
+    hasAttendance
 }) => {
     const [mode, setMode] = useState('grade');
     const [grade, setGrade] = useState('');
     const [attendanceStatus, setAttendanceStatus] = useState('present');
     const [attendanceReason, setAttendanceReason] = useState('');
+
+    const hasAttendanceMark = existingGrade?.type === 'attendance' || hasAttendance;
+
 
     useEffect(() => {
         if (existingGrade) {
@@ -37,7 +42,6 @@ const GradeModal = ({
                 value: parseInt(grade)
             });
         } else {
-            // Для вчителя-предметника - тільки один урок
             onSave({
                 type: 'attendance',
                 status: attendanceStatus,
@@ -49,6 +53,13 @@ const GradeModal = ({
                 lessonsAbsent: attendanceStatus === 'absent' ? 1 : 0,
                 totalLessons: 1
             });
+        }
+    };
+
+    const handleDeleteAttendance = () => {
+        if (onDeleteAttendance && date && studentId) {
+            onDeleteAttendance(studentId, date);
+            onHide();
         }
     };
 
@@ -139,10 +150,10 @@ const GradeModal = ({
                         style={{
                             flex: 1,
                             padding: '10px',
-                            border: `2px solid ${mode === 'attendance' ? '#f59e0b' : '#e5e7eb'}`,
+                            border: `2px solid ${mode === 'attendance' ? 'rgba(105, 180, 185, 1)' : '#e5e7eb'}`,
                             borderRadius: '8px',
-                            backgroundColor: mode === 'attendance' ? '#fffbeb' : 'white',
-                            color: mode === 'attendance' ? '#d97706' : '#374151',
+                            backgroundColor: mode === 'attendance' ? 'rgba(105, 180, 185, 0.1)' : 'white',
+                            color: mode === 'attendance' ? 'rgba(105, 180, 185, 1)' : '#374151',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -176,7 +187,6 @@ const GradeModal = ({
                         ))}
                     </select>
                 ) : (
-                    // Режим відвідуваності - тільки для поточного уроку
                     <div style={{ marginBottom: '20px' }}>
                         <div style={{
                             display: 'flex',
@@ -248,12 +258,37 @@ const GradeModal = ({
                                 padding: '10px 20px',
                                 border: 'none',
                                 borderRadius: '6px',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
                             }}
                         >
+                            <FaTrash />
+                            Видалити оцінку
+                        </button>
+                    )}
+
+                    {hasAttendance && mode === 'attendance' && (
+                        <button
+                            onClick={handleDeleteAttendance}
+                            style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                padding: '10px 20px',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <FaTrash />
                             Видалити
                         </button>
                     )}
+
                     <button
                         onClick={onHide}
                         style={{

@@ -186,14 +186,14 @@ const JournalTable = ({
                                             borderBottom: '1px solid #e5e7eb',
                                             borderLeft: '1px solid #e5e7eb',
                                             cursor: 'pointer',
-                                            backgroundColor: attendance ? '#fff3e0' : 'white',
+                                            backgroundColor: 'white', // Завжди білий фон
                                             transition: 'background-color 0.2s'
                                         }}
                                         onMouseOver={(e) => {
-                                            e.currentTarget.style.backgroundColor = attendance ? '#ffe4cc' : '#f3f4f6';
+                                            e.currentTarget.style.backgroundColor = '#f3f4f6'; // Світло-сірий при наведенні
                                         }}
                                         onMouseOut={(e) => {
-                                            e.currentTarget.style.backgroundColor = attendance ? '#fff3e0' : 'white';
+                                            e.currentTarget.style.backgroundColor = 'white'; // Повертаємось до білого
                                         }}
                                     >
                                         {grade ? (

@@ -230,6 +230,73 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         setDates(dates);
     };
 
+    const handleDeleteAttendance = async (studentId, date) => {
+        try {
+            console.log('Видалення мітки відвідуваності для:', { studentId, date, scheduleId });
+
+            // Спочатку видаляємо з локального стану, щоб одразу прибрати з таблиці
+            const key = `${studentId}_${date.fullDate}`;
+            setLessonAttendance(prev => {
+                const newAttendance = { ...prev };
+                delete newAttendance[key];
+                return newAttendance;
+            });
+
+            // Потім пробуємо видалити з бази даних
+            try {
+                // Знаходимо запис для цього студента на цю дату
+                const response = await axios.get(
+                    `/api/attendance/lesson/schedule/${scheduleId}?date=${date.fullDate}&databaseName=${databaseName}`
+                );
+
+                console.log('Знайдений запис:', response.data);
+
+                if (response.data && response.data.records) {
+                    // Знаходимо запис для цього студента
+                    const studentRecord = response.data.records.find(r =>
+                        r.student === studentId || r.student?._id === studentId
+                    );
+
+                    console.log('Запис студента:', studentRecord);
+
+                    if (studentRecord && studentRecord._id) {
+                        // Видаляємо запис
+                        await axios.delete(`/api/attendance/lesson/${studentRecord._id}`, {
+                            data: { databaseName }
+                        });
+                        console.log('Запис успішно видалено з БД');
+                    }
+                }
+            } catch (dbError) {
+                console.log('Запис в БД не знайдено, але з локального стану видалено');
+            }
+
+            // Тригеримо агрегацію для оновлення даних класного керівника
+            if (currentLesson?.group?._id) {
+                try {
+                    await axios.post('/api/attendance/aggregate-daily', {
+                        databaseName,
+                        groupId: currentLesson.group._id,
+                        date: date.fullDate
+                    });
+                    console.log('Агрегацію запущено після видалення');
+                } catch (aggError) {
+                    console.error('Помилка агрегації після видалення:', aggError);
+                }
+            }
+
+            // Примусово перезавантажуємо всі дані через невелику затримку
+            setTimeout(async () => {
+                await forceRefreshAttendance();
+            }, 500);
+
+            setSuccess('Мітку відвідуваності видалено');
+        } catch (error) {
+            console.error('Помилка видалення мітки відвідуваності:', error);
+            setSuccess('Мітку відвідуваності видалено з таблиці');
+        }
+    };
+
     const loadLessonAttendanceForDate = async (date) => {
         if (!scheduleId) return;
 
@@ -241,14 +308,21 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 `/api/attendance/lesson/date/${date}?databaseName=${databaseName}`
             );
 
-            console.log('Отримані дані відвідуваності:', response.data);
+            console.log(`Отримано ${response.data?.length || 0} записів для дати ${date}`);
 
-            if (response.data) {
-                setLessonAttendance(prev => {
-                    const newAttendance = { ...prev };
+            setLessonAttendance(prev => {
+                const newAttendance = { ...prev };
 
+                // Видаляємо старі записи для цієї дати
+                Object.keys(newAttendance).forEach(key => {
+                    if (key.endsWith(`_${date}`)) {
+                        delete newAttendance[key];
+                    }
+                });
+
+                // Додаємо нові записи з БД
+                if (response.data && response.data.length > 0) {
                     response.data.forEach(record => {
-                        // Для кожного запису проходимо по всіх студентах
                         record.records.forEach(r => {
                             const studentId = r.student?._id || r.student;
                             const key = `${studentId}_${date}`;
@@ -270,25 +344,67 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                                 newAttendance[key].lessonsAbsent++;
                             }
                             newAttendance[key].totalLessons++;
+
+                            console.log(`Додано запис для студента ${studentId} на дату ${date}: статус ${r.status}`);
                         });
                     });
+                }
 
-                    console.log('Оновлений lessonAttendance:', newAttendance);
-                    return newAttendance;
-                });
-            }
+                return newAttendance;
+            });
         } catch (error) {
-            console.error('Помилка завантаження відвідуваності:', error);
+            console.error(`Помилка завантаження відвідуваності для дати ${date}:`, error);
+            // При помилці просто залишаємо порожній стан для цієї дати
+            setLessonAttendance(prev => {
+                const newAttendance = { ...prev };
+                Object.keys(newAttendance).forEach(key => {
+                    if (key.endsWith(`_${date}`)) {
+                        delete newAttendance[key];
+                    }
+                });
+                return newAttendance;
+            });
         }
     };
 
     const loadAllAttendanceForMonth = async () => {
-        console.log('Завантаження відвідуваності для всіх дат місяця');
+        console.log('Завантаження відвідуваності для всіх дат місяця, дат:', dates.length);
 
+        // Очищаємо всі дані
         setLessonAttendance({});
 
+        // Завантажуємо для кожної дати
         for (const date of dates) {
             await loadLessonAttendanceForDate(date.fullDate);
+        }
+
+        console.log('Завершено завантаження всіх дат');
+    };
+
+    // Додайте цю функцію після loadAllAttendanceForMonth
+    const forceRefreshAttendance = async () => {
+        console.log('Примусове оновлення даних відвідуваності');
+
+        // Очищаємо всі дані
+        setLessonAttendance({});
+
+        // Завантажуємо заново для всіх дат
+        if (dates.length > 0) {
+            for (const date of dates) {
+                await loadLessonAttendanceForDate(date.fullDate);
+            }
+        }
+
+        console.log('Дані відвідуваності оновлено');
+    };
+
+    const refreshCurrentMonth = async () => {
+        console.log('Оновлення даних поточного місяця');
+        if (dates.length > 0) {
+            setLessonAttendance({});
+            for (const date of dates) {
+                await loadLessonAttendanceForDate(date.fullDate);
+            }
         }
     };
 
@@ -772,6 +888,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 onHide={() => setShowGradeModal(false)}
                 onSave={handleSaveGrade}
                 onDelete={handleDeleteGrade}
+                onDeleteAttendance={handleDeleteAttendance}
                 existingGrade={selectedGrade}
                 isMobile={isMobile}
                 scheduleId={scheduleId}
@@ -779,6 +896,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 date={selectedCell?.date}
                 studentId={selectedCell?.studentId}
                 studentName={students.find(s => s._id === selectedCell?.studentId)?.fullName}
+                hasAttendance={selectedCell ? getAttendanceForStudentAndDate(selectedCell.studentId, selectedCell.date) !== null : false}
             />
         </div>
     );

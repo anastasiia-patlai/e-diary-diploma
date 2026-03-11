@@ -479,6 +479,49 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         if (!record?._id) return;
 
         try {
+            // Спочатку видаляємо всі пов'язані записи з lessonAttendance
+            if (record.lessonDetails && record.lessonDetails.length > 0) {
+                // Отримуємо всі scheduleId, де були позначки
+                const scheduleIds = record.lessonDetails
+                    .filter(d => d.status === 'absent')
+                    .map(d => d.scheduleId);
+
+                console.log('Видалення записів для уроків:', scheduleIds);
+
+                // Для кожного уроку видаляємо запис відвідуваності
+                const deletePromises = scheduleIds.map(async (scheduleId) => {
+                    try {
+                        // Спочатку знаходимо запис
+                        const searchResponse = await fetch(
+                            `/api/attendance/lesson/schedule/${scheduleId}?date=${selectedCell.date.fullDate}&databaseName=${databaseName}`
+                        );
+                        const searchData = await searchResponse.json();
+
+                        if (searchData && searchData.records) {
+                            // Знаходимо запис для цього студента
+                            const studentRecord = searchData.records.find(r =>
+                                r.student === selectedCell.studentId || r.student?._id === selectedCell.studentId
+                            );
+
+                            if (studentRecord && studentRecord._id) {
+                                console.log(`Видаляємо запис для уроку ${scheduleId}:`, studentRecord._id);
+                                // Видаляємо запис
+                                await fetch(`/api/attendance/lesson/${studentRecord._id}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ databaseName })
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Помилка при видаленні запису уроку:', e);
+                    }
+                });
+
+                await Promise.all(deletePromises);
+            }
+
+            // Потім видаляємо агрегований запис
             const response = await fetch(`/api/attendance/class/${record._id}`, {
                 method: 'DELETE',
                 headers: {
@@ -491,6 +534,24 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 const newAttendance = { ...attendance };
                 delete newAttendance[key];
                 setAttendance(newAttendance);
+
+                // Тригеримо агрегацію для оновлення даних
+                if (groupId) {
+                    try {
+                        await fetch('/api/attendance/aggregate-daily', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                databaseName,
+                                groupId,
+                                date: selectedCell.date.fullDate
+                            })
+                        });
+                        console.log('Агрегацію запущено після видалення');
+                    } catch (aggError) {
+                        console.error('Помилка агрегації після видалення:', aggError);
+                    }
+                }
 
                 setSuccess('Запис видалено');
                 setShowReasonModal(false);
