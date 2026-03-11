@@ -316,6 +316,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         const key = `${studentId}_${date.fullDate}`;
         const existing = attendance[key];
 
+        console.log('Existing attendance record:', existing);
+
         setSelectedCell({ studentId, date });
         setSelectedAttendance(existing || {
             status: 'absent',
@@ -511,6 +513,10 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const renderAttendanceCell = (studentId, date) => {
         const key = `${studentId}_${date.fullDate}`;
         const record = attendance[key];
+
+        if (record && record.lessonDetails) {
+            console.log(`Cell data for ${studentId} on ${date.fullDate}:`, record.lessonDetails);
+        }
 
         if (!record) {
             return (

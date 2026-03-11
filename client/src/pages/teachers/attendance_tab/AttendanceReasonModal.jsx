@@ -36,19 +36,38 @@ const AttendanceReasonModal = ({
 
     useEffect(() => {
         if (attendance) {
+            console.log('Attendance data in modal:', attendance); // Для перевірки
+
             setReasonType(attendance.reasonType || 'other');
             setHasCertificate(!!attendance.certificate);
 
-            if (attendance.lessonDetails) {
+            if (attendance.lessonDetails && attendance.lessonDetails.length > 0) {
+                console.log('Lesson details:', attendance.lessonDetails);
+
                 const absentLessons = attendance.lessonDetails
                     .filter(d => d.status === 'absent')
                     .map(d => d.scheduleId);
+
+                console.log('Absent lessons IDs:', absentLessons);
                 setSelectedLessons(absentLessons);
+
+                // Перевіряємо, чи є серед них позначки від вчителів
+                const teacherMarkedLessons = attendance.lessonDetails
+                    .filter(d => d.status === 'absent' && d.markedBy === 'teacher')
+                    .map(d => d.scheduleId);
+
+                if (teacherMarkedLessons.length > 0) {
+                    setIsReadOnly(true);
+                }
+            } else {
+                setSelectedLessons([]);
+                setIsReadOnly(false);
             }
         } else {
             setReasonType('other');
             setHasCertificate(false);
             setSelectedLessons([]);
+            setIsReadOnly(false);
         }
     }, [attendance, show]);
 
@@ -56,7 +75,7 @@ const AttendanceReasonModal = ({
         if (show && databaseName && groupId && date && selectedQuarter) {
             loadData();
         }
-    }, [show, databaseName, groupId, date, selectedQuarter]);
+    }, [show, databaseName, groupId, date, selectedQuarter, attendance]);
 
     const loadData = async () => {
         setLoading(true);
@@ -79,7 +98,6 @@ const AttendanceReasonModal = ({
             }
 
             const dayOfWeekId = dayResponse.data._id;
-            console.log('Day of week ID:', dayOfWeekId);
 
             // Отримуємо розклад групи на цей день
             const scheduleResponse = await axios.get('/api/schedule', {
@@ -92,12 +110,29 @@ const AttendanceReasonModal = ({
             });
 
             console.log('Schedule response:', scheduleResponse.data);
-            console.log(`Знайдено ${scheduleResponse.data.length} уроків на цей день`);
-
             setDaySchedule(scheduleResponse.data);
             setTotalLessons(scheduleResponse.data.length);
 
-            // Завантажуємо вже існуючі записи відвідуваності для цього студента
+            // Якщо вже є lessonDetails з пропущеними уроками, відмічаємо їх
+            if (attendance?.lessonDetails && attendance.lessonDetails.length > 0) {
+                const absentFromDetails = attendance.lessonDetails
+                    .filter(d => d.status === 'absent')
+                    .map(d => d.scheduleId);
+
+                console.log('Setting selected lessons from props:', absentFromDetails);
+                setSelectedLessons(absentFromDetails);
+
+                // Перевіряємо, чи є позначки від вчителів
+                const hasTeacherMarks = attendance.lessonDetails.some(d =>
+                    d.status === 'absent' && d.markedBy === 'teacher'
+                );
+
+                if (hasTeacherMarks) {
+                    setIsReadOnly(true);
+                }
+            }
+
+            // Завантажуємо вже існуючі записи відвідуваності для цього студента (актуальні дані з БД)
             if (studentId) {
                 const attendancePromises = scheduleResponse.data.map(async (lesson) => {
                     try {
@@ -126,7 +161,7 @@ const AttendanceReasonModal = ({
 
                 const results = await Promise.all(attendancePromises);
 
-                // Збираємо ID уроків, де студент відсутній
+                // Збираємо ID уроків, де студент відсутній (з актуальних даних)
                 const absentLessons = [];
                 const attendanceMap = {};
 
@@ -137,10 +172,22 @@ const AttendanceReasonModal = ({
                     }
                 });
 
-                console.log('Знайдено відсутніх уроків:', absentLessons.length);
-                setSelectedLessons(absentLessons);
+                console.log('Знайдено відсутніх уроків з БД:', absentLessons.length);
+
+                // Об'єднуємо з тими, що прийшли з пропсів (якщо є)
+                if (absentLessons.length > 0) {
+                    setSelectedLessons(prev => {
+                        const combined = [...new Set([...prev, ...absentLessons])];
+                        return combined;
+                    });
+                }
+
                 setLessonAttendanceData(attendanceMap);
-                setIsReadOnly(absentLessons.length > 0);
+
+                // Якщо є записи з БД, встановлюємо readOnly
+                if (absentLessons.length > 0) {
+                    setIsReadOnly(true);
+                }
             }
 
         } catch (error) {

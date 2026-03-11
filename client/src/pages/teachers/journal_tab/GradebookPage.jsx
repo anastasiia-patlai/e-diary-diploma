@@ -55,12 +55,18 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     }, [databaseName]);
 
-    // Завантажуємо відвідуваність після отримання дат та студентів
     useEffect(() => {
         if (students.length > 0 && dates.length > 0) {
+            console.log('Студенти та дати завантажені, запускаємо loadAllAttendanceForMonth');
             loadAllAttendanceForMonth();
         }
     }, [students, dates]);
+
+    useEffect(() => {
+        if (dates.length > 0 && students.length > 0) {
+            loadAllAttendanceForMonth();
+        }
+    }, [dates]);
 
     const loadJournalData = async () => {
         setLoading(true);
@@ -228,36 +234,46 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         if (!scheduleId) return;
 
         try {
+            console.log(`Завантаження відвідуваності для дати: ${date}`);
+
             // Отримуємо всі записи відвідуваності для цієї дати
             const response = await axios.get(
                 `/api/attendance/lesson/date/${date}?databaseName=${databaseName}`
             );
 
+            console.log('Отримані дані відвідуваності:', response.data);
+
             if (response.data) {
                 setLessonAttendance(prev => {
                     const newAttendance = { ...prev };
+
                     response.data.forEach(record => {
-                        const studentId = record.student?._id || record.student;
-                        const key = `${studentId}_${date}`;
+                        // Для кожного запису проходимо по всіх студентах
+                        record.records.forEach(r => {
+                            const studentId = r.student?._id || r.student;
+                            const key = `${studentId}_${date}`;
 
-                        // Групуємо записи по студентах
-                        if (!newAttendance[key]) {
-                            newAttendance[key] = {
-                                records: [],
-                                lessonsAbsent: 0,
-                                totalLessons: 0
-                            };
-                        }
+                            if (!newAttendance[key]) {
+                                newAttendance[key] = {
+                                    records: [],
+                                    lessonsAbsent: 0,
+                                    totalLessons: 0
+                                };
+                            }
 
-                        newAttendance[key].records.push(record);
+                            newAttendance[key].records.push({
+                                ...r,
+                                scheduleId: record.schedule
+                            });
 
-                        // Підраховуємо кількість відсутностей
-                        if (record.status === 'absent') {
-                            newAttendance[key].lessonsAbsent++;
-                        }
-                        newAttendance[key].totalLessons++;
+                            if (r.status === 'absent') {
+                                newAttendance[key].lessonsAbsent++;
+                            }
+                            newAttendance[key].totalLessons++;
+                        });
                     });
 
+                    console.log('Оновлений lessonAttendance:', newAttendance);
                     return newAttendance;
                 });
             }
@@ -267,6 +283,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const loadAllAttendanceForMonth = async () => {
+        console.log('Завантаження відвідуваності для всіх дат місяця');
+
+        setLessonAttendance({});
+
         for (const date of dates) {
             await loadLessonAttendanceForDate(date.fullDate);
         }
@@ -337,7 +357,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const handleSaveGrade = async (data) => {
         try {
             if (data.type === 'grade') {
-                // Збереження оцінки
                 if (!selectedCell || !selectedCell.studentId || !selectedCell.date) {
                     alert('Відсутні дані для збереження оцінки');
                     return;
@@ -384,29 +403,48 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 console.log('Saving attendance:', attendancePayload);
                 await axios.post('/api/attendance/lesson', attendancePayload);
 
-                // Оновлюємо локальний стан
-                const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
-                setLessonAttendance(prev => ({
-                    ...prev,
-                    [key]: {
-                        status: data.status,
-                        reason: data.reason,
-                        lessonsAbsent: data.status === 'absent' ? 1 : 0,
-                        totalLessons: 1
+                // Оновлюємо локальний стан для цієї дати
+                const date = selectedCell.date.fullDate;
+                const key = `${selectedCell.studentId}_${date}`;
+
+                setLessonAttendance(prev => {
+                    const newAttendance = { ...prev };
+
+                    if (!newAttendance[key]) {
+                        newAttendance[key] = {
+                            records: [],
+                            lessonsAbsent: 0,
+                            totalLessons: 0
+                        };
                     }
-                }));
+
+                    // Додаємо новий запис
+                    newAttendance[key].records.push({
+                        student: selectedCell.studentId,
+                        status: data.status,
+                        reason: data.reason || '',
+                        scheduleId: scheduleId
+                    });
+
+                    // Оновлюємо лічильники
+                    newAttendance[key].lessonsAbsent = data.status === 'absent' ?
+                        newAttendance[key].lessonsAbsent + 1 : newAttendance[key].lessonsAbsent;
+                    newAttendance[key].totalLessons++;
+
+                    return newAttendance;
+                });
 
                 // Тригеримо агрегацію для класного керівника
                 if (currentLesson?.group?._id) {
                     try {
-                        const aggResponse = await axios.post('/api/attendance/aggregate-daily', {
+                        await axios.post('/api/attendance/aggregate-daily', {
                             databaseName,
                             groupId: currentLesson.group._id,
                             date: selectedCell.date.fullDate
                         });
-                        console.log('Агрегацію запущено:', aggResponse.data);
+                        console.log('Агрегацію запущено');
                     } catch (aggError) {
-                        console.error('Помилка агрегації:', aggError.response?.data || aggError.message);
+                        console.error('Помилка агрегації:', aggError);
                     }
                 }
 
@@ -419,13 +457,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
         } catch (error) {
             console.error('Помилка збереження:', error);
-            if (error.response) {
-                alert(`Помилка: ${error.response.data?.error || 'Помилка при збереженні'}`);
-            } else if (error.request) {
-                alert('Сервер не відповідає. Перевірте з\'єднання.');
-            } else {
-                alert('Помилка при відправці запиту');
-            }
+            alert(`Помилка: ${error.response?.data?.error || error.message}`);
         }
     };
 

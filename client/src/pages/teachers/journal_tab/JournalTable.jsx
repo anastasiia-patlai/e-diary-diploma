@@ -10,8 +10,48 @@ const JournalTable = ({
     const renderAttendanceStatus = (attendance) => {
         if (!attendance) return null;
 
-        if (attendance.lessonsAbsent === attendance.totalLessons && attendance.totalLessons > 0) {
-            // Повна відсутність
+        // Якщо це об'єкт з lessonAttendance (має records)
+        if (attendance.records) {
+            const absentCount = attendance.records.filter(r => r.status === 'absent').length;
+            if (absentCount === attendance.totalLessons && attendance.totalLessons > 0) {
+                return (
+                    <span style={{
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '4px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                    }}>
+                        Н
+                    </span>
+                );
+            } else if (absentCount > 0) {
+                return (
+                    <span style={{
+                        backgroundColor: '#f59e0b',
+                        color: 'white',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '4px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '12px'
+                    }}>
+                        {absentCount}/{attendance.totalLessons}
+                    </span>
+                );
+            }
+        }
+
+        // Якщо це просто статус (для сумісності)
+        if (attendance.status === 'absent') {
             return (
                 <span style={{
                     backgroundColor: '#ef4444',
@@ -26,24 +66,6 @@ const JournalTable = ({
                     fontSize: '14px'
                 }}>
                     Н
-                </span>
-            );
-        } else if (attendance.lessonsAbsent > 0) {
-            // Часткова відсутність
-            return (
-                <span style={{
-                    backgroundColor: '#f59e0b',
-                    color: 'white',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '4px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '12px'
-                }}>
-                    {attendance.lessonsAbsent}/{attendance.totalLessons}
                 </span>
             );
         }
