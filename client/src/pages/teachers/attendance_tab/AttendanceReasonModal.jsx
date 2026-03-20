@@ -106,9 +106,10 @@ const AttendanceReasonModal = ({
                     );
 
                     if (response.data && response.data.records) {
-                        const studentRecord = response.data.records.find(r =>
-                            r.student === studentId || r.student?._id === studentId
-                        );
+                        const studentRecord = response.data.records.find(r => {
+                            const rid = r.student?._id?.toString() || r.student?.toString();
+                            return rid === studentId?.toString();
+                        });
 
                         if (studentRecord) {
                             // Зберігаємо повний запис для відображення причини
@@ -161,10 +162,8 @@ const AttendanceReasonModal = ({
 
     const handleSave = () => {
         const lessonDetails = daySchedule.map(lesson => {
-            const isTeacherMarked = !!teacherAttendance[lesson._id];
+            const isTeacherMarked = teacherAttendance[lesson._id];
             const isSelected = selectedLessons.includes(lesson._id);
-
-            // Визначаємо фінальний статус
             const isAbsent = isTeacherMarked || isSelected;
 
             return {
@@ -175,26 +174,33 @@ const AttendanceReasonModal = ({
                     endTime: lesson.timeSlot?.endTime
                 },
                 status: isAbsent ? 'absent' : 'present',
-                reason: isTeacherMarked
-                    ? (lessonAttendanceData[lesson._id]?.reason || '')
-                    : (isSelected && reasonType === 'sick' ? 'Хвороба'
-                        : isSelected && reasonType === 'family' ? 'Сімейні обставини' : ''),
-                // КЛЮЧОВЕ: markedBy вказує хто виставив відмітку.
-                // Бекенд syncWithLessonAttendance НЕ чіпає уроки де markedBy === 'teacher'
-                markedBy: isTeacherMarked ? 'teacher' : 'class_teacher'
+                reason: isTeacherMarked ? (lessonAttendanceData[lesson._id]?.reason || '') :
+                    (isSelected && reasonType === 'sick' ? 'Хвороба' :
+                        isSelected && reasonType === 'family' ? 'Сімейні обставини' : ''),
+                markedBy: isTeacherMarked ? 'teacher' : 'class_teacher',
+                totalLessons: daySchedule.length // Додаємо totalLessons для кожного уроку
             };
         });
 
         const totalAbsent = lessonDetails.filter(l => l.status === 'absent').length;
 
-        onSave({
+        const attendanceData = {
             status: totalAbsent > 0 ? 'absent' : 'present',
             reasonType,
             lessonsAbsent: totalAbsent,
             totalLessons: daySchedule.length,
             lessonDetails,
             certificate: hasCertificate
+        };
+
+        console.log('Saving attendance data:', {
+            totalLessons: daySchedule.length,
+            lessonsAbsent: totalAbsent,
+            lessonDetailsCount: lessonDetails.length,
+            absentLessons: lessonDetails.filter(l => l.status === 'absent').map(l => l.subject)
         });
+
+        onSave(attendanceData);
     };
 
     if (!show) return null;

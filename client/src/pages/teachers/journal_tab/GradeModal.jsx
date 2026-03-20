@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaUserClock, FaTimes, FaTrash } from 'react-icons/fa';
-import axios from 'axios';
+import { FaStar, FaUserClock, FaTimes, FaTrash, FaExclamationCircle } from 'react-icons/fa';
 
 const GradeModal = ({
     show,
@@ -19,11 +18,7 @@ const GradeModal = ({
 }) => {
     const [mode, setMode] = useState('grade');
     const [grade, setGrade] = useState('');
-    const [attendanceStatus, setAttendanceStatus] = useState('present');
     const [attendanceReason, setAttendanceReason] = useState('');
-
-    const hasAttendanceMark = existingGrade?.type === 'attendance' || hasAttendance;
-
 
     useEffect(() => {
         if (existingGrade) {
@@ -33,24 +28,20 @@ const GradeModal = ({
             setGrade('');
             setMode('grade');
         }
+        setAttendanceReason('');
     }, [existingGrade, show]);
 
     const handleSave = () => {
         if (mode === 'grade') {
-            onSave({
-                type: 'grade',
-                value: parseInt(grade)
-            });
+            onSave({ type: 'grade', value: parseInt(grade) });
         } else {
+            // В режимі відвідуваності — завжди ставимо "н"
             onSave({
                 type: 'attendance',
-                status: attendanceStatus,
+                status: 'absent',
                 reason: attendanceReason,
-                records: [{
-                    scheduleId: scheduleId,
-                    status: attendanceStatus === 'absent' ? 'absent' : 'present'
-                }],
-                lessonsAbsent: attendanceStatus === 'absent' ? 1 : 0,
+                records: [{ scheduleId, status: 'absent' }],
+                lessonsAbsent: 1,
                 totalLessons: 1
             });
         }
@@ -67,255 +58,183 @@ const GradeModal = ({
 
     return (
         <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000
         }}>
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
                 padding: isMobile ? '20px' : '24px',
-                width: isMobile ? '95%' : '450px',
-                maxWidth: '450px'
+                width: isMobile ? '95%' : '420px',
+                maxWidth: '420px'
             }}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '20px'
-                }}>
-                    <h3 style={{ margin: 0 }}>
+                {/* Шапка */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>
                         {studentName}
                     </h3>
-                    <button
-                        onClick={onHide}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '20px',
-                            cursor: 'pointer',
-                            color: '#6b7280'
-                        }}
-                    >
+                    <button onClick={onHide} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>
                         <FaTimes />
                     </button>
                 </div>
 
-                <div style={{
-                    backgroundColor: '#f0f9ff',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    marginBottom: '20px'
-                }}>
-                    <div style={{ fontSize: '14px', color: '#0369a1' }}>
-                        {date?.formatted} ({date?.dayName})
-                    </div>
+                {/* Дата */}
+                <div style={{ backgroundColor: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#0369a1' }}>
+                    {date?.formatted} ({date?.dayName})
                 </div>
 
-                {/* Вибір режиму */}
-                <div style={{
-                    display: 'flex',
-                    gap: '10px',
-                    marginBottom: '20px'
-                }}>
-                    <button
-                        onClick={() => setMode('grade')}
-                        style={{
-                            flex: 1,
-                            padding: '10px',
-                            border: `2px solid ${mode === 'grade' ? 'rgba(105, 180, 185, 1)' : '#e5e7eb'}`,
-                            borderRadius: '8px',
-                            backgroundColor: mode === 'grade' ? 'rgba(105, 180, 185, 0.1)' : 'white',
-                            color: mode === 'grade' ? 'rgba(105, 180, 185, 1)' : '#374151',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            fontWeight: mode === 'grade' ? '600' : 'normal'
-                        }}
-                    >
-                        <FaStar />
-                        Оцінка
-                    </button>
-                    <button
-                        onClick={() => setMode('attendance')}
-                        style={{
-                            flex: 1,
-                            padding: '10px',
-                            border: `2px solid ${mode === 'attendance' ? 'rgba(105, 180, 185, 1)' : '#e5e7eb'}`,
-                            borderRadius: '8px',
-                            backgroundColor: mode === 'attendance' ? 'rgba(105, 180, 185, 0.1)' : 'white',
-                            color: mode === 'attendance' ? 'rgba(105, 180, 185, 1)' : '#374151',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            fontWeight: mode === 'attendance' ? '600' : 'normal'
-                        }}
-                    >
-                        <FaUserClock />
-                        Відвідуваність
-                    </button>
+                {/* Перемикач режимів */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                    {[
+                        { key: 'grade', icon: <FaStar size={13} />, label: 'Оцінка' },
+                        { key: 'attendance', icon: <FaUserClock size={13} />, label: 'Відвідуваність' }
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setMode(tab.key)}
+                            style={{
+                                flex: 1, padding: '9px 10px',
+                                border: `2px solid ${mode === tab.key ? 'rgba(105,180,185,1)' : '#e5e7eb'}`,
+                                borderRadius: '8px',
+                                backgroundColor: mode === tab.key ? 'rgba(105,180,185,0.08)' : 'white',
+                                color: mode === tab.key ? 'rgba(105,180,185,1)' : '#6b7280',
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                fontWeight: mode === tab.key ? '600' : 'normal',
+                                fontSize: '14px',
+                                transition: 'all 0.15s'
+                            }}
+                        >
+                            {tab.icon} {tab.label}
+                        </button>
+                    ))}
                 </div>
 
-                {mode === 'grade' ? (
-                    // Режим оцінки
+                {/* ── Режим оцінки ── */}
+                {mode === 'grade' && (
                     <select
                         value={grade}
                         onChange={(e) => setGrade(e.target.value)}
                         style={{
-                            width: '100%',
-                            padding: '12px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            fontSize: '16px',
-                            marginBottom: '20px'
+                            width: '100%', padding: '11px 12px',
+                            border: '1px solid #e5e7eb', borderRadius: '8px',
+                            fontSize: '15px', marginBottom: '20px',
+                            color: grade ? '#111827' : '#9ca3af'
                         }}
                     >
                         <option value="">Оберіть оцінку</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => (
-                            <option key={num} value={num}>{num}</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                            <option key={n} value={n}>{n}</option>
                         ))}
                     </select>
-                ) : (
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{
-                            display: 'flex',
-                            gap: '10px',
-                            marginBottom: '15px'
-                        }}>
-                            <button
-                                onClick={() => setAttendanceStatus('present')}
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    border: `2px solid ${attendanceStatus === 'present' ? '#10b981' : '#e5e7eb'}`,
-                                    borderRadius: '8px',
-                                    backgroundColor: attendanceStatus === 'present' ? '#d1fae5' : 'white',
-                                    color: attendanceStatus === 'present' ? '#065f46' : '#374151',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Присутній
-                            </button>
-                            <button
-                                onClick={() => setAttendanceStatus('absent')}
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    border: `2px solid ${attendanceStatus === 'absent' ? '#ef4444' : '#e5e7eb'}`,
-                                    borderRadius: '8px',
-                                    backgroundColor: attendanceStatus === 'absent' ? '#fee2e2' : 'white',
-                                    color: attendanceStatus === 'absent' ? '#dc2626' : '#374151',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Відсутній
-                            </button>
-                        </div>
+                )}
 
-                        {attendanceStatus === 'absent' && (
-                            <input
-                                type="text"
-                                placeholder="Причина відсутності (необов'язково)"
-                                value={attendanceReason}
-                                onChange={(e) => setAttendanceReason(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
+                {/* ── Режим відвідуваності ── */}
+                {mode === 'attendance' && (
+                    <div style={{ marginBottom: '20px' }}>
+                        {hasAttendance ? (
+                            // Вже є "н" — показуємо інфо-блок
+                            <div style={{
+                                backgroundColor: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                borderRadius: '10px',
+                                padding: '16px',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '12px'
+                            }}>
+                                <FaExclamationCircle size={18} style={{ color: '#ef4444', marginTop: '1px', flexShrink: 0 }} />
+                                <div>
+                                    <div style={{ fontWeight: '600', color: '#991b1b', marginBottom: '4px', fontSize: '14px' }}>
+                                        Учень відсутній на цьому уроці
+                                    </div>
+                                    <div style={{ fontSize: '13px', color: '#b91c1c' }}>
+                                        Щоб прибрати відмітку — натисніть «Видалити н»
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            // Немає "н" — форма для виставлення
+                            <>
+                                <div style={{
+                                    backgroundColor: '#f9fafb',
                                     border: '1px solid #e5e7eb',
-                                    borderRadius: '8px',
-                                    fontSize: '14px'
-                                }}
-                            />
+                                    borderRadius: '10px',
+                                    padding: '14px',
+                                    marginBottom: '12px',
+                                    fontSize: '13px',
+                                    color: '#6b7280'
+                                }}>
+                                    Буде поставлено відмітку про <strong style={{ color: '#374151' }}>відсутність</strong> на цьому уроці
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Причина відсутності (необов'язково)"
+                                    value={attendanceReason}
+                                    onChange={(e) => setAttendanceReason(e.target.value)}
+                                    style={{
+                                        width: '100%', padding: '10px 12px',
+                                        border: '1px solid #e5e7eb', borderRadius: '8px',
+                                        fontSize: '14px', boxSizing: 'border-box'
+                                    }}
+                                />
+                            </>
                         )}
                     </div>
                 )}
 
-                {/* Кнопки */}
+                {/* Кнопки дій */}
                 <div style={{
-                    display: 'flex',
-                    gap: '10px',
-                    justifyContent: 'flex-end',
-                    borderTop: '1px solid #e5e7eb',
-                    paddingTop: '20px'
+                    display: 'flex', gap: '8px', justifyContent: 'flex-end',
+                    borderTop: '1px solid #f3f4f6', paddingTop: '16px'
                 }}>
+                    {/* Видалити оцінку */}
                     {existingGrade && mode === 'grade' && (
-                        <button
-                            onClick={onDelete}
-                            style={{
-                                backgroundColor: '#ef4444',
-                                color: 'white',
-                                padding: '10px 20px',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}
-                        >
-                            <FaTrash />
-                            Видалити оцінку
+                        <button onClick={onDelete} style={{
+                            backgroundColor: '#ef4444', color: 'white',
+                            padding: '9px 16px', border: 'none', borderRadius: '7px',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px'
+                        }}>
+                            <FaTrash size={12} /> Видалити оцінку
                         </button>
                     )}
 
+                    {/* Видалити "н" */}
                     {hasAttendance && mode === 'attendance' && (
-                        <button
-                            onClick={handleDeleteAttendance}
-                            style={{
-                                backgroundColor: '#ef4444',
-                                color: 'white',
-                                padding: '10px 20px',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}
-                        >
-                            <FaTrash />
-                            Видалити
+                        <button onClick={handleDeleteAttendance} style={{
+                            backgroundColor: '#ef4444', color: 'white',
+                            padding: '9px 16px', border: 'none', borderRadius: '7px',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px'
+                        }}>
+                            <FaTrash size={12} /> Видалити н
                         </button>
                     )}
 
-                    <button
-                        onClick={onHide}
-                        style={{
-                            backgroundColor: 'transparent',
-                            border: '1px solid #e5e7eb',
-                            padding: '10px 20px',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                        }}
-                    >
+                    <button onClick={onHide} style={{
+                        backgroundColor: 'transparent', border: '1px solid #e5e7eb',
+                        padding: '9px 16px', borderRadius: '7px', cursor: 'pointer',
+                        color: '#6b7280', fontSize: '14px'
+                    }}>
                         Скасувати
                     </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={mode === 'grade' && !grade}
-                        style={{
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                            color: 'white',
-                            padding: '10px 20px',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: (mode === 'grade' && !grade) ? 'not-allowed' : 'pointer',
-                            opacity: (mode === 'grade' && !grade) ? 0.5 : 1
-                        }}
-                    >
-                        Зберегти
-                    </button>
+
+                    {!(mode === 'attendance' && hasAttendance) && (
+                        <button
+                            onClick={handleSave}
+                            disabled={mode === 'grade' && !grade}
+                            style={{
+                                backgroundColor: 'rgba(105,180,185,1)', color: 'white',
+                                padding: '9px 18px', border: 'none', borderRadius: '7px',
+                                cursor: (mode === 'grade' && !grade) ? 'not-allowed' : 'pointer',
+                                opacity: (mode === 'grade' && !grade) ? 0.45 : 1,
+                                fontWeight: '600', fontSize: '14px'
+                            }}
+                        >
+                            {mode === 'attendance' ? 'Поставити н' : 'Зберегти'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
