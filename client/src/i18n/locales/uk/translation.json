@@ -3,6 +3,34 @@
         "exit": "Вихід",
         "loading": "Завантаження..."
     },
+    "login": {
+        "title": "Вхід в систему",
+        "subtitle": "Електронний щоденник",
+        "emailLabel": "Електронна пошта",
+        "emailPlaceholder": "Введіть email",
+        "passwordLabel": "Пароль",
+        "passwordPlaceholder": "Введіть пароль",
+        "loginButton": "Увійти",
+        "loggingIn": "Вхід...",
+        "errors": {
+            "emailRequired": "Електронна пошта обов'язкова",
+            "emailInvalid": "Некоректна електронна адреса",
+            "passwordRequired": "Пароль обов'язковий",
+            "passwordMinLength": "Пароль має містити щонайменше 6 символів",
+            "loginError": "Помилка входу",
+            "invalidResponse": "Некоректна відповідь від сервера",
+            "serverError": "Помилка сервера"
+        },
+        "defaults": {
+            "admin": "Адміністратор",
+            "schoolName": "Навчальний заклад"
+        },
+        "logs": {
+            "serverResponse": "Відповідь сервера:",
+            "dataSaved": "Всі дані збережено в localStorage:",
+            "checkDatabaseName": "Перевірка збереження databaseName:"
+        }
+    },
     "teacher": {
         "menuTitle": "Розділи вчителя",
         "welcome": "Ласкаво просимо!",

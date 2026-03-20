@@ -3,6 +3,34 @@
         "exit": "Exit",
         "loading": "Loading..."
     },
+    "login": {
+        "title": "Login to System",
+        "subtitle": "Electronic Diary",
+        "emailLabel": "Email",
+        "emailPlaceholder": "Enter email",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter password",
+        "loginButton": "Login",
+        "loggingIn": "Logging in...",
+        "errors": {
+            "emailRequired": "Email is required",
+            "emailInvalid": "Invalid email address",
+            "passwordRequired": "Password is required",
+            "passwordMinLength": "Password must be at least 6 characters",
+            "loginError": "Login error",
+            "invalidResponse": "Invalid server response",
+            "serverError": "Server error"
+        },
+        "defaults": {
+            "admin": "Administrator",
+            "schoolName": "Educational Institution"
+        },
+        "logs": {
+            "serverResponse": "Server response:",
+            "dataSaved": "All data saved to localStorage:",
+            "checkDatabaseName": "Checking databaseName saved:"
+        }
+    },
     "teacher": {
         "menuTitle": "Teacher Sections",
         "welcome": "Welcome!",

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown } from 'react-icons/fa';
 
-const LanguageSwitcher = ({ onLogout }) => {
+const LanguageSwitcher = ({ onLogout, isLoginPage = false }) => {
     const { i18n, t } = useTranslation();
     const currentLanguage = i18n.language;
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -36,6 +36,62 @@ const LanguageSwitcher = ({ onLogout }) => {
         }
     };
 
+    // Стилі для сторінки входу
+    const loginPageStyle = {
+        position: 'fixed',
+        height: isMobile ? 'auto' : '40px',
+        width: isMobile ? 'auto' : '100px',
+        top: '18px',
+        right: isMobile ? '16px' : '100px',
+        zIndex: 999,
+        ...(isMobile ? {} : {
+            backdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(99, 93, 93, 0.2)',
+            borderRadius: '12px',
+            padding: '5px 10px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
+        })
+    };
+
+    // Якщо це сторінка входу - показуємо кнопки зі спеціальними стилями
+    if (isLoginPage) {
+        return (
+            <div style={loginPageStyle}>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
+                    <button
+                        onClick={() => changeLanguage('uk')}
+                        style={{
+                            fontWeight: currentLanguage === 'uk' ? 'bold' : 'normal',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: isMobile ? '14px' : '16px',
+                            padding: '5px 10px',
+                            color: 'white'
+                        }}
+                    >
+                        UA
+                    </button>
+                    <button
+                        onClick={() => changeLanguage('en')}
+                        style={{
+                            fontWeight: currentLanguage === 'en' ? 'bold' : 'normal',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: isMobile ? '14px' : '16px',
+                            padding: '5px 10px',
+                            color: 'white'
+                        }}
+                    >
+                        EN
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Для інших сторінок
     // Мобільна версія - випадаючий список
     if (isMobile) {
         return (
@@ -98,16 +154,6 @@ const LanguageSwitcher = ({ onLogout }) => {
                                     fontSize: '14px',
                                     fontWeight: currentLanguage === 'uk' ? 'bold' : 'normal'
                                 }}
-                                onMouseOver={(e) => {
-                                    if (currentLanguage !== 'uk') {
-                                        e.target.style.backgroundColor = '#f5f5f5';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentLanguage !== 'uk') {
-                                        e.target.style.backgroundColor = 'white';
-                                    }
-                                }}
                             >
                                 🇺🇦 Українська
                             </button>
@@ -124,16 +170,6 @@ const LanguageSwitcher = ({ onLogout }) => {
                                     fontSize: '14px',
                                     fontWeight: currentLanguage === 'en' ? 'bold' : 'normal'
                                 }}
-                                onMouseOver={(e) => {
-                                    if (currentLanguage !== 'en') {
-                                        e.target.style.backgroundColor = '#f5f5f5';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (currentLanguage !== 'en') {
-                                        e.target.style.backgroundColor = 'white';
-                                    }
-                                }}
                             >
                                 🇬🇧 English
                             </button>
@@ -144,7 +180,7 @@ const LanguageSwitcher = ({ onLogout }) => {
         );
     }
 
-    // Десктопна версія - кнопки
+    // Десктопна версія для інших сторінок
     return (
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '10px' }}>

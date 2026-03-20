@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaEnvelope, FaLock, FaSignInAlt } from "react-icons/fa";
 
 function Login() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ email: "", password: "" });
     const [errors, setErrors] = useState({});
@@ -24,12 +26,12 @@ function Login() {
     const validateField = (name, value) => {
         let error = "";
         if (name === "email") {
-            if (!value) error = "Електронна пошта обов'язкова";
-            else if (!/\S+@\S+\.\S+/.test(value)) error = "Некоректна електронна адреса";
+            if (!value) error = t("login.errors.emailRequired");
+            else if (!/\S+@\S+\.\S+/.test(value)) error = t("login.errors.emailInvalid");
         }
         if (name === "password") {
-            if (!value) error = "Пароль обов'язковий";
-            else if (value.length < 6) error = "Пароль має містити щонайменше 6 символів";
+            if (!value) error = t("login.errors.passwordRequired");
+            else if (value.length < 6) error = t("login.errors.passwordMinLength");
         }
         setErrors((prev) => ({ ...prev, [name]: error }));
     };
@@ -67,22 +69,18 @@ function Login() {
             });
 
             const data = await res.json();
-            console.log("Відповідь сервера:", data);
+            console.log(t("login.logs.serverResponse"), data);
 
             if (!res.ok) {
-                alert(data.error || "Помилка входу");
+                alert(data.error || t("login.errors.loginError"));
                 setLoading(false);
                 return;
             }
 
             if (data.user && data.user.role) {
-                // ЗБЕРІГАЄМО ВСІ ДАНІ В localStorage
                 localStorage.setItem("user", JSON.stringify(data.user));
-
-                // ДОДАЄМО ЗБЕРЕЖЕННЯ databaseName окремо для надійності
                 localStorage.setItem("databaseName", data.user.databaseName);
 
-                // Зберігаємо повну інформацію для профілю
                 const userInfo = {
                     userId: data.user.id,
                     databaseName: data.user.databaseName,
@@ -90,32 +88,30 @@ function Login() {
                     role: data.user.role,
                     email: data.user.email,
                     phone: data.user.phone,
-                    position: data.user.position || (data.user.role === 'admin' ? 'Адміністратор' : data.user.role),
+                    position: data.user.position || (data.user.role === 'admin' ? t("login.defaults.admin") : data.user.role),
                     positions: data.user.positions || [],
-                    schoolName: data.user.schoolName || 'Навчальний заклад'
+                    schoolName: data.user.schoolName || t("login.defaults.schoolName")
                 };
 
                 localStorage.setItem("userInfo", JSON.stringify(userInfo));
-                console.log("✅ Всі дані збережено в localStorage:", {
+                console.log(t("login.logs.dataSaved"), {
                     user: data.user,
                     databaseName: data.user.databaseName,
                     userInfo: userInfo
                 });
 
-                // Перевіряємо, що дані збереглися
                 const savedDbName = localStorage.getItem('databaseName');
-                console.log("Перевірка збереження databaseName:", savedDbName);
+                console.log(t("login.logs.checkDatabaseName"), savedDbName);
 
-                // Перенаправлення на відповідну сторінку
                 window.location.href = `/${data.user.role}`;
             } else {
-                alert("Некоректна відповідь від сервера");
+                alert(t("login.errors.invalidResponse"));
                 setLoading(false);
             }
 
         } catch (err) {
             console.error(err);
-            alert("Помилка сервера");
+            alert(t("login.errors.serverError"));
             setLoading(false);
         }
     };
@@ -132,23 +128,49 @@ function Login() {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         minHeight: "100vh",
+        position: "relative"
     };
+
+    // Стиль для контейнера перемикача мови
+    const languageSwitcherStyle = {
+        position: 'fixed',
+        height: isMobile ? 'auto' : '40px',
+        width: isMobile ? 'auto' : '100px',
+        top: '18px',
+        right: isMobile ? '16px' : '100px',
+        zIndex: 999,
+        ...(isMobile ? {} : {
+            backdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(146, 146, 146, 0.2)',
+            borderRadius: '12px',
+            padding: '5px 10px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
+        })
+    };
+
+    const cardStyle = {
+        width: isMobile ? '90%' : '750px',
+        maxWidth: isMobile ? '90%' : '750px',
+        minHeight: isMobile ? 'auto' : '350px',
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        borderRadius: "15px",
+        margin: isMobile ? '0.5rem' : '0',
+        position: 'relative',
+        zIndex: 1000
+    };
+
 
     return (
         <div
             className="d-flex justify-content-center align-items-center min-vh-100"
             style={backgroundStyle}
         >
+            <div style={languageSwitcherStyle}>
+            </div>
+
             <div
                 className="card shadow-lg border-0"
-                style={{
-                    width: isMobile ? '90%' : '750px',
-                    maxWidth: isMobile ? '90%' : '750px',
-                    minHeight: isMobile ? 'auto' : '350px',
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
-                    borderRadius: "15px",
-                    margin: isMobile ? '0.5rem' : '0'
-                }}
+                style={cardStyle}
             >
                 <div className="card-body p-4 p-md-5">
                     <div className="text-center mb-4">
@@ -164,7 +186,7 @@ function Login() {
                                 fontWeight: '700',
                                 margin: 0
                             }}>
-                                Вхід в систему
+                                {t("login.title")}
                             </h2>
                         </div>
 
@@ -175,19 +197,18 @@ function Login() {
                             margin: 0,
                             paddingTop: '5px'
                         }}>
-                            Електронний щоденник
+                            {t("login.subtitle")}
                         </h3>
                     </div>
 
                     <form onSubmit={handleSubmit} noValidate>
-                        {/* ПОШТА */}
                         <div className="mb-3">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '16px' : '20px',
                                 fontWeight: '500'
                             }}>
                                 <FaEnvelope className="me-2" />
-                                Електронна пошта
+                                {t("login.emailLabel")}
                             </label>
                             <input
                                 type="email"
@@ -196,7 +217,7 @@ function Login() {
                                 value={formData.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="Введіть email"
+                                placeholder={t("login.emailPlaceholder")}
                                 style={{
                                     fontSize: isMobile ? '16px' : '20px',
                                     padding: isMobile ? '12px 15px' : '14px 18px',
@@ -211,14 +232,13 @@ function Login() {
                             </div>
                         </div>
 
-                        {/* ПАРОЛЬ */}
                         <div className="mb-4">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '16px' : '20px',
                                 fontWeight: '500'
                             }}>
                                 <FaLock className="me-2" />
-                                Пароль
+                                {t("login.passwordLabel")}
                             </label>
                             <input
                                 type="password"
@@ -227,7 +247,7 @@ function Login() {
                                 value={formData.password}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="Введіть пароль"
+                                placeholder={t("login.passwordPlaceholder")}
                                 style={{
                                     fontSize: isMobile ? '16px' : '20px',
                                     padding: isMobile ? '12px 15px' : '14px 18px',
@@ -266,12 +286,12 @@ function Login() {
                             {loading ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Вхід...
+                                    {t("login.loggingIn")}
                                 </>
                             ) : (
                                 <>
                                     <FaSignInAlt className="me-2" />
-                                    Увійти
+                                    {t("login.loginButton")}
                                 </>
                             )}
                         </button>
