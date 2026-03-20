@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate as RouterNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useState, useEffect } from "react";
 import Signup from "./pages/admins/Signup";
 import Login from "./Login";
 import Navigate from "./pages/Navigate";
@@ -7,8 +9,21 @@ import AdminPage from "./pages/admins/AdminPage";
 import TeacherPage from "./pages/teachers/TeacherPage";
 import StudentPage from "./pages/students/StudentPage";
 import ParentPage from "./pages/parents/ParentPage";
+import LanguageSwitcher from "./i18n/components/LanguageSwitcher";
 
 function App() {
+  const { t } = useTranslation();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   let user = null;
   try {
     const storedUser = localStorage.getItem("user");
@@ -16,7 +31,7 @@ function App() {
       user = JSON.parse(storedUser);
     }
   } catch (err) {
-    console.error("Помилка читання user з localStorage:", err);
+    console.error(t("errors.readUser"), err);
     localStorage.removeItem("user");
   }
 
@@ -27,6 +42,15 @@ function App() {
 
   return (
     <Router>
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: isMobile ? '80px' : '100px',
+        zIndex: 1000
+      }}>
+        <LanguageSwitcher onLogout={handleLogout} />
+      </div>
+
       <Routes>
         <Route
           path="/"

@@ -1,0 +1,56 @@
+{
+    "common": {
+        "exit": "Вихід",
+        "loading": "Завантаження..."
+    },
+    "teacher": {
+        "menuTitle": "Розділи вчителя",
+        "welcome": "Ласкаво просимо!",
+        "selectSection": "Оберіть розділ з меню для початку роботи",
+        "sections": {
+            "home": "Головна",
+            "profile": "Мій профіль",
+            "schedule": "Мій розклад",
+            "journal": "Журнал",
+            "attendance": "Відвідуваність",
+            "homework": "Домашні завдання",
+            "myStudents": "Мої учні",
+            "reports": "Звіти",
+            "tests": "Контрольні роботи"
+        },
+        "dashboard": {
+            "title": "Головна панель вчителя",
+            "welcome": "Ласкаво просимо,",
+            "subject": "Предмет",
+            "upcomingLessons": "Найближчі уроки",
+            "lessonExample": "Понеділок, 9:00 - 9А клас\nПонеділок, 10:00 - 10Б клас",
+            "statistics": "Статистика",
+            "studentsCount": "Учнів",
+            "averageScore": "Середній бал"
+        },
+        "homework": {
+            "title": "Домашні завдання",
+            "createButton": "Створити завдання",
+            "mathExample": "Завдання з математики",
+            "classExample": "Клас",
+            "deadline": "Дедлайн"
+        },
+        "reports": {
+            "title": "Звіти та статистика",
+            "academicPerformance": "Успішність класів",
+            "charts": "Графіки успішності",
+            "attendance": "Відвідуваність",
+            "attendanceStats": "Статистика відвідувань"
+        },
+        "journal": {
+            "title": "Журнал"
+        },
+        "buttons": {
+            "backToSchedule": "Назад до списку журналів"
+        },
+        "defaults": {
+            "position": "Вчитель",
+            "subject": "Математика"
+        }
+    }
+}

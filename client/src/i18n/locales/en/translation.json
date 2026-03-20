@@ -1,0 +1,56 @@
+{
+    "common": {
+        "exit": "Exit",
+        "loading": "Loading..."
+    },
+    "teacher": {
+        "menuTitle": "Teacher Sections",
+        "welcome": "Welcome!",
+        "selectSection": "Select a section from the menu to start",
+        "sections": {
+            "home": "Home",
+            "profile": "My Profile",
+            "schedule": "My Schedule",
+            "journal": "Journal",
+            "attendance": "Attendance",
+            "homework": "Homework",
+            "myStudents": "My Students",
+            "reports": "Reports",
+            "tests": "Tests"
+        },
+        "dashboard": {
+            "title": "Teacher Dashboard",
+            "welcome": "Welcome,",
+            "subject": "Subject",
+            "upcomingLessons": "Upcoming Lessons",
+            "lessonExample": "Monday, 9:00 - 9A class\nMonday, 10:00 - 10B class",
+            "statistics": "Statistics",
+            "studentsCount": "Students",
+            "averageScore": "Average score"
+        },
+        "homework": {
+            "title": "Homework",
+            "createButton": "Create Assignment",
+            "mathExample": "Math Assignment",
+            "classExample": "Class",
+            "deadline": "Deadline"
+        },
+        "reports": {
+            "title": "Reports & Statistics",
+            "academicPerformance": "Academic Performance",
+            "charts": "Performance Charts",
+            "attendance": "Attendance",
+            "attendanceStats": "Attendance Statistics"
+        },
+        "journal": {
+            "title": "Journal"
+        },
+        "buttons": {
+            "backToSchedule": "Back to Journals List"
+        },
+        "defaults": {
+            "position": "Teacher",
+            "subject": "Mathematics"
+        }
+    }
+}

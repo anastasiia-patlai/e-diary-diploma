@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     FaHome,
     FaBook,
@@ -31,8 +32,9 @@ import AttendanceTab from "./attendance_tab/AttendanceTab";
 import ClassAttendance from "./attendance_tab/ClassAttendance";
 
 const TeacherPage = ({ onLogout, userFullName }) => {
-    const [activeSection, setActiveSection] = useState("Головна");
-    const [showGradebook, setShowGradebook] = useState(false); // Новий стан для відображення журналу
+    const { t } = useTranslation();
+    const [activeSection, setActiveSection] = useState(t("teacher.sections.home"));
+    const [showGradebook, setShowGradebook] = useState(false);
     const [activeGradebookSchedule, setActiveGradebookSchedule] = useState(null);
     const [curatorGroupId, setCuratorGroupId] = useState(null);
     const [userData, setUserData] = useState(null);
@@ -71,21 +73,17 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     const data = await response.json();
 
                     if (data.success) {
-                        // Додаємо userId до даних
                         if (!data.user._id && userId) {
                             data.user._id = userId;
                         }
 
-                        // Окремий запит для отримання групи, де вчитель є куратором
                         try {
                             const groupsResponse = await fetch(`/api/groups?databaseName=${dbName}`);
                             if (groupsResponse.ok) {
                                 const groups = await groupsResponse.json();
                                 console.log('Всі групи для перевірки куратора:', groups);
 
-                                // Шукаємо групу, де curator співпадає з userId
                                 const curatorGroup = groups.find(g => {
-                                    // Перевіряємо різні формати
                                     if (g.curator && typeof g.curator === 'object' && g.curator._id === userId) {
                                         return true;
                                     }
@@ -99,7 +97,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
 
                                 if (curatorGroup) {
                                     data.user.curatorGroup = curatorGroup;
-                                    setCuratorGroupId(curatorGroup._id); // Зберігаємо ID групи
+                                    setCuratorGroupId(curatorGroup._id);
                                 }
                             }
                         } catch (groupError) {
@@ -113,13 +111,12 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 }
             }
 
-            // Запасний варіант
             setUserData({
                 _id: userId,
                 fullName: userInfo.fullName || userFullName,
                 role: userInfo.role || 'teacher',
-                position: userInfo.position || 'Вчитель',
-                subject: userInfo.subject || 'Математика',
+                position: userInfo.position || t("teacher.defaults.position"),
+                subject: userInfo.subject || t("teacher.defaults.subject"),
                 email: userInfo.email || 'teacher@school.edu.ua',
                 phone: userInfo.phone || '+380990000000',
                 createdAt: new Date().toISOString()
@@ -132,8 +129,8 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             setUserData({
                 fullName: userInfo.fullName || userFullName,
                 role: userInfo.role || 'teacher',
-                position: userInfo.position || 'Вчитель',
-                subject: userInfo.subject || 'Математика',
+                position: userInfo.position || t("teacher.defaults.position"),
+                subject: userInfo.subject || t("teacher.defaults.subject"),
                 email: userInfo.email || 'teacher@school.edu.ua',
                 phone: userInfo.phone || '+380990000000',
                 createdAt: new Date().toISOString()
@@ -141,29 +138,26 @@ const TeacherPage = ({ onLogout, userFullName }) => {
         }
     };
 
-    // Функція для відкриття журналу
     const handleOpenGradebook = (scheduleId) => {
         setActiveGradebookSchedule(scheduleId);
-        setShowGradebook(true); // Показуємо журнал
+        setShowGradebook(true);
     };
 
-    // Функція для закриття журналу
     const handleCloseGradebook = () => {
         setShowGradebook(false);
         setActiveGradebookSchedule(null);
     };
 
-    // Розділи для вчителя
     const teacherSections = [
-        { name: "Головна", icon: <FaHome /> },
-        { name: "Мій профіль", icon: <FaUserCircle /> },
-        { name: "Мій розклад", icon: <FaCalendarAlt /> },
-        { name: "Журнал", icon: <FaBook /> },
-        { name: "Відвідуваність", icon: <FaUserCheck /> },
-        { name: "Домашні завдання", icon: <FaTasks /> },
-        { name: "Мої учні", icon: <FaUsers /> },
-        { name: "Звіти", icon: <FaChartBar /> },
-        { name: "Контрольні роботи", icon: <FaClipboardList /> },
+        { name: t("teacher.sections.home"), icon: <FaHome /> },
+        { name: t("teacher.sections.profile"), icon: <FaUserCircle /> },
+        { name: t("teacher.sections.schedule"), icon: <FaCalendarAlt /> },
+        { name: t("teacher.sections.journal"), icon: <FaBook /> },
+        { name: t("teacher.sections.attendance"), icon: <FaUserCheck /> },
+        { name: t("teacher.sections.homework"), icon: <FaTasks /> },
+        { name: t("teacher.sections.myStudents"), icon: <FaUsers /> },
+        { name: t("teacher.sections.reports"), icon: <FaChartBar /> },
+        { name: t("teacher.sections.tests"), icon: <FaClipboardList /> },
     ];
 
     const toggleMenu = () => {
@@ -172,7 +166,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
 
     const handleSectionClick = (sectionName) => {
         setActiveSection(sectionName);
-        setShowGradebook(false); // Закриваємо журнал при зміні розділу
+        setShowGradebook(false);
         setActiveGradebookSchedule(null);
         if (isMobile) {
             setIsMenuOpen(false);
@@ -180,7 +174,6 @@ const TeacherPage = ({ onLogout, userFullName }) => {
     };
 
     const renderTeacherContent = () => {
-        // Якщо показуємо журнал
         if (showGradebook && activeGradebookSchedule) {
             return (
                 <div>
@@ -200,7 +193,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                         }}
                     >
                         <FaArrowLeft />
-                        Назад до списку журналів
+                        {t("teacher.buttons.backToSchedule")}
                     </button>
                     <GradebookPage
                         scheduleId={activeGradebookSchedule}
@@ -211,15 +204,14 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             );
         }
 
-        // Інакше показуємо звичайний контент
         switch (activeSection) {
-            case "Головна":
+            case t("teacher.sections.home"):
                 return (
                     <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Головна панель вчителя</h3>
+                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.dashboard.title")}</h3>
                         <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Ласкаво просимо, {userData?.fullName || userFullName}!<br />
-                            Предмет: {userData?.subject || 'Не вказано'}
+                            {t("teacher.dashboard.welcome")} {userData?.fullName || userFullName}!<br />
+                            {t("teacher.dashboard.subject")}: {userData?.subject || t("teacher.defaults.subject")}
                         </p>
                         <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
                             <div style={{
@@ -229,9 +221,8 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                                 flex: '1',
                                 minWidth: '200px'
                             }}>
-                                <h4 style={{ marginTop: 0 }}>Найближчі уроки</h4>
-                                <p>Понеділок, 9:00 - 9А клас</p>
-                                <p>Понеділок, 10:00 - 10Б клас</p>
+                                <h4 style={{ marginTop: 0 }}>{t("teacher.dashboard.upcomingLessons")}</h4>
+                                <p>{t("teacher.dashboard.lessonExample")}</p>
                             </div>
                             <div style={{
                                 padding: '20px',
@@ -240,25 +231,25 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                                 flex: '1',
                                 minWidth: '200px'
                             }}>
-                                <h4 style={{ marginTop: 0 }}>Статистика</h4>
-                                <p>Учнів: 45</p>
-                                <p>Середній бал: 8.7</p>
+                                <h4 style={{ marginTop: 0 }}>{t("teacher.dashboard.statistics")}</h4>
+                                <p>{t("teacher.dashboard.studentsCount")}: 45</p>
+                                <p>{t("teacher.dashboard.averageScore")}: 8.7</p>
                             </div>
                         </div>
                     </div>
                 );
 
-            case "Мій профіль":
-                return userData ? <TeacherInfo userData={userData} isMobile={isMobile} /> : <div>Завантаження...</div>;
+            case t("teacher.sections.profile"):
+                return userData ? <TeacherInfo userData={userData} isMobile={isMobile} /> : <div>{t("common.loading")}</div>;
 
-            case "Мій розклад":
+            case t("teacher.sections.schedule"):
                 return (
                     <TeacherScheduleTab
                         onOpenGradebook={handleOpenGradebook}
                     />
                 );
 
-            case "Журнал":
+            case t("teacher.sections.journal"):
                 return (
                     <JournalTab
                         databaseName={databaseName}
@@ -267,22 +258,22 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     />
                 );
 
-            case "Відвідуваність":
+            case t("teacher.sections.attendance"):
                 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
                 return (
                     <ClassAttendance
                         databaseName={databaseName}
                         isMobile={isMobile}
-                        teacherId={userInfo.userId} // Беремо безпосередньо з localStorage
+                        teacherId={userInfo.userId}
                         groupId={curatorGroupId || userData?.curatorGroup?._id}
                     />
                 );
 
-            case "Домашні завдання":
+            case t("teacher.sections.homework"):
                 return (
                     <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Домашні завдання</h3>
+                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.homework.title")}</h3>
                         <div style={{ marginTop: '20px' }}>
                             <button style={{
                                 backgroundColor: 'rgba(105, 180, 185, 1)',
@@ -293,35 +284,34 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                                 cursor: 'pointer',
                                 marginBottom: '20px'
                             }}>
-                                + Створити завдання
+                                + {t("teacher.homework.createButton")}
                             </button>
                             <div style={{
                                 display: 'grid',
                                 gap: '15px',
                                 gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
                             }}>
-                                {/* Приклад завдань */}
                                 <div style={{
                                     padding: '15px',
                                     border: '1px solid #e5e7eb',
                                     borderRadius: '8px'
                                 }}>
-                                    <h4>Завдання з математики</h4>
-                                    <p>Клас: 9А</p>
-                                    <p>Дедлайн: 15.03.2024</p>
+                                    <h4>{t("teacher.homework.mathExample")}</h4>
+                                    <p>{t("teacher.homework.classExample")}: 9А</p>
+                                    <p>{t("teacher.homework.deadline")}: 15.03.2024</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 );
 
-            case "Мої учні":
+            case t("teacher.sections.myStudents"):
                 return <MyStudents databaseName={databaseName} />;
 
-            case "Звіти":
+            case t("teacher.sections.reports"):
                 return (
                     <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Звіти та статистика</h3>
+                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.reports.title")}</h3>
                         <div style={{
                             display: 'grid',
                             gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
@@ -329,12 +319,12 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                             marginTop: '20px'
                         }}>
                             <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                                <h4>Успішність класів</h4>
-                                <p>Графіки успішності</p>
+                                <h4>{t("teacher.reports.academicPerformance")}</h4>
+                                <p>{t("teacher.reports.charts")}</p>
                             </div>
                             <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                                <h4>Відвідуваність</h4>
-                                <p>Статистика відвідувань</p>
+                                <h4>{t("teacher.reports.attendance")}</h4>
+                                <p>{t("teacher.reports.attendanceStats")}</p>
                             </div>
                         </div>
                     </div>
@@ -343,13 +333,19 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             default:
                 return (
                     <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>Ласкаво просимо!</h3>
+                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.welcome")}</h3>
                         <p style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Оберіть розділ з меню для початку роботи
+                            {t("teacher.selectSection")}
                         </p>
                     </div>
                 );
         }
+    };
+
+    // Оновлюємо заголовок з локалізацією
+    const getHeaderTitle = () => {
+        if (showGradebook) return t("teacher.journal.title");
+        return activeSection;
     };
 
     return (
@@ -400,7 +396,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     textAlign: 'center',
                     flex: 1
                 }}>
-                    {showGradebook ? 'Журнал' : activeSection} {userData?.subject ? `(${userData.subject})` : ''}
+                    {getHeaderTitle()} {userData?.subject ? `(${userData.subject})` : ''}
                 </h1>
 
                 <button
@@ -422,7 +418,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                         e.target.style.backgroundColor = '#ef4444';
                     }}
                 >
-                    Вихід
+                    {t("common.exit")}
                 </button>
             </header>
 
@@ -431,7 +427,6 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                 flex: 1,
                 position: 'relative'
             }}>
-                {/* Бічне меню - ховаємо коли показуємо журнал */}
                 {!showGradebook && (
                     <aside style={{
                         width: isMobile ? (isMenuOpen ? '260px' : '0') : '270px',
@@ -455,7 +450,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                                     marginBottom: '18px',
                                     color: '#374151'
                                 }}>
-                                    Розділи вчителя
+                                    {t("teacher.menuTitle")}
                                 </h2>
                                 <ul style={{
                                     display: 'flex',
