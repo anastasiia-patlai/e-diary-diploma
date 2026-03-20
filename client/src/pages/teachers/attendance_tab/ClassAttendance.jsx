@@ -18,34 +18,22 @@ import {
     FaCalendarWeek
 } from 'react-icons/fa';
 import AttendanceReasonModal from './AttendanceReasonModal';
-import axios from 'axios'; // Додаємо імпорт axios
 
 const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-
-    // Дані про групу та студентів
     const [group, setGroup] = useState(null);
     const [students, setStudents] = useState([]);
-
-    // Дані про чверті
     const [quarters, setQuarters] = useState([]);
     const [selectedQuarter, setSelectedQuarter] = useState(null);
     const [quarterDates, setQuarterDates] = useState([]);
-    const [weeks, setWeeks] = useState([]);
-
-    // Дані про відвідуваність
     const [attendance, setAttendance] = useState({});
     const [existingAttendance, setExistingAttendance] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-
-    // Стан модального вікна
     const [showReasonModal, setShowReasonModal] = useState(false);
     const [selectedCell, setSelectedCell] = useState(null);
     const [selectedAttendance, setSelectedAttendance] = useState(null);
-
-    // Статистика
     const [stats, setStats] = useState({
         totalDays: 0,
         totalAbsent: 0,
@@ -53,18 +41,10 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         otherDays: 0
     });
 
-    // Таймери для повідомлень
     useEffect(() => {
         let errorTimer, successTimer;
-
-        if (error) {
-            errorTimer = setTimeout(() => setError(null), 4000);
-        }
-
-        if (success) {
-            successTimer = setTimeout(() => setSuccess(null), 4000);
-        }
-
+        if (error) errorTimer = setTimeout(() => setError(null), 4000);
+        if (success) successTimer = setTimeout(() => setSuccess(null), 4000);
         return () => {
             clearTimeout(errorTimer);
             clearTimeout(successTimer);
@@ -89,6 +69,15 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         calculateStats();
     }, [attendance, quarterDates]);
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (selectedQuarter) {
+                loadAttendanceForQuarter();
+            }
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [selectedQuarter]);
+
     const loadGroupData = async () => {
         setLoading(true);
         try {
@@ -108,15 +97,11 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const loadQuarters = async () => {
         try {
             const response = await fetch(`/api/study-calendar/quarters?databaseName=${databaseName}`);
-
             if (response.ok) {
                 const data = await response.json();
                 setQuarters(data);
-
-                // Знаходимо активну чверть
                 const now = new Date();
                 now.setHours(12, 0, 0, 0);
-
                 const activeQuarter = data.find(q => {
                     const start = new Date(q.startDate);
                     const end = new Date(q.endDate);
@@ -124,10 +109,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     end.setHours(12, 0, 0, 0);
                     return now >= start && now <= end;
                 }) || data.find(q => q.isActive) || data[0];
-
-                if (activeQuarter) {
-                    setSelectedQuarter(activeQuarter);
-                }
+                if (activeQuarter) setSelectedQuarter(activeQuarter);
             }
         } catch (err) {
             console.error('Помилка завантаження чвертей:', err);
@@ -136,8 +118,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const generateQuarterDates = () => {
         if (!selectedQuarter) return;
-
-        // Функція для конвертації UTC дати в локальну з правильним днем
         const convertUTCToLocalDate = (utcDateStr) => {
             const date = new Date(utcDateStr);
             const year = date.getUTCFullYear();
@@ -145,10 +125,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             const day = date.getUTCDate();
             return new Date(year, month, day, 12, 0, 0, 0);
         };
-
         const startDate = convertUTCToLocalDate(selectedQuarter.startDate);
         const endDate = convertUTCToLocalDate(selectedQuarter.endDate);
-
         const dates = [];
         const currentDate = new Date(startDate);
         let weekNumber = 1;
@@ -156,13 +134,11 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
         while (currentDate <= endDate) {
             const dayOfWeek = currentDate.getDay();
-
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
                 const year = currentDate.getFullYear();
                 const month = String(currentDate.getMonth() + 1).padStart(2, '0');
                 const day = String(currentDate.getDate()).padStart(2, '0');
                 const dateStr = `${year}-${month}-${day}`;
-
                 const dateObj = {
                     date: new Date(currentDate),
                     formatted: currentDate.toLocaleDateString('uk-UA', {
@@ -176,24 +152,19 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     isFirstOfWeek: false,
                     isLastOfWeek: false
                 };
-
                 dates.push(dateObj);
                 weekDates.push(dateObj);
             }
-
             const isFriday = dayOfWeek === 5;
             const isLastDay = currentDate.toDateString() === endDate.toDateString();
-
             if ((isFriday || isLastDay) && weekDates.length > 0) {
                 weekDates[0].isFirstOfWeek = true;
                 weekDates[weekDates.length - 1].isLastOfWeek = true;
                 weekDates = [];
                 weekNumber++;
             }
-
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
         setQuarterDates(dates);
     };
 
@@ -204,72 +175,70 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const loadAttendanceForQuarter = async () => {
         if (!selectedQuarter?._id || !groupId) return;
-
         try {
-            // Спочатку отримуємо розклад для всіх днів, щоб знати реальну кількість уроків
+            // Отримуємо розклад для визначення кількості уроків в кожен день
             const scheduleResponse = await fetch(
                 `/api/schedule?databaseName=${databaseName}&group=${groupId}&semester=${selectedQuarter.semester?._id}`
             );
             const schedules = await scheduleResponse.json();
 
-            // Групуємо розклад по днях тижня
+            // Групуємо уроки за днями тижня
             const lessonsByDay = {};
             schedules.forEach(schedule => {
-                const dayOfWeek = schedule.dayOfWeek?.order; // 1-7
-                if (!lessonsByDay[dayOfWeek]) {
-                    lessonsByDay[dayOfWeek] = [];
-                }
+                const dayOfWeek = schedule.dayOfWeek?.order;
+                if (!lessonsByDay[dayOfWeek]) lessonsByDay[dayOfWeek] = [];
                 lessonsByDay[dayOfWeek].push(schedule);
             });
 
-            console.log('Розклад по днях:', lessonsByDay);
+            console.log('Lessons by day:', Object.keys(lessonsByDay).map(day => ({
+                day,
+                count: lessonsByDay[day].length,
+                subjects: lessonsByDay[day].map(s => s.subject)
+            })));
 
             const response = await fetch(
                 `/api/attendance/class/group/${groupId}?quarter=${selectedQuarter._id}&databaseName=${databaseName}`,
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
+                { headers: { 'Content-Type': 'application/json' } }
             );
 
             if (response.ok) {
                 const data = await response.json();
                 setExistingAttendance(data);
-
                 const attendanceMap = {};
 
                 data.forEach(record => {
                     const studentId = record.student?._id || record.student;
-
-                    if (!studentId) {
-                        console.error('Record without student ID:', record);
-                        return;
-                    }
-
+                    if (!studentId) return;
                     const recordDate = new Date(record.date);
                     const recordDateStr = recordDate.toISOString().split('T')[0];
                     const key = `${studentId}_${recordDateStr}`;
-
-                    // Отримуємо день тижня для цієї дати
                     const dayOfWeek = recordDate.getDay() === 0 ? 7 : recordDate.getDay();
 
-                    // Отримуємо реальну кількість уроків у цей день
+                    // Отримуємо реальну кількість уроків в цей день
                     const actualTotalLessons = lessonsByDay[dayOfWeek]?.length || 0;
 
-                    console.log(`Для дати ${recordDateStr}, день ${dayOfWeek}, уроків: ${actualTotalLessons}`);
+                    // Якщо є lessonDetails, використовуємо їх для підрахунку відсутніх уроків
+                    let lessonsAbsent = record.lessonsAbsent;
+                    if (record.lessonDetails && record.lessonDetails.length > 0) {
+                        lessonsAbsent = record.lessonDetails.filter(l => l.status === 'absent').length;
+                    }
 
                     attendanceMap[key] = {
                         status: record.status,
                         reasonType: record.reasonType || 'other',
                         certificate: record.certificate || null,
-                        lessonsAbsent: record.lessonsAbsent || 0,
-                        totalLessons: actualTotalLessons, // Використовуємо реальну кількість з розкладу
+                        lessonsAbsent: lessonsAbsent,
+                        totalLessons: actualTotalLessons,
                         lessonDetails: record.lessonDetails || [],
                         _id: record._id
                     };
-                });
 
+                    console.log(`Loaded record for ${key}:`, {
+                        lessonsAbsent,
+                        totalLessons: actualTotalLessons,
+                        hasLessonDetails: !!(record.lessonDetails?.length)
+                    });
+                });
                 setAttendance(attendanceMap);
                 setIsEditing(false);
             }
@@ -280,44 +249,24 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const calculateStats = () => {
         if (!students.length || !quarterDates.length) return;
-
-        let totalAbsent = 0;
-        let sickDays = 0;
-        let otherDays = 0;
-
+        let totalAbsent = 0, sickDays = 0, otherDays = 0;
         students.forEach(student => {
             quarterDates.forEach(date => {
                 const key = `${student._id}_${date.fullDate}`;
                 const record = attendance[key];
-
                 if (record && record.status === 'absent') {
                     totalAbsent++;
-
-                    switch (record.reasonType) {
-                        case 'sick':
-                            sickDays++;
-                            break;
-                        default:
-                            otherDays++;
-                    }
+                    if (record.reasonType === 'sick') sickDays++;
+                    else otherDays++;
                 }
             });
         });
-
-        setStats({
-            totalDays: quarterDates.length,
-            totalAbsent,
-            sickDays,
-            otherDays
-        });
+        setStats({ totalDays: quarterDates.length, totalAbsent, sickDays, otherDays });
     };
 
     const handleCellClick = (studentId, date) => {
         const key = `${studentId}_${date.fullDate}`;
         const existing = attendance[key];
-
-        console.log('Existing attendance record:', existing);
-
         setSelectedCell({ studentId, date });
         setSelectedAttendance(existing || {
             status: 'absent',
@@ -332,81 +281,33 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const handleSaveAttendance = async (attendanceData) => {
         if (!selectedCell || !groupId) return;
-
         try {
-            // Спочатку отримуємо актуальний розклад для цього дня
             const dateObj = new Date(selectedCell.date.fullDate);
             const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay();
 
+            // Отримуємо розклад для визначення загальної кількості уроків
             const scheduleResponse = await fetch(
                 `/api/schedule?databaseName=${databaseName}&group=${groupId}&semester=${selectedQuarter.semester?._id}`
             );
             const schedules = await scheduleResponse.json();
 
-            const lessonsByDay = {};
-            schedules.forEach(schedule => {
-                const day = schedule.dayOfWeek?.order;
-                if (!lessonsByDay[day]) {
-                    lessonsByDay[day] = [];
-                }
-                lessonsByDay[day].push(schedule);
-            });
+            // Фільтруємо розклад тільки для цього дня тижня
+            const daySchedules = schedules.filter(schedule =>
+                schedule.dayOfWeek?.order === dayOfWeek
+            );
 
-            const actualTotalLessons = lessonsByDay[dayOfWeek]?.length || 0;
+            const actualTotalLessons = daySchedules.length;
 
-            // Спочатку зберігаємо/оновлюємо записи для кожного уроку
-            if (attendanceData.lessonDetails) {
-                const lessonPromises = attendanceData.lessonDetails.map(async (lesson) => {
-                    if (lesson.markedBy === 'class_teacher' && lesson.status === 'absent') {
-                        const payload = {
-                            databaseName,
-                            scheduleId: lesson.scheduleId,
-                            date: selectedCell.date.fullDate,
-                            records: [{
-                                student: selectedCell.studentId,
-                                status: 'absent',
-                                reason: attendanceData.reasonType === 'sick' ? 'Хвороба' :
-                                    attendanceData.reasonType === 'family' ? 'Сімейні обставини' : ''
-                            }]
-                        };
+            console.log('Day schedules:', daySchedules.map(s => s.subject));
+            console.log('Total lessons for day:', actualTotalLessons);
 
-                        // Перевіряємо, чи є вже запис для цього уроку
-                        try {
-                            const existingRecord = await fetch(
-                                `/api/attendance/lesson/schedule/${lesson.scheduleId}?date=${selectedCell.date.fullDate}&databaseName=${databaseName}`
-                            );
-                            const existingData = await existingRecord.json();
+            // Оновлюємо lessonDetails з правильним totalLessons
+            const updatedLessonDetails = attendanceData.lessonDetails.map(lesson => ({
+                ...lesson,
+                totalLessons: actualTotalLessons
+            }));
 
-                            if (existingData && existingData.records) {
-                                const studentRecord = existingData.records.find(r =>
-                                    r.student === selectedCell.studentId || r.student?._id === selectedCell.studentId
-                                );
-
-                                if (studentRecord && studentRecord._id) {
-                                    return fetch(`/api/attendance/lesson/${studentRecord._id}`, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify(payload)
-                                    });
-                                }
-                            }
-                        } catch (e) {
-                            // Запис не знайдено, створюємо новий
-                        }
-
-                        return fetch('/api/attendance/lesson', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                    }
-                    return null;
-                }).filter(p => p !== null);
-
-                await Promise.all(lessonPromises);
-            }
-
-            // Потім зберігаємо агрегований запис для класного керівника
+            // Підготовка payload
             const payload = {
                 databaseName,
                 groupId,
@@ -416,10 +317,18 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 status: attendanceData.status,
                 reasonType: attendanceData.reasonType,
                 lessonsAbsent: attendanceData.lessonsAbsent,
-                totalLessons: actualTotalLessons, // Використовуємо актуальну кількість
-                lessonDetails: attendanceData.lessonDetails,
+                totalLessons: actualTotalLessons,
+                lessonDetails: updatedLessonDetails,
                 certificate: attendanceData.certificate
             };
+
+            console.log('Saving attendance payload:', {
+                studentId: selectedCell.studentId,
+                date: selectedCell.date.fullDate,
+                lessonsAbsent: attendanceData.lessonsAbsent,
+                totalLessons: actualTotalLessons,
+                lessonDetailsCount: updatedLessonDetails.length
+            });
 
             let response;
             const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
@@ -441,7 +350,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
             if (response.ok) {
                 const savedRecord = await response.json();
-
                 setAttendance(prev => ({
                     ...prev,
                     [key]: {
@@ -449,7 +357,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         reasonType: savedRecord.reasonType || 'other',
                         certificate: savedRecord.certificate,
                         lessonsAbsent: savedRecord.lessonsAbsent || 0,
-                        totalLessons: actualTotalLessons, // Оновлюємо в стані
+                        totalLessons: actualTotalLessons,
                         lessonDetails: savedRecord.lessonDetails || [],
                         _id: savedRecord._id
                     }
@@ -472,85 +380,35 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
 
     const handleDeleteAttendance = async () => {
         if (!selectedCell) return;
-
         const key = `${selectedCell.studentId}_${selectedCell.date.fullDate}`;
         const record = attendance[key];
-
         if (!record?._id) return;
 
         try {
-            // Спочатку видаляємо всі пов'язані записи з lessonAttendance
-            if (record.lessonDetails && record.lessonDetails.length > 0) {
-                // Отримуємо всі scheduleId, де були позначки
-                const scheduleIds = record.lessonDetails
-                    .filter(d => d.status === 'absent')
-                    .map(d => d.scheduleId);
-
-                console.log('Видалення записів для уроків:', scheduleIds);
-
-                // Для кожного уроку видаляємо запис відвідуваності
-                const deletePromises = scheduleIds.map(async (scheduleId) => {
-                    try {
-                        // Спочатку знаходимо запис
-                        const searchResponse = await fetch(
-                            `/api/attendance/lesson/schedule/${scheduleId}?date=${selectedCell.date.fullDate}&databaseName=${databaseName}`
-                        );
-                        const searchData = await searchResponse.json();
-
-                        if (searchData && searchData.records) {
-                            // Знаходимо запис для цього студента
-                            const studentRecord = searchData.records.find(r =>
-                                r.student === selectedCell.studentId || r.student?._id === selectedCell.studentId
-                            );
-
-                            if (studentRecord && studentRecord._id) {
-                                console.log(`Видаляємо запис для уроку ${scheduleId}:`, studentRecord._id);
-                                // Видаляємо запис
-                                await fetch(`/api/attendance/lesson/${studentRecord._id}`, {
-                                    method: 'DELETE',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ databaseName })
-                                });
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Помилка при видаленні запису уроку:', e);
-                    }
-                });
-
-                await Promise.all(deletePromises);
-            }
-
-            // Потім видаляємо агрегований запис
+            // Видаляємо запис через API (бекенд сам видалить з LessonAttendance)
             const response = await fetch(`/api/attendance/class/${record._id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ databaseName })
             });
 
             if (response.ok) {
+                // Оновлюємо локальний стан
                 const newAttendance = { ...attendance };
                 delete newAttendance[key];
                 setAttendance(newAttendance);
 
-                // Тригеримо агрегацію для оновлення даних
+                // Запускаємо агрегацію для оновлення статистики
                 if (groupId) {
-                    try {
-                        await fetch('/api/attendance/aggregate-daily', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                databaseName,
-                                groupId,
-                                date: selectedCell.date.fullDate
-                            })
-                        });
-                        console.log('Агрегацію запущено після видалення');
-                    } catch (aggError) {
-                        console.error('Помилка агрегації після видалення:', aggError);
-                    }
+                    await fetch('/api/attendance/aggregate-daily', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            databaseName,
+                            groupId,
+                            date: selectedCell.date.fullDate
+                        })
+                    });
                 }
 
                 setSuccess('Запис видалено');
@@ -558,13 +416,8 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 setSelectedCell(null);
                 setSelectedAttendance(null);
             } else {
-                const errorText = await response.text();
-                try {
-                    const errorData = JSON.parse(errorText);
-                    setError(errorData.message || errorData.error || 'Помилка при видаленні');
-                } catch {
-                    setError('Помилка при видаленні: ' + errorText);
-                }
+                const errorData = await response.json();
+                setError(errorData.message || errorData.error || 'Помилка при видаленні');
             }
         } catch (err) {
             setError('Помилка при видаленні: ' + err.message);
@@ -574,10 +427,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
     const renderAttendanceCell = (studentId, date) => {
         const key = `${studentId}_${date.fullDate}`;
         const record = attendance[key];
-
-        if (record && record.lessonDetails) {
-            console.log(`Cell data for ${studentId} on ${date.fullDate}:`, record.lessonDetails);
-        }
 
         if (!record) {
             return (
@@ -595,8 +444,120 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
             );
         }
 
+        // Якщо статус відсутній
         if (record.status === 'absent') {
-            // Повна відсутність
+            // Перевіряємо, чи є дані про уроки
+            if (record.lessonDetails && record.lessonDetails.length > 0) {
+                // Підраховуємо кількість відсутніх уроків
+                const absentLessonsCount = record.lessonDetails.filter(l => l.status === 'absent').length;
+                const totalLessonsInDay = record.totalLessons || record.lessonDetails.length;
+
+                console.log(`Student ${studentId} on ${date.fullDate}:`, {
+                    absentLessonsCount,
+                    totalLessonsInDay,
+                    lessonDetails: record.lessonDetails.map(l => ({ subject: l.subject, status: l.status }))
+                });
+
+                // Повна відсутність (всі уроки)
+                if (absentLessonsCount === totalLessonsInDay && totalLessonsInDay > 0) {
+                    return (
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative'
+                        }}>
+                            <span style={{
+                                backgroundColor: '#ef4444',
+                                color: 'white',
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '14px'
+                            }}>
+                                Н
+                            </span>
+                            {record.certificate && (
+                                <span style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    right: '-5px',
+                                    backgroundColor: '#10b981',
+                                    color: 'white',
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    border: '1px solid white'
+                                }}>
+                                    ✓
+                                </span>
+                            )}
+                        </div>
+                    );
+                }
+
+                // Часткова відсутність
+                if (absentLessonsCount > 0 && totalLessonsInDay > 0) {
+                    return (
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative'
+                        }}>
+                            <span style={{
+                                backgroundColor: '#f59e0b',
+                                color: 'white',
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '12px'
+                            }}>
+                                {absentLessonsCount}/{totalLessonsInDay}
+                            </span>
+                            {record.certificate && (
+                                <span style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    right: '-5px',
+                                    backgroundColor: '#10b981',
+                                    color: 'white',
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '10px',
+                                    fontWeight: 'bold',
+                                    border: '1px solid white'
+                                }}>
+                                    ✓
+                                </span>
+                            )}
+                        </div>
+                    );
+                }
+            }
+
+            // Якщо немає lessonDetails, але статус absent (старий формат)
             if (record.lessonsAbsent === record.totalLessons && record.totalLessons > 0) {
                 return (
                     <div style={{
@@ -645,7 +606,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 );
             }
 
-            // Часткова відсутність
             if (record.lessonsAbsent > 0 && record.totalLessons > 0) {
                 return (
                     <div style={{
@@ -716,54 +676,41 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
         (typeof group.curator === 'string' && group.curator === teacherId)
     );
 
-    if (loading) {
-        return (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-                Завантаження...
-            </div>
-        );
-    }
-
-    if (!teacherId) {
-        return (
-            <div style={{
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffeeba',
-                borderRadius: '8px',
-                padding: '40px',
-                textAlign: 'center',
-                color: '#856404'
-            }}>
-                <FaChalkboardTeacher style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
-                <h3>Очікування даних</h3>
-                <p>Завантаження інформації про користувача...</p>
-            </div>
-        );
-    }
-
-    if (!isCurator) {
-        return (
-            <div style={{
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffeeba',
-                borderRadius: '8px',
-                padding: '40px',
-                textAlign: 'center',
-                color: '#856404'
-            }}>
-                <FaChalkboardTeacher style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
-                <h3>Доступ обмежено</h3>
-                <p>Цей розділ доступний тільки для класних керівників.</p>
-                <p style={{ fontSize: '14px', marginTop: '10px' }}>
-                    Ви не є класним керівником групи {group?.name}
-                </p>
-            </div>
-        );
-    }
+    if (loading) return <div style={{ textAlign: 'center', padding: '40px' }}>Завантаження...</div>;
+    if (!teacherId) return (
+        <div style={{
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffeeba',
+            borderRadius: '8px',
+            padding: '40px',
+            textAlign: 'center',
+            color: '#856404'
+        }}>
+            <FaChalkboardTeacher style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
+            <h3>Очікування даних</h3>
+            <p>Завантаження інформації про користувача...</p>
+        </div>
+    );
+    if (!isCurator) return (
+        <div style={{
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffeeba',
+            borderRadius: '8px',
+            padding: '40px',
+            textAlign: 'center',
+            color: '#856404'
+        }}>
+            <FaChalkboardTeacher style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.5 }} />
+            <h3>Доступ обмежено</h3>
+            <p>Цей розділ доступний тільки для класних керівників.</p>
+            <p style={{ fontSize: '14px', marginTop: '10px' }}>
+                Ви не є класним керівником групи {group?.name}
+            </p>
+        </div>
+    );
 
     return (
         <div>
-            {/* Заголовок */}
             <h3 style={{
                 fontSize: isMobile ? '18px' : '24px',
                 fontWeight: '500',
@@ -773,7 +720,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 Відвідуваність
             </h3>
 
-            {/* Вибір чверті */}
             <div style={{
                 marginBottom: '20px',
                 display: 'flex',
@@ -781,9 +727,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 gap: '15px',
                 flexWrap: 'wrap'
             }}>
-                <label style={{ fontWeight: '500', color: '#374151' }}>
-                    Навчальна чверть:
-                </label>
+                <label style={{ fontWeight: '500', color: '#374151' }}>Навчальна чверть:</label>
                 <select
                     value={selectedQuarter?._id || ''}
                     onChange={(e) => {
@@ -807,7 +751,6 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                 </select>
             </div>
 
-            {/* Повідомлення з можливістю закриття */}
             {error && (
                 <div style={{
                     backgroundColor: '#fee2e2',
@@ -824,17 +767,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         <FaExclamationTriangle />
                         <span>{error}</span>
                     </div>
-                    <button
-                        onClick={() => setError(null)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#dc2626',
-                            cursor: 'pointer',
-                            fontSize: '18px',
-                            padding: '0 4px'
-                        }}
-                    >
+                    <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '18px', padding: '0 4px' }}>
                         <FaTimes />
                     </button>
                 </div>
@@ -853,23 +786,12 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     gap: '10px'
                 }}>
                     <span>{success}</span>
-                    <button
-                        onClick={() => setSuccess(null)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#065f46',
-                            cursor: 'pointer',
-                            fontSize: '18px',
-                            padding: '0 4px'
-                        }}
-                    >
+                    <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', fontSize: '18px', padding: '0 4px' }}>
                         <FaTimes />
                     </button>
                 </div>
             )}
 
-            {/* Статистика */}
             {quarterDates.length > 0 && (
                 <div style={{
                     display: 'grid',
@@ -877,75 +799,30 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     gap: '15px',
                     marginBottom: '20px'
                 }}>
-                    <div style={{
-                        padding: '15px',
-                        backgroundColor: '#f0f9ff',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                    }}>
+                    <div style={{ padding: '15px', backgroundColor: '#f0f9ff', borderRadius: '8px', textAlign: 'center' }}>
                         <div style={{ fontSize: '14px', color: '#0369a1' }}>Всього днів</div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>
-                            {stats.totalDays}
-                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0284c7' }}>{stats.totalDays}</div>
                     </div>
-                    <div style={{
-                        padding: '15px',
-                        backgroundColor: '#fef2f2',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                    }}>
+                    <div style={{ padding: '15px', backgroundColor: '#fef2f2', borderRadius: '8px', textAlign: 'center' }}>
                         <div style={{ fontSize: '14px', color: '#991b1b' }}>Всього пропусків</div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>
-                            {stats.totalAbsent}
-                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>{stats.totalAbsent}</div>
                     </div>
-                    <div style={{
-                        padding: '15px',
-                        backgroundColor: '#fff3e0',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                    }}>
+                    <div style={{ padding: '15px', backgroundColor: '#fff3e0', borderRadius: '8px', textAlign: 'center' }}>
                         <div style={{ fontSize: '14px', color: '#9a3412' }}>За хворобою</div>
-                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ea580c' }}>
-                            {stats.sickDays}
-                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ea580c' }}>{stats.sickDays}</div>
                     </div>
                 </div>
             )}
 
-            {/* Таблиця відвідуваності */}
             {students.length > 0 && quarterDates.length > 0 ? (
-                <div style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    overflow: 'auto',
-                    maxHeight: '70vh'
-                }}>
-                    <table style={{
-                        width: '100%',
-                        borderCollapse: 'collapse',
-                        minWidth: `${quarterDates.length * 120 + 250}px`
-                    }}>
+                <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'auto', maxHeight: '70vh' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${quarterDates.length * 120 + 250}px` }}>
                         <thead>
                             <tr style={{ backgroundColor: '#f9fafb' }}>
-                                <th style={{
-                                    padding: '12px',
-                                    textAlign: 'left',
-                                    borderBottom: '2px solid #e5e7eb',
-                                    position: 'sticky',
-                                    top: 0,
-                                    left: 0,
-                                    backgroundColor: '#f9fafb',
-                                    zIndex: 3,
-                                    minWidth: '250px',
-                                    boxShadow: '2px 0 0 #e5e7eb'
-                                }}>
-                                    Учень
-                                </th>
+                                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #e5e7eb', position: 'sticky', top: 0, left: 0, backgroundColor: '#f9fafb', zIndex: 3, minWidth: '250px', boxShadow: '2px 0 0 #e5e7eb' }}>Учень</th>
                                 {quarterDates.map((date, index) => {
                                     const isFirstOfWeek = date.isFirstOfWeek;
                                     const isLastOfWeek = date.isLastOfWeek;
-
                                     return (
                                         <th key={index} style={{
                                             padding: '12px',
@@ -961,42 +838,18 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                                             boxShadow: isFirstOfWeek ? 'inset 2px 0 0 #9ca3af' : 'none'
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                                {isFirstOfWeek && (
-                                                    <FaCalendarWeek style={{ fontSize: '12px', color: '#6b7280' }} />
-                                                )}
+                                                {isFirstOfWeek && <FaCalendarWeek style={{ fontSize: '12px', color: '#6b7280' }} />}
                                                 <span>{date.formatted}</span>
                                             </div>
-                                            <div style={{ fontSize: '11px', color: '#6b7280' }}>
-                                                {date.dayName}
-                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#6b7280' }}>{date.dayName}</div>
                                         </th>
                                     );
                                 })}
-                                <th style={{
-                                    padding: '12px',
-                                    textAlign: 'center',
-                                    borderBottom: '2px solid #e5e7eb',
-                                    borderLeft: '2px solid #e5e7eb',
-                                    position: 'sticky',
-                                    top: 0,
-                                    backgroundColor: '#e0f2fe',
-                                    zIndex: 2,
-                                    minWidth: '100px'
-                                }}>
+                                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', borderLeft: '2px solid #e5e7eb', position: 'sticky', top: 0, backgroundColor: '#e0f2fe', zIndex: 2, minWidth: '100px' }}>
                                     <div>Всього</div>
                                     <div style={{ fontSize: '11px' }}>пропусків</div>
                                 </th>
-                                <th style={{
-                                    padding: '12px',
-                                    textAlign: 'center',
-                                    borderBottom: '2px solid #e5e7eb',
-                                    borderLeft: '1px solid #e5e7eb',
-                                    position: 'sticky',
-                                    top: 0,
-                                    backgroundColor: '#fff3e0',
-                                    zIndex: 2,
-                                    minWidth: '100px'
-                                }}>
+                                <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', borderLeft: '1px solid #e5e7eb', position: 'sticky', top: 0, backgroundColor: '#fff3e0', zIndex: 2, minWidth: '100px' }}>
                                     <div>З них</div>
                                     <div style={{ fontSize: '11px' }}>за хворобою</div>
                                 </th>
@@ -1004,9 +857,7 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                         </thead>
                         <tbody>
                             {students.map((student, rowIndex) => {
-                                let studentTotalAbsent = 0;
-                                let studentSickDays = 0;
-
+                                let studentTotalAbsent = 0, studentSickDays = 0;
                                 quarterDates.forEach(date => {
                                     const key = `${student._id}_${date.fullDate}`;
                                     const record = attendance[key];
@@ -1015,71 +866,30 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                                         if (record.reasonType === 'sick') studentSickDays++;
                                     }
                                 });
-
                                 return (
-                                    <tr key={student._id} style={{
-                                        borderBottom: '1px solid #e5e7eb',
-                                        backgroundColor: rowIndex % 2 === 0 ? 'white' : '#fafafa'
-                                    }}>
-                                        <td style={{
-                                            padding: '10px 12px',
-                                            position: 'sticky',
-                                            left: 0,
-                                            backgroundColor: 'inherit',
-                                            fontWeight: '500',
-                                            boxShadow: '2px 0 0 #e5e7eb',
-                                            zIndex: 1
-                                        }}>
-                                            {student.fullName}
-                                        </td>
+                                    <tr key={student._id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: rowIndex % 2 === 0 ? 'white' : '#fafafa' }}>
+                                        <td style={{ padding: '10px 12px', position: 'sticky', left: 0, backgroundColor: 'inherit', fontWeight: '500', boxShadow: '2px 0 0 #e5e7eb', zIndex: 1 }}>{student.fullName}</td>
                                         {quarterDates.map((date, colIndex) => {
                                             const isLastOfWeek = date.isLastOfWeek;
-
                                             return (
-                                                <td
-                                                    key={`${rowIndex}-${colIndex}`}
-                                                    onClick={() => handleCellClick(student._id, date)}
-                                                    style={{
-                                                        padding: '8px',
-                                                        textAlign: 'center',
-                                                        borderLeft: '1px solid #e5e7eb',
-                                                        borderRight: isLastOfWeek ? '2px solid #9ca3af' : 'none',
-                                                        cursor: 'pointer',
-                                                        backgroundColor: 'inherit',
-                                                        transition: 'background-color 0.2s',
-                                                        height: '50px'
-                                                    }}
-                                                    onMouseOver={(e) => {
-                                                        e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                                    }}
-                                                    onMouseOut={(e) => {
-                                                        e.currentTarget.style.backgroundColor = 'inherit';
-                                                    }}
-                                                >
+                                                <td key={`${rowIndex}-${colIndex}`} onClick={() => handleCellClick(student._id, date)} style={{
+                                                    padding: '8px',
+                                                    textAlign: 'center',
+                                                    borderLeft: '1px solid #e5e7eb',
+                                                    borderRight: isLastOfWeek ? '2px solid #9ca3af' : 'none',
+                                                    cursor: 'pointer',
+                                                    backgroundColor: 'inherit',
+                                                    transition: 'background-color 0.2s',
+                                                    height: '50px'
+                                                }}
+                                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'inherit'}>
                                                     {renderAttendanceCell(student._id, date)}
                                                 </td>
                                             );
                                         })}
-                                        <td style={{
-                                            padding: '10px 12px',
-                                            textAlign: 'center',
-                                            borderLeft: '2px solid #e5e7eb',
-                                            backgroundColor: '#f0f9ff',
-                                            fontWeight: 'bold',
-                                            color: '#dc2626'
-                                        }}>
-                                            {studentTotalAbsent}
-                                        </td>
-                                        <td style={{
-                                            padding: '10px 12px',
-                                            textAlign: 'center',
-                                            borderLeft: '1px solid #e5e7eb',
-                                            backgroundColor: '#fff3e0',
-                                            fontWeight: 'bold',
-                                            color: '#ea580c'
-                                        }}>
-                                            {studentSickDays}
-                                        </td>
+                                        <td style={{ padding: '10px 12px', textAlign: 'center', borderLeft: '2px solid #e5e7eb', backgroundColor: '#f0f9ff', fontWeight: 'bold', color: '#dc2626' }}>{studentTotalAbsent}</td>
+                                        <td style={{ padding: '10px 12px', textAlign: 'center', borderLeft: '1px solid #e5e7eb', backgroundColor: '#fff3e0', fontWeight: 'bold', color: '#ea580c' }}>{studentSickDays}</td>
                                     </tr>
                                 );
                             })}
@@ -1087,119 +897,31 @@ const ClassAttendance = ({ databaseName, isMobile, teacherId, groupId }) => {
                     </table>
                 </div>
             ) : (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '40px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '8px',
-                    color: '#6b7280'
-                }}>
+                <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f9fafb', borderRadius: '8px', color: '#6b7280' }}>
                     {students.length === 0 ? 'Немає учнів у класі' : 'Виберіть чверть для відображення'}
                 </div>
             )}
 
-            {/* Легенда */}
             {students.length > 0 && quarterDates.length > 0 && (
-                <div style={{
-                    marginTop: '20px',
-                    padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '24px',
-                    alignItems: 'center'
-                }}>
+                <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center' }}>
                     <div style={{ fontWeight: '500', color: '#374151' }}>Позначення:</div>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                            backgroundColor: '#ef4444',
-                            color: 'white',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold',
-                            fontSize: '14px'
-                        }}>
-                            Н
-                        </span>
+                        <span style={{ backgroundColor: '#ef4444', color: 'white', width: '24px', height: '24px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>Н</span>
                         <span style={{ fontSize: '14px', color: '#4b5563' }}>повна відсутність</span>
                     </div>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                            backgroundColor: '#f59e0b',
-                            color: 'white',
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold',
-                            fontSize: '12px'
-                        }}>
-                            2/8
-                        </span>
+                        <span style={{ backgroundColor: '#f59e0b', color: 'white', width: '24px', height: '24px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>2/8</span>
                         <span style={{ fontSize: '14px', color: '#4b5563' }}>часткова відсутність</span>
                     </div>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ position: 'relative', width: '24px', height: '24px' }}>
-                            <span style={{
-                                backgroundColor: '#ef4444',
-                                color: 'white',
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 'bold',
-                                fontSize: '14px'
-                            }}>
-                                Н
-                            </span>
-                            <span style={{
-                                position: 'absolute',
-                                top: '-5px',
-                                right: '-5px',
-                                backgroundColor: '#10b981',
-                                color: 'white',
-                                width: '14px',
-                                height: '14px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                border: '1px solid white'
-                            }}>
-                                ✓
-                            </span>
+                            <span style={{ backgroundColor: '#ef4444', color: 'white', width: '24px', height: '24px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>Н</span>
+                            <span style={{ position: 'absolute', top: '-5px', right: '-5px', backgroundColor: '#10b981', color: 'white', width: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', border: '1px solid white' }}>✓</span>
                         </div>
                         <span style={{ fontSize: '14px', color: '#4b5563' }}>є довідка</span>
                     </div>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                            width: '24px',
-                            height: '24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#d1d5db',
-                            fontSize: '16px',
-                            fontWeight: '500'
-                        }}>
-                            —
-                        </span>
+                        <span style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d1d5db', fontSize: '16px', fontWeight: '500' }}>—</span>
                         <span style={{ fontSize: '14px', color: '#4b5563' }}>присутній</span>
                     </div>
                 </div>

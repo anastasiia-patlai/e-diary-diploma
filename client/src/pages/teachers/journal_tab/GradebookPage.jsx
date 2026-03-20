@@ -16,19 +16,14 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [availableMonths, setAvailableMonths] = useState([]);
     const [success, setSuccess] = useState(null);
-
-    // Стан модального вікна
     const [showGradeModal, setShowGradeModal] = useState(false);
     const [selectedCell, setSelectedCell] = useState(null);
     const [selectedGrade, setSelectedGrade] = useState(null);
-
-    // Стан для семестрів та канікул
     const [semesters, setSemesters] = useState([]);
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
 
-    // Таймер для повідомлень
     useEffect(() => {
         let timer;
         if (success) {
@@ -57,7 +52,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     useEffect(() => {
         if (students.length > 0 && dates.length > 0) {
-            console.log('Студенти та дати завантажені, запускаємо loadAllAttendanceForMonth');
             loadAllAttendanceForMonth();
         }
     }, [students, dates]);
@@ -68,16 +62,32 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     }, [dates]);
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (dates.length > 0) {
+                refreshAttendance();
+            }
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [dates]);
+
+    const refreshAttendance = async () => {
+        setLessonAttendance({});
+        if (dates.length > 0) {
+            for (const date of dates) {
+                await loadLessonAttendanceForDate(date.fullDate);
+            }
+        }
+    };
+
     const loadJournalData = async () => {
         setLoading(true);
         try {
-            // Завантаження інформації про урок
             const lessonResponse = await axios.get(`/api/schedule/${scheduleId}`, {
                 params: { databaseName }
             });
             setCurrentLesson(lessonResponse.data);
 
-            // Завантаження студентів
             if (lessonResponse.data.group?._id) {
                 try {
                     const studentsResponse = await axios.get(`/api/groups/${lessonResponse.data.group._id}`, {
@@ -90,21 +100,18 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                         const subgroup = studentsResponse.data.subgroups?.find(
                             sg => sg.order === subgroupNumber
                         );
-
                         if (subgroup && subgroup.students) {
                             studentsList = subgroup.students;
                         }
                     } else {
                         studentsList = studentsResponse.data.students || [];
                     }
-
                     setStudents(studentsList);
                 } catch (error) {
                     console.error('Помилка при завантаженні студентів:', error.message);
                 }
             }
 
-            // Завантаження оцінок
             try {
                 const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, {
                     params: { databaseName }
@@ -113,7 +120,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             } catch (error) {
                 console.error('Помилка при завантаженні оцінок:', error.message);
             }
-
         } catch (error) {
             console.error('Помилка завантаження журналу:', error);
             setError(error.response?.data?.error || 'Не вдалося завантажити дані журналу');
@@ -128,9 +134,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             const response = await axios.get('/api/study-calendar/semesters', {
                 params: { databaseName }
             });
-
             setSemesters(response.data);
-
             const activeSemester = response.data.find(s => s.isActive) || response.data[0];
             if (activeSemester) {
                 setSelectedSemester(activeSemester);
@@ -149,11 +153,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             const response = await axios.get('/api/study-calendar/holidays', {
                 params: { databaseName }
             });
-
             const semesterHolidays = response.data.filter(holiday =>
                 holiday.quarter?.semester?._id === semesterId
             );
-
             setHolidays(semesterHolidays);
         } catch (error) {
             console.error('Помилка завантаження канікул:', error);
@@ -164,7 +166,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         const months = [];
         const startDate = new Date(semester.startDate);
         const endDate = new Date(semester.endDate);
-
         let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
         while (currentDate <= endDate) {
             months.push({
@@ -174,35 +175,26 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             });
             currentDate.setMonth(currentDate.getMonth() + 1);
         }
-
         setAvailableMonths(months);
-        if (months.length > 0) {
-            setCurrentMonth(months[0].date);
-        }
+        if (months.length > 0) setCurrentMonth(months[0].date);
     };
 
     const generateDatesForMonth = (monthDate) => {
         if (!currentLesson?.dayOfWeek?.order || !selectedSemester) return;
-
         const dates = [];
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth();
-
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-
         const dayOfWeekOrder = currentLesson.dayOfWeek.order;
         const targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
-
         const semesterStart = new Date(selectedSemester.startDate);
         const semesterEnd = new Date(selectedSemester.endDate);
 
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
             const currentDate = new Date(d);
             currentDate.setHours(12, 0, 0, 0);
-
             if (currentDate < semesterStart || currentDate > semesterEnd) continue;
-
             if (currentDate.getDay() === targetDayOfWeek) {
                 const isHoliday = holidays.some(holiday => {
                     const holidayStart = new Date(holiday.startDate);
@@ -211,9 +203,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     holidayEnd.setHours(12, 0, 0, 0);
                     return currentDate >= holidayStart && currentDate <= holidayEnd;
                 });
-
                 const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
                 dates.push({
                     date: currentDate,
                     formatted: d.toLocaleDateString('uk-UA', {
@@ -226,52 +216,50 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 });
             }
         }
-
         setDates(dates);
     };
 
     const handleDeleteAttendance = async (studentId, date) => {
-        try {
-            console.log('Видалення мітки відвідуваності для:', { studentId, date, scheduleId });
+        console.log('=== ВИДАЛЕННЯ "Н" ВЧИТЕЛЕМ ===');
+        console.log('studentId:', studentId, 'date:', date?.fullDate);
 
-            // Спочатку видаляємо з локального стану, щоб одразу прибрати з таблиці
+        try {
+            // 1. Оновлюємо локальний стан одразу (optimistic update)
             const key = `${studentId}_${date.fullDate}`;
             setLessonAttendance(prev => {
                 const newAttendance = { ...prev };
-                delete newAttendance[key];
+                const existing = newAttendance[key];
+                if (existing) {
+                    // Видаляємо запис цього студента для ЦЬОГО scheduleId
+                    existing.records = existing.records?.filter(
+                        r => r.scheduleId?.toString() !== scheduleId
+                    ) || [];
+                    if (existing.records.length === 0) {
+                        delete newAttendance[key];
+                    } else {
+                        newAttendance[key] = { ...existing };
+                    }
+                }
                 return newAttendance;
             });
 
-            // Потім пробуємо видалити з бази даних
+            // 2. Видаляємо студента з LessonAttendance через новий endpoint
             try {
-                // Знаходимо запис для цього студента на цю дату
-                const response = await axios.get(
-                    `/api/attendance/lesson/schedule/${scheduleId}?date=${date.fullDate}&databaseName=${databaseName}`
-                );
-
-                console.log('Знайдений запис:', response.data);
-
-                if (response.data && response.data.records) {
-                    // Знаходимо запис для цього студента
-                    const studentRecord = response.data.records.find(r =>
-                        r.student === studentId || r.student?._id === studentId
-                    );
-
-                    console.log('Запис студента:', studentRecord);
-
-                    if (studentRecord && studentRecord._id) {
-                        // Видаляємо запис
-                        await axios.delete(`/api/attendance/lesson/${studentRecord._id}`, {
-                            data: { databaseName }
-                        });
-                        console.log('Запис успішно видалено з БД');
+                await axios.delete('/api/attendance/lesson/student', {
+                    data: {
+                        databaseName,
+                        scheduleId,
+                        studentId,
+                        date: date.fullDate
                     }
-                }
+                });
+                console.log('[Delete] Студента видалено з LessonAttendance');
             } catch (dbError) {
-                console.log('Запис в БД не знайдено, але з локального стану видалено');
+                console.error('[Delete] Помилка видалення з LessonAttendance:', dbError.response?.data || dbError.message);
+                // Продовжуємо — агрегація виправить стан
             }
 
-            // Тригеримо агрегацію для оновлення даних класного керівника
+            // 3. Запускаємо агрегацію щоб оновити ClassAttendance класного керівника
             if (currentLesson?.group?._id) {
                 try {
                     await axios.post('/api/attendance/aggregate-daily', {
@@ -279,54 +267,39 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                         groupId: currentLesson.group._id,
                         date: date.fullDate
                     });
-                    console.log('Агрегацію запущено після видалення');
+                    console.log('[Delete] Агрегацію виконано');
                 } catch (aggError) {
-                    console.error('Помилка агрегації після видалення:', aggError);
+                    console.error('[Delete] Помилка агрегації:', aggError.response?.data || aggError.message);
                 }
             }
 
-            // Примусово перезавантажуємо всі дані через невелику затримку
-            setTimeout(async () => {
-                await forceRefreshAttendance();
-            }, 500);
-
             setSuccess('Мітку відвідуваності видалено');
+            setShowGradeModal(false);
         } catch (error) {
-            console.error('Помилка видалення мітки відвідуваності:', error);
-            setSuccess('Мітку відвідуваності видалено з таблиці');
+            console.error('[Delete] Помилка:', error);
+            setSuccess('Мітку видалено з таблиці');
+            setShowGradeModal(false);
         }
     };
 
     const loadLessonAttendanceForDate = async (date) => {
         if (!scheduleId) return;
-
         try {
-            console.log(`Завантаження відвідуваності для дати: ${date}`);
-
-            // Отримуємо всі записи відвідуваності для цієї дати
             const response = await axios.get(
                 `/api/attendance/lesson/date/${date}?databaseName=${databaseName}`
             );
 
-            console.log(`Отримано ${response.data?.length || 0} записів для дати ${date}`);
-
             setLessonAttendance(prev => {
                 const newAttendance = { ...prev };
-
-                // Видаляємо старі записи для цієї дати
                 Object.keys(newAttendance).forEach(key => {
-                    if (key.endsWith(`_${date}`)) {
-                        delete newAttendance[key];
-                    }
+                    if (key.endsWith(`_${date}`)) delete newAttendance[key];
                 });
 
-                // Додаємо нові записи з БД
                 if (response.data && response.data.length > 0) {
                     response.data.forEach(record => {
                         record.records.forEach(r => {
                             const studentId = r.student?._id || r.student;
                             const key = `${studentId}_${date}`;
-
                             if (!newAttendance[key]) {
                                 newAttendance[key] = {
                                     records: [],
@@ -334,33 +307,23 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                                     totalLessons: 0
                                 };
                             }
-
                             newAttendance[key].records.push({
                                 ...r,
                                 scheduleId: record.schedule
                             });
-
-                            if (r.status === 'absent') {
-                                newAttendance[key].lessonsAbsent++;
-                            }
+                            if (r.status === 'absent') newAttendance[key].lessonsAbsent++;
                             newAttendance[key].totalLessons++;
-
-                            console.log(`Додано запис для студента ${studentId} на дату ${date}: статус ${r.status}`);
                         });
                     });
                 }
-
                 return newAttendance;
             });
         } catch (error) {
             console.error(`Помилка завантаження відвідуваності для дати ${date}:`, error);
-            // При помилці просто залишаємо порожній стан для цієї дати
             setLessonAttendance(prev => {
                 const newAttendance = { ...prev };
                 Object.keys(newAttendance).forEach(key => {
-                    if (key.endsWith(`_${date}`)) {
-                        delete newAttendance[key];
-                    }
+                    if (key.endsWith(`_${date}`)) delete newAttendance[key];
                 });
                 return newAttendance;
             });
@@ -368,43 +331,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const loadAllAttendanceForMonth = async () => {
-        console.log('Завантаження відвідуваності для всіх дат місяця, дат:', dates.length);
-
-        // Очищаємо всі дані
         setLessonAttendance({});
-
-        // Завантажуємо для кожної дати
         for (const date of dates) {
             await loadLessonAttendanceForDate(date.fullDate);
-        }
-
-        console.log('Завершено завантаження всіх дат');
-    };
-
-    // Додайте цю функцію після loadAllAttendanceForMonth
-    const forceRefreshAttendance = async () => {
-        console.log('Примусове оновлення даних відвідуваності');
-
-        // Очищаємо всі дані
-        setLessonAttendance({});
-
-        // Завантажуємо заново для всіх дат
-        if (dates.length > 0) {
-            for (const date of dates) {
-                await loadLessonAttendanceForDate(date.fullDate);
-            }
-        }
-
-        console.log('Дані відвідуваності оновлено');
-    };
-
-    const refreshCurrentMonth = async () => {
-        console.log('Оновлення даних поточного місяця');
-        if (dates.length > 0) {
-            setLessonAttendance({});
-            for (const date of dates) {
-                await loadLessonAttendanceForDate(date.fullDate);
-            }
         }
     };
 
@@ -426,10 +355,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             m.date.getMonth() === currentMonth.getMonth() &&
             m.date.getFullYear() === currentMonth.getFullYear()
         );
-
-        if (currentIndex > 0) {
-            setCurrentMonth(availableMonths[currentIndex - 1].date);
-        }
+        if (currentIndex > 0) setCurrentMonth(availableMonths[currentIndex - 1].date);
     };
 
     const handleNextMonth = () => {
@@ -437,10 +363,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             m.date.getMonth() === currentMonth.getMonth() &&
             m.date.getFullYear() === currentMonth.getFullYear()
         );
-
-        if (currentIndex < availableMonths.length - 1) {
-            setCurrentMonth(availableMonths[currentIndex + 1].date);
-        }
+        if (currentIndex < availableMonths.length - 1) setCurrentMonth(availableMonths[currentIndex + 1].date);
     };
 
     const handleMonthSelect = (index) => {
@@ -451,7 +374,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     const handleCellClick = (studentId, date) => {
         if (date.isHoliday) return;
-
         const existingGrade = grades.find(g => {
             const studentMatch = g.student === studentId || g.student?._id === studentId;
             let gradeDate;
@@ -464,7 +386,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             }
             return studentMatch && gradeDate === date.fullDate;
         });
-
         setSelectedCell({ studentId, date });
         setSelectedGrade(existingGrade || null);
         setShowGradeModal(true);
@@ -477,12 +398,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     alert('Відсутні дані для збереження оцінки');
                     return;
                 }
-
                 if (!data.value) {
                     alert('Виберіть оцінку');
                     return;
                 }
-
                 const gradePayload = {
                     value: data.value,
                     databaseName,
@@ -490,7 +409,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     student: selectedCell.studentId,
                     date: selectedCell.date.fullDate
                 };
-
                 let response;
                 if (selectedGrade) {
                     response = await axios.put(`/api/grades/${selectedGrade._id}`, gradePayload);
@@ -501,10 +419,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     response = await axios.post('/api/grades', gradePayload);
                     setGrades(prevGrades => [...prevGrades, response.data]);
                 }
-
                 setSuccess('Оцінку збережено');
             } else {
-                // Збереження відвідуваності для одного уроку
                 const attendancePayload = {
                     databaseName,
                     scheduleId: scheduleId,
@@ -515,17 +431,11 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                         reason: data.reason || ''
                     }]
                 };
-
-                console.log('Saving attendance:', attendancePayload);
                 await axios.post('/api/attendance/lesson', attendancePayload);
-
-                // Оновлюємо локальний стан для цієї дати
                 const date = selectedCell.date.fullDate;
                 const key = `${selectedCell.studentId}_${date}`;
-
                 setLessonAttendance(prev => {
                     const newAttendance = { ...prev };
-
                     if (!newAttendance[key]) {
                         newAttendance[key] = {
                             records: [],
@@ -533,24 +443,18 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                             totalLessons: 0
                         };
                     }
-
-                    // Додаємо новий запис
                     newAttendance[key].records.push({
                         student: selectedCell.studentId,
                         status: data.status,
                         reason: data.reason || '',
                         scheduleId: scheduleId
                     });
-
-                    // Оновлюємо лічильники
                     newAttendance[key].lessonsAbsent = data.status === 'absent' ?
                         newAttendance[key].lessonsAbsent + 1 : newAttendance[key].lessonsAbsent;
                     newAttendance[key].totalLessons++;
-
                     return newAttendance;
                 });
 
-                // Тригеримо агрегацію для класного керівника
                 if (currentLesson?.group?._id) {
                     try {
                         await axios.post('/api/attendance/aggregate-daily', {
@@ -558,19 +462,15 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                             groupId: currentLesson.group._id,
                             date: selectedCell.date.fullDate
                         });
-                        console.log('Агрегацію запущено');
                     } catch (aggError) {
                         console.error('Помилка агрегації:', aggError);
                     }
                 }
-
                 setSuccess('Відвідуваність збережено');
             }
-
             setShowGradeModal(false);
             setSelectedCell(null);
             setSelectedGrade(null);
-
         } catch (error) {
             console.error('Помилка збереження:', error);
             alert(`Помилка: ${error.response?.data?.error || error.message}`);
@@ -579,12 +479,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     const handleDeleteGrade = async () => {
         if (!selectedGrade) return;
-
         try {
             await axios.delete(`/api/grades/${selectedGrade._id}`, {
                 data: { databaseName }
             });
-
             setGrades(prevGrades => prevGrades.filter(g => g._id !== selectedGrade._id));
             setShowGradeModal(false);
             setSelectedCell(null);
@@ -598,12 +496,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     const getGradeForStudentAndDate = (studentId, date) => {
         if (!grades || !Array.isArray(grades) || grades.length === 0) return null;
-
         const targetDate = date.fullDate || date;
-
         const grade = grades.find(g => {
             const studentMatch = g.student === studentId || g.student?._id === studentId;
-
             let gradeDate;
             if (g.date instanceof Date) {
                 gradeDate = g.date.toISOString().split('T')[0];
@@ -612,28 +507,19 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             } else {
                 gradeDate = String(g.date);
             }
-
             return studentMatch && gradeDate === targetDate;
         });
-
         return grade?.value || null;
     };
 
     if (loading || loadingSemesters) {
         return (
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '400px'
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
                 <div style={{ textAlign: 'center' }}>
                     <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">Завантаження...</span>
                     </div>
-                    <p style={{ marginTop: '10px', color: '#6b7280' }}>
-                        Завантаження журналу...
-                    </p>
+                    <p style={{ marginTop: '10px', color: '#6b7280' }}>Завантаження журналу...</p>
                 </div>
             </div>
         );
@@ -641,14 +527,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     if (error) {
         return (
-            <div style={{
-                backgroundColor: '#fee2e2',
-                border: '1px solid #ef4444',
-                borderRadius: '8px',
-                padding: '20px',
-                textAlign: 'center',
-                color: '#b91c1c'
-            }}>
+            <div style={{ backgroundColor: '#fee2e2', border: '1px solid #ef4444', borderRadius: '8px', padding: '20px', textAlign: 'center', color: '#b91c1c' }}>
                 {error}
             </div>
         );
@@ -656,31 +535,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
     return (
         <div>
-            {/* Повідомлення про успіх */}
             {success && (
-                <div style={{
-                    backgroundColor: '#d1fae5',
-                    color: '#065f46',
-                    padding: '12px 16px',
-                    borderRadius: '6px',
-                    marginBottom: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px'
-                }}>
+                <div style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '12px 16px', borderRadius: '6px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                     <span>{success}</span>
-                    <button
-                        onClick={() => setSuccess(null)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#065f46',
-                            cursor: 'pointer',
-                            fontSize: '18px',
-                            padding: '0 4px'
-                        }}
-                    >
+                    <button onClick={() => setSuccess(null)} style={{ background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', fontSize: '18px', padding: '0 4px' }}>
                         <FaTimes />
                     </button>
                 </div>
@@ -688,34 +546,14 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 
             <JournalHeader lesson={currentLesson} isMobile={isMobile} />
 
-            {/* Вибір семестру */}
             {!loadingSemesters && semesters.length > 0 && (
-                <div style={{
-                    marginBottom: '20px',
-                    backgroundColor: 'white',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        flexWrap: 'wrap'
-                    }}>
-                        <label style={{ fontWeight: '500', color: '#374151' }}>
-                            Навчальний семестр:
-                        </label>
+                <div style={{ marginBottom: '20px', backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <label style={{ fontWeight: '500', color: '#374151' }}>Навчальний семестр:</label>
                         <select
                             value={selectedSemester?._id || ''}
                             onChange={(e) => handleSemesterChange(e.target.value)}
-                            style={{
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                border: '1px solid #e5e7eb',
-                                fontSize: '14px',
-                                minWidth: '200px'
-                            }}
+                            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px', minWidth: '200px' }}
                         >
                             {semesters.map(semester => (
                                 <option key={semester._id} value={semester._id}>
@@ -727,148 +565,46 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 </div>
             )}
 
-            {/* Навігація по місяцях */}
             {availableMonths.length > 0 && (
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '20px',
-                    backgroundColor: 'white',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb'
-                }}>
-                    <button
-                        onClick={handlePrevMonth}
-                        disabled={availableMonths.findIndex(m =>
-                            m.date.getMonth() === currentMonth.getMonth() &&
-                            m.date.getFullYear() === currentMonth.getFullYear()
-                        ) === 0}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === 0 ? 'not-allowed' : 'pointer',
-                            padding: '8px',
-                            color: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === 0 ? '#d1d5db' : '#6b7280',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                        }}
-                    >
-                        <FaChevronLeft />
-                        {!isMobile && 'Попередній'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', backgroundColor: 'white', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <button onClick={handlePrevMonth} disabled={availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === 0} style={{ background: 'none', border: 'none', cursor: availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === 0 ? 'not-allowed' : 'pointer', padding: '8px', color: availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === 0 ? '#d1d5db' : '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FaChevronLeft /> {!isMobile && 'Попередній'}
                     </button>
 
                     {isMobile ? (
-                        <select
-                            value={availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            )}
-                            onChange={(e) => handleMonthSelect(parseInt(e.target.value))}
-                            style={{
-                                padding: '8px',
-                                borderRadius: '6px',
-                                border: '1px solid #e5e7eb',
-                                fontSize: '16px'
-                            }}
-                        >
+                        <select value={availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear())} onChange={(e) => handleMonthSelect(parseInt(e.target.value))} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '16px' }}>
                             {availableMonths.map((month, index) => (
-                                <option key={index} value={index}>
-                                    {month.label}
-                                </option>
+                                <option key={index} value={index}>{month.label}</option>
                             ))}
                         </select>
                     ) : (
                         <div style={{ display: 'flex', gap: '8px' }}>
                             {availableMonths.map((month, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => handleMonthSelect(index)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        borderRadius: '6px',
-                                        border: 'none',
-                                        backgroundColor: currentMonth.getMonth() === month.date.getMonth() &&
-                                            currentMonth.getFullYear() === month.date.getFullYear()
-                                            ? 'rgba(105, 180, 185, 1)'
-                                            : '#f3f4f6',
-                                        color: currentMonth.getMonth() === month.date.getMonth() &&
-                                            currentMonth.getFullYear() === month.date.getFullYear()
-                                            ? 'white'
-                                            : '#374151',
-                                        cursor: 'pointer',
-                                        fontWeight: currentMonth.getMonth() === month.date.getMonth() &&
-                                            currentMonth.getFullYear() === month.date.getFullYear()
-                                            ? '600'
-                                            : 'normal'
-                                    }}
-                                >
+                                <button key={index} onClick={() => handleMonthSelect(index)} style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    backgroundColor: currentMonth.getMonth() === month.date.getMonth() && currentMonth.getFullYear() === month.date.getFullYear() ? 'rgba(105, 180, 185, 1)' : '#f3f4f6',
+                                    color: currentMonth.getMonth() === month.date.getMonth() && currentMonth.getFullYear() === month.date.getFullYear() ? 'white' : '#374151',
+                                    cursor: 'pointer',
+                                    fontWeight: currentMonth.getMonth() === month.date.getMonth() && currentMonth.getFullYear() === month.date.getFullYear() ? '600' : 'normal'
+                                }}>
                                     {month.label}
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    <button
-                        onClick={handleNextMonth}
-                        disabled={availableMonths.findIndex(m =>
-                            m.date.getMonth() === currentMonth.getMonth() &&
-                            m.date.getFullYear() === currentMonth.getFullYear()
-                        ) === availableMonths.length - 1}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === availableMonths.length - 1 ? 'not-allowed' : 'pointer',
-                            padding: '8px',
-                            color: availableMonths.findIndex(m =>
-                                m.date.getMonth() === currentMonth.getMonth() &&
-                                m.date.getFullYear() === currentMonth.getFullYear()
-                            ) === availableMonths.length - 1 ? '#d1d5db' : '#6b7280',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                        }}
-                    >
-                        {!isMobile && 'Наступний'}
-                        <FaChevronRight />
+                    <button onClick={handleNextMonth} disabled={availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === availableMonths.length - 1} style={{ background: 'none', border: 'none', cursor: availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === availableMonths.length - 1 ? 'not-allowed' : 'pointer', padding: '8px', color: availableMonths.findIndex(m => m.date.getMonth() === currentMonth.getMonth() && m.date.getFullYear() === currentMonth.getFullYear()) === availableMonths.length - 1 ? '#d1d5db' : '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {!isMobile && 'Наступний'} <FaChevronRight />
                     </button>
                 </div>
             )}
 
-            {/* Таблиця журналу */}
             {students.length === 0 ? (
-                <div style={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '40px',
-                    textAlign: 'center',
-                    color: '#6b7280'
-                }}>
+                <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '40px', textAlign: 'center', color: '#6b7280' }}>
                     <h3>Немає учнів для відображення</h3>
-                    <button
-                        onClick={() => loadJournalData()}
-                        style={{
-                            marginTop: '20px',
-                            backgroundColor: 'rgba(105, 180, 185, 1)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                        }}
-                    >
+                    <button onClick={() => loadJournalData()} style={{ marginTop: '20px', backgroundColor: 'rgba(105, 180, 185, 1)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}>
                         Спробувати знову
                     </button>
                 </div>

@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const { getSchoolDBConnection } = require('../config/databaseManager');
 
-// Агрегація денної відвідуваності
 router.post('/aggregate-daily', async (req, res) => {
     try {
         const { databaseName, groupId, date } = req.body;
 
-        console.log('Агрегація для:', { databaseName, groupId, date });
+        console.log('\n=== АГРЕГАЦІЯ ПОЧАТА ===');
+        console.log('Параметри:', { databaseName, groupId, date });
 
         const connection = getSchoolDBConnection(databaseName);
         const LessonAttendance = require('../models/LessonAttendance')(connection);
@@ -15,72 +15,81 @@ router.post('/aggregate-daily', async (req, res) => {
         const Schedule = connection.models.Schedule;
         const DayOfWeek = connection.models.DayOfWeek;
         const Quarter = connection.models.Quarter;
+        const Group = connection.models.Group;
 
-        // Отримуємо активну чверть для цієї дати
         const activeQuarter = await Quarter.findOne({
             startDate: { $lte: new Date(date) },
             endDate: { $gte: new Date(date) }
         });
 
         if (!activeQuarter) {
-            console.log('Не знайдено активної чверті для дати:', date);
-            return res.status(404).json({ error: 'Не знайдено активної чверті для вказаної дати' });
+            return res.status(404).json({ error: 'Не знайдено активної чверті' });
         }
 
-        console.log('Знайдено чверть:', activeQuarter._id);
-
-        // Отримуємо день тижня з дати (1-7, де 1 = понеділок)
         const dateObj = new Date(date);
-        const jsDayOfWeek = dateObj.getDay(); // 0 = неділя, 1 = понеділок, ..., 6 = субота
+        const jsDayOfWeek = dateObj.getDay();
         const dbDayOfWeekNumber = jsDayOfWeek === 0 ? 7 : jsDayOfWeek;
 
-        console.log('День тижня:', { jsDayOfWeek, dbDayOfWeekNumber });
-
-        // Отримуємо ObjectId дня тижня за його номером
         const dayOfWeekDoc = await DayOfWeek.findOne({ id: dbDayOfWeekNumber });
-
         if (!dayOfWeekDoc) {
-            console.log('День тижня не знайдено в БД');
             return res.status(404).json({ error: 'День тижня не знайдено' });
         }
 
-        console.log('Знайдено день тижня:', dayOfWeekDoc._id);
-
-        // Отримуємо всі розклади для групи на цей день тижня
+        // Отримуємо ВСІ розклади для групи на цей день
         const schedules = await Schedule.find({
             group: groupId,
             dayOfWeek: dayOfWeekDoc._id
         }).populate('timeSlot');
 
+        console.log('Розклад на день:', schedules.map(s => ({
+            id: s._id,
+            subject: s.subject,
+            teacher: s.teacher
+        })));
+
         const totalLessons = schedules.length;
-        console.log(`Знайдено ${totalLessons} уроків для групи`);
 
-        if (totalLessons === 0) {
-            return res.json({
-                message: 'Немає уроків у розкладі на цей день',
-                totalLessons: 0
-            });
-        }
-
-        // Отримуємо всі записи відвідуваності з уроків
         const startDate = new Date(date);
         startDate.setHours(0, 0, 0, 0);
-
         const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
 
+        // Отримуємо ВСІ записи з LessonAttendance для цієї групи на цю дату
         const lessonAttendances = await LessonAttendance.find({
             schedule: { $in: schedules.map(s => s._id) },
             date: { $gte: startDate, $lte: endDate }
         }).populate('records.student');
 
-        console.log(`Знайдено ${lessonAttendances.length} записів відвідуваності`);
+        console.log(`Знайдено ${lessonAttendances.length} записів у LessonAttendance`);
 
-        // Групуємо по студентах
+        // Детально виводимо кожен запис
+        lessonAttendances.forEach((record, index) => {
+            console.log(`Запис ${index + 1}:`, {
+                id: record._id,
+                schedule: record.schedule,
+                scheduleId: record.schedule.toString(),
+                records: record.records.map(r => ({
+                    studentId: r.student?._id,
+                    studentName: r.student?.fullName,
+                    status: r.status,
+                    reason: r.reason,
+                    recordId: r._id
+                }))
+            });
+        });
+
+        // Отримуємо всіх студентів групи
+        const group = await Group.findById(groupId).populate('students');
+        const allStudentIds = group?.students?.map(s => s._id.toString()) || [];
+        console.log(`Всього студентів у групі: ${allStudentIds.length}`);
+
+        // Створюємо мапу відсутностей
         const studentAttendance = {};
 
         lessonAttendances.forEach(record => {
             record.records.forEach(r => {
+                if (!r.student) return;
+
                 const studentId = r.student._id.toString();
 
                 if (!studentAttendance[studentId]) {
@@ -109,58 +118,69 @@ router.post('/aggregate-daily', async (req, res) => {
             });
         });
 
-        console.log(`Знайдено дані для ${Object.keys(studentAttendance).length} студентів`);
-
-        // Оновлюємо або створюємо записи в ClassAttendance
-        const updatePromises = Object.entries(studentAttendance).map(async ([studentId, data]) => {
-            const existingRecord = await ClassAttendance.findOne({
-                group: groupId,
-                student: studentId,
-                date: {
-                    $gte: startDate,
-                    $lte: endDate
-                }
-            });
-
-            const attendanceData = {
-                group: groupId,
-                student: studentId,
-                date: dateObj,
-                quarter: activeQuarter._id,  // Додаємо quarter
-                status: data.lessonsAbsent > 0 ? 'absent' : 'present',
+        console.log('Студенти з відсутностями:',
+            Object.entries(studentAttendance).map(([id, data]) => ({
+                studentId: id,
                 lessonsAbsent: data.lessonsAbsent,
-                totalLessons: totalLessons,
-                lessonDetails: data.lessonDetails,
-                reasonType: data.lessonDetails.length > 0 ?
-                    (data.lessonDetails[0].reason?.toLowerCase().includes('хвор') ? 'sick' : 'other')
-                    : 'other'
-            };
+                details: data.lessonDetails.map(d => d.subject)
+            }))
+        );
 
-            if (existingRecord) {
-                return ClassAttendance.findByIdAndUpdate(
-                    existingRecord._id,
-                    attendanceData,
-                    { new: true }
-                );
-            } else {
-                const newRecord = new ClassAttendance(attendanceData);
-                return newRecord.save();
-            }
+        // Видаляємо ВСІ існуючі записи для цієї дати
+        const deleteResult = await ClassAttendance.deleteMany({
+            group: groupId,
+            date: { $gte: startDate, $lte: endDate }
         });
+        console.log(`Видалено ${deleteResult.deletedCount} старих записів з ClassAttendance`);
 
-        await Promise.all(updatePromises);
-        console.log('Агрегація завершена успішно');
+        const createResults = [];
+
+        for (const [studentId, data] of Object.entries(studentAttendance)) {
+            if (data.lessonsAbsent > 0) {
+                console.log(`Створюємо запис для студента ${studentId} з ${data.lessonsAbsent} пропусками`);
+                console.log(`totalLessons = ${totalLessons}, lessonsAbsent = ${data.lessonsAbsent}`);
+
+                const attendanceData = {
+                    group: groupId,
+                    student: studentId,
+                    date: dateObj,
+                    quarter: activeQuarter._id,
+                    status: 'absent',
+                    lessonsAbsent: data.lessonsAbsent,
+                    totalLessons: totalLessons, // Використовуємо totalLessons з розкладу
+                    lessonDetails: data.lessonDetails.map(detail => ({
+                        ...detail,
+                        totalLessons: totalLessons // Додаємо totalLessons в кожен деталь
+                    })),
+                    reasonType: data.lessonDetails[0]?.reason?.toLowerCase().includes('хвор') ? 'sick' : 'other',
+                    certificate: false
+                };
+
+                const newRecord = new ClassAttendance(attendanceData);
+                await newRecord.save();
+                createResults.push({
+                    studentId,
+                    lessons: data.lessonsAbsent,
+                    totalLessons: totalLessons,
+                    details: data.lessonDetails.map(d => d.scheduleId.toString())
+                });
+            }
+        }
+
+        console.log('Створено записів:', createResults.length);
+        console.log('=== АГРЕГАЦІЯ ЗАВЕРШЕНА ===\n');
 
         res.json({
-            message: 'Агрегація виконана успішно',
-            stats: {
-                totalLessons,
-                studentsWithAttendance: Object.keys(studentAttendance).length
-            }
+            message: 'Агрегація виконана',
+            deletedCount: deleteResult.deletedCount,
+            createdCount: createResults.length,
+            createdDetails: createResults,
+            lessonAttendancesFound: lessonAttendances.length,
+            schedulesCount: schedules.length
         });
 
     } catch (error) {
-        console.error('Помилка агрегації:', error);
+        console.error('ПОМИЛКА АГРЕГАЦІЇ:', error);
         res.status(500).json({ error: error.message });
     }
 });
