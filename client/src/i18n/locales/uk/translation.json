@@ -86,7 +86,7 @@
             "university": "Університет"
         },
         "defaults": {
-            "principal": "Директор"
+            "principal": "Директор школи"
         }
     },
     "login": {
@@ -115,6 +115,98 @@
             "serverResponse": "Відповідь сервера:",
             "dataSaved": "Всі дані збережено в localStorage:",
             "checkDatabaseName": "Перевірка збереження databaseName:"
+        }
+    },
+    "admin": {
+        "welcome": "Ласкаво просимо до адміністративної панелі!",
+        "sectionsTitle": "Розділи",
+        "sections": {
+            "home": "Головна",
+            "profile": "Мій профіль",
+            "users": "Користувачі",
+            "curators": "Класні керівники",
+            "calendar": "Навчальний календар",
+            "schedule": "Розклад занять",
+            "timeSchedule": "Розклад часу",
+            "classrooms": "Кабінети",
+            "settings": "Налаштування",
+            "reports": "Звіти"
+        },
+        "settings": {
+            "title": "Налаштування системи",
+            "description": "Тут будуть налаштування системи, ролей, прав доступу тощо."
+        },
+        "reports": {
+            "title": "Звіти та статистика",
+            "description": "Тут будуть різні звіти та статистика по системі."
+        },
+        "buttons": {
+            "createDiary": "Створити щоденник",
+            "createNewDiary": "Створити новий щоденник",
+            "editProfile": "Редагувати профіль"
+        },
+        "roles": {
+            "admin": "Адміністратор",
+            "teacher": "Вчитель",
+            "student": "Учень",
+            "parent": "Батько",
+            "user": "Користувач"
+        },
+        "positions": {
+            "director": "Директор",
+            "deputyDirector": "Заступник директора",
+            "headTeacher": "Завідувач навчальної частини",
+            "methodologist": "Методист",
+            "psychologist": "Психолог",
+            "socialPedagogue": "Соціальний педагог"
+        },
+        "profile": {
+            "profileInfo": "Профільна інформація",
+            "position": "Посада",
+            "additionalSubjects": "Додаткові предмети",
+            "birthDate": "Дата народження",
+            "registrationDate": "Дата реєстрації",
+            "contactInfo": "Контактна інформація",
+            "email": "Електронна пошта",
+            "phone": "Телефон",
+            "status": "Статус",
+            "adminDescription": "Ви маєте повний доступ до всіх функцій системи управління навчальним закладом",
+            "limitedAccess": "Обмежений доступ до функцій системи"
+        },
+        "editPopup": {
+            "title": "Редагування профілю",
+            "fullName": "ПІБ",
+            "fullNamePlaceholder": "Введіть ПІБ",
+            "email": "Електронна пошта",
+            "phone": "Телефон",
+            "position": "Посада",
+            "positionPlaceholder": "Наприклад: Директор",
+            "additionalPositions": "Додаткові посади",
+            "additionalPositionsPlaceholder": "Через кому: Вчитель математики, Керівник гуртка",
+            "additionalPositionsHint": "Перелічіть посади через кому",
+            "birthDate": "Дата народження",
+            "cancel": "Скасувати",
+            "save": "Зберегти зміни",
+            "saving": "Збереження...",
+            "errors": {
+                "fullNameRequired": "ПІБ обов'язкове поле",
+                "emailRequired": "Електронна пошта обов'язкова",
+                "emailInvalid": "Некоректна електронна пошта",
+                "phoneRequired": "Телефон обов'язковий",
+                "positionRequired": "Посада обов'язкова"
+            }
+        },
+        "notifications": {
+            "updateSuccess": "Дані успішно оновлено!"
+        },
+        "errors": {
+            "noDataFound": "Не вдалося знайти дані для оновлення в localStorage",
+            "serverError": "Помилка сервера:",
+            "updateError": "Помилка при оновленні",
+            "saveError": "Помилка при збереженні даних"
+        },
+        "defaults": {
+            "director": "Директор"
         }
     },
     "teacher": {
@@ -284,5 +376,80 @@
         "Основи здоров'я": "Основи здоров'я",
         "Правознавство": "Правознавство",
         "Економіка": "Економіка"
+    },
+    "schedule": {
+        "title": "Розклад занять",
+        "semester": "Семестр",
+        "selectSemester": "Оберіть семестр",
+        "lessonsCount": "{{count}} заняття",
+        "scheduleInfo": "Інформація про розклад",
+        "totalLessons": "Загальна кількість занять",
+        "selectedSemester": "Обраний семестр",
+        "academicYear": "Навчальний рік",
+        "semesterStatus": "Статус семестру",
+        "teacher": "Викладач",
+        "legend": "Легенда",
+        "legendSubject": "Предмет",
+        "legendGroup": "Група/Клас",
+        "legendClassroom": "Аудиторія",
+        "legendSubgroup": "Позначення підгрупи",
+        "number": "№",
+        "time": "Час",
+        "subject": "Предмет",
+        "group": "Група",
+        "classroom": "Аудиторія",
+        "journal": "Журнал",
+        "noTimeSlots": "Час уроків для цього дня не налаштовано",
+        "noLessons": "Немає занять на цей день",
+        "semesterFinished": "Завершений семестр",
+        "semesterFuture": "Майбутній семестр",
+        "notSelected": "Не обрано",
+        "status": {
+            "active": "Активний",
+            "past": "Завершений",
+            "future": "Майбутній"
+        },
+        "days": {
+            "monday": "Понеділок",
+            "mondayShort": "Пн",
+            "tuesday": "Вівторок",
+            "tuesdayShort": "Вт",
+            "wednesday": "Середа",
+            "wednesdayShort": "Ср",
+            "thursday": "Четвер",
+            "thursdayShort": "Чт",
+            "friday": "П'ятниця",
+            "fridayShort": "Пт",
+            "saturday": "Субота",
+            "saturdayShort": "Сб",
+            "sunday": "Неділя",
+            "sundayShort": "Нд"
+        },
+        "semesters": {
+            "autumnWinter": "I. Осінньо-зимовий",
+            "winterSpring": "II. Зимово-весняний"
+        },
+        "subgroups": {
+            "all": "Вся група",
+            "subgroup1": "Підгр. 1",
+            "subgroup2": "Підгр. 2",
+            "subgroup3": "Підгр. 3"
+        },
+        "classroomTypes": {
+            "classroom": "кабінет",
+            "special": "спеціальний",
+            "laboratory": "лабораторія"
+        },
+        "classrooms": {
+            "physicsLab": "Фіз. зал",
+            "chemistryLab": "Хім. кабінет"
+        },
+        "defaults": {
+            "teacher": "Викладач"
+        },
+        "errors": {
+            "accessDenied": "Доступ заборонено. Будь ласка, увійдіть як вчитель.",
+            "loadData": "Сталася помилка при завантаженні даних"
+        }
     }
 }

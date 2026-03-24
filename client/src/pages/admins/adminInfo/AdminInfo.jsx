@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
 import {
     FaUser,
     FaEnvelope,
@@ -16,6 +17,7 @@ import EditAdminPopup from "./EditAdminPopup";
 import Notification from "./Notification";
 
 const AdminInfo = ({ userData }) => {
+    const { t } = useTranslation();
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [currentUserData, setCurrentUserData] = useState(userData);
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
@@ -23,11 +25,42 @@ const AdminInfo = ({ userData }) => {
     const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
     const navigate = useNavigate();
 
+    // Функція для перекладу посади
+    const translatePosition = (position) => {
+        if (!position) return t('common.notSpecified');
+
+        // Мапа відповідності українських назв до ключів
+        const positionMap = {
+            'Директор': 'director',
+            'Заступник директора': 'deputyDirector',
+            'Завідувач навчальної частини': 'headTeacher',
+            'Методист': 'methodologist',
+            'Психолог': 'psychologist',
+            'Соціальний педагог': 'socialPedagogue',
+            'Principal': 'director',
+            'Deputy Principal': 'deputyDirector',
+            'Head Teacher': 'headTeacher',
+            'Methodologist': 'methodologist',
+            'Psychologist': 'psychologist',
+            'Social Pedagogue': 'socialPedagogue'
+        };
+
+        const key = positionMap[position];
+        if (key) {
+            const translated = t(`admin.positions.${key}`);
+            // Якщо переклад існує, повертаємо його, інакше повертаємо оригінал
+            if (translated && translated !== `admin.positions.${key}`) {
+                return translated;
+            }
+        }
+
+        return position;
+    };
+
     const handleCreateNewSchool = () => {
         navigate('/');
     };
 
-    // ПЕРЕВІРКА, ЧИ КОРИСТУВАЧ Є ДИРЕКТОРОМ
     const isDirector = () => {
         const displayData = currentUserData || userData;
         const position = displayData?.position?.toLowerCase();
@@ -36,7 +69,6 @@ const AdminInfo = ({ userData }) => {
             position?.includes('керівник');
     };
 
-    // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
@@ -49,7 +81,7 @@ const AdminInfo = ({ userData }) => {
     }, []);
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'Не вказано';
+        if (!dateString) return t('common.notSpecified');
         try {
             return new Date(dateString).toLocaleDateString('uk-UA', {
                 year: 'numeric',
@@ -57,18 +89,18 @@ const AdminInfo = ({ userData }) => {
                 day: 'numeric'
             });
         } catch {
-            return 'Не вказано';
+            return t('common.notSpecified');
         }
     };
 
     const getRoleDisplayName = (role) => {
         const roles = {
-            'admin': 'Адміністратор',
-            'teacher': 'Вчитель',
-            'student': 'Учень',
-            'parent': 'Батько'
+            'admin': t('admin.roles.admin'),
+            'teacher': t('admin.roles.teacher'),
+            'student': t('admin.roles.student'),
+            'parent': t('admin.roles.parent')
         };
-        return roles[role] || 'Користувач';
+        return roles[role] || t('admin.roles.user');
     };
 
     const showNotification = (message, type = "success") => {
@@ -87,7 +119,7 @@ const AdminInfo = ({ userData }) => {
             console.log('Початок збереження даних:', { databaseName, userId, updatedData });
 
             if (!databaseName || !userId) {
-                throw new Error('Не вдалося знайти дані для оновлення в localStorage');
+                throw new Error(t('admin.errors.noDataFound'));
             }
 
             const response = await fetch(`/api/user/me?databaseName=${encodeURIComponent(databaseName)}&userId=${encodeURIComponent(userId)}`, {
@@ -104,7 +136,7 @@ const AdminInfo = ({ userData }) => {
             console.log('Відповідь сервера:', result);
 
             if (!response.ok) {
-                throw new Error(result.message || `Помилка сервера: ${response.status}`);
+                throw new Error(result.message || `${t('admin.errors.serverError')} ${response.status}`);
             }
 
             if (result.success) {
@@ -125,15 +157,15 @@ const AdminInfo = ({ userData }) => {
 
                 console.log('Дані успішно оновлено в стані:', result.user);
 
-                showNotification('Дані успішно оновлено!');
+                showNotification(t('admin.notifications.updateSuccess'));
                 setShowEditPopup(false);
             } else {
-                throw new Error(result.message || 'Помилка при оновленні');
+                throw new Error(result.message || t('admin.errors.updateError'));
             }
 
         } catch (error) {
             console.error('Помилка збереження:', error);
-            showNotification(`Помилка при збереженні даних: ${error.message}`, "error");
+            showNotification(`${t('admin.errors.saveError')}: ${error.message}`, "error");
             throw error;
         }
     };
@@ -150,12 +182,12 @@ const AdminInfo = ({ userData }) => {
                 fontSize: isMobile ? '16px' : '18px',
                 color: '#666'
             }}>
-                Завантаження інформації...
+                {t('common.loading')}
             </div>
         );
     }
 
-    const useColumns = !isMobile && !isTablet; // Тільки для великих екранів
+    const useColumns = !isMobile && !isTablet;
 
     return (
         <>
@@ -164,7 +196,6 @@ const AdminInfo = ({ userData }) => {
                 margin: '0 auto',
                 padding: isMobile ? '0 16px' : '0'
             }}>
-                {/* КНОПКИ ДІЙ */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
@@ -172,7 +203,6 @@ const AdminInfo = ({ userData }) => {
                     marginBottom: isMobile ? '16px' : '24px',
                     flexWrap: 'wrap'
                 }}>
-                    {/* КНОПКА СТВОРЕННЯ НОВОЇ ШКОЛИ - ТІЛЬКИ ДЛЯ ДИРЕКТОРА */}
                     {isDirector() && (
                         <button
                             onClick={handleCreateNewSchool}
@@ -209,7 +239,7 @@ const AdminInfo = ({ userData }) => {
                             }}
                         >
                             <FaPlusCircle size={isMobile ? 14 : 16} />
-                            {isMobile ? 'Створити щоденник' : 'Створити новий щоденник'}
+                            {isMobile ? t('admin.buttons.createDiary') : t('admin.buttons.createNewDiary')}
                         </button>
                     )}
 
@@ -248,7 +278,7 @@ const AdminInfo = ({ userData }) => {
                         }}
                     >
                         <FaEdit size={isMobile ? 14 : 16} />
-                        Редагувати профіль
+                        {t('admin.buttons.editProfile')}
                     </button>
                 </div>
 
@@ -259,7 +289,6 @@ const AdminInfo = ({ userData }) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                     border: '1px solid #e5e7eb'
                 }}>
-                    {/* ЗАГОЛОВОК З ФОТО */}
                     <div style={{
                         display: 'flex',
                         flexDirection: isMobile ? 'column' : 'row',
@@ -316,13 +345,11 @@ const AdminInfo = ({ userData }) => {
                         </div>
                     </div>
 
-                    {/* ОСНОВНИЙ КОНТЕНТ - АДАПТИВНА СТРУКТУРА */}
                     <div style={{
                         display: 'flex',
                         flexDirection: useColumns ? 'row' : 'column',
                         gap: useColumns ? '40px' : (isMobile ? '24px' : '32px')
                     }}>
-                        {/* ПРОФІЛЬНА ІНФОРМАЦІЯ - ЛІВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
                         <div style={{
                             flex: useColumns ? 1 : 'none',
                             width: useColumns ? '50%' : '100%'
@@ -333,14 +360,13 @@ const AdminInfo = ({ userData }) => {
                                 fontWeight: '600',
                                 color: '#374151'
                             }}>
-                                Профільна інформація
+                                {t('admin.profile.profileInfo')}
                             </h3>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
-                                {/* Посада */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -369,7 +395,7 @@ const AdminInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Посада
+                                            {t('admin.profile.position')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -377,7 +403,7 @@ const AdminInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.position || 'Не вказано'}
+                                            {translatePosition(displayData.position)}
                                         </div>
                                         {displayData.positions && displayData.positions.length > 1 && (
                                             <div style={{
@@ -388,13 +414,12 @@ const AdminInfo = ({ userData }) => {
                                                 borderTop: '1px solid #e5e7eb',
                                                 wordBreak: 'break-word'
                                             }}>
-                                                <strong>Додаткові предмети:</strong> {displayData.positions.slice(1).join(', ')}
+                                                <strong>{t('admin.profile.additionalSubjects')}:</strong> {displayData.positions.slice(1).join(', ')}
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Дата народження */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -423,7 +448,7 @@ const AdminInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Дата народження
+                                            {t('admin.profile.birthDate')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -435,7 +460,6 @@ const AdminInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
-                                {/* Дата реєстрації */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -464,7 +488,7 @@ const AdminInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Дата реєстрації
+                                            {t('admin.profile.registrationDate')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -478,7 +502,6 @@ const AdminInfo = ({ userData }) => {
                             </div>
                         </div>
 
-                        {/* КОНТАКТНА ІНФОРМАЦІЯ - ПРАВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
                         <div style={{
                             flex: useColumns ? 1 : 'none',
                             width: useColumns ? '50%' : '100%'
@@ -489,14 +512,13 @@ const AdminInfo = ({ userData }) => {
                                 fontWeight: '600',
                                 color: '#374151'
                             }}>
-                                Контактна інформація
+                                {t('admin.profile.contactInfo')}
                             </h3>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
-                                {/* Email */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -525,7 +547,7 @@ const AdminInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Електронна пошта
+                                            {t('admin.profile.email')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -533,12 +555,11 @@ const AdminInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.email || 'Не вказано'}
+                                            {displayData.email || t('common.notSpecified')}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Телефон */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -567,7 +588,7 @@ const AdminInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Телефон
+                                            {t('admin.profile.phone')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -575,12 +596,11 @@ const AdminInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.phone || 'Не вказано'}
+                                            {displayData.phone || t('common.notSpecified')}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* ДОДАТКОВИЙ ІНФОРМАЦІЙНИЙ БЛОК */}
                                 <div style={{
                                     marginTop: useColumns ? '0' : '20px',
                                     padding: isMobile ? '16px 12px' : '20px',
@@ -599,7 +619,7 @@ const AdminInfo = ({ userData }) => {
                                             fontSize: isMobile ? '15px' : '16px',
                                             fontWeight: '600',
                                         }}>
-                                            Статус: {getRoleDisplayName(displayData.role)}
+                                            {t('admin.profile.status')}: {getRoleDisplayName(displayData.role)}
                                         </span>
                                     </div>
                                     <p style={{
@@ -609,8 +629,8 @@ const AdminInfo = ({ userData }) => {
                                         lineHeight: '1.5'
                                     }}>
                                         {displayData.role === 'admin'
-                                            ? 'Ви маєте повний доступ до всіх функцій системи управління навчальним закладом'
-                                            : 'Обмежений доступ до функцій системи'
+                                            ? t('admin.profile.adminDescription')
+                                            : t('admin.profile.limitedAccess')
                                         }
                                     </p>
                                 </div>

@@ -86,7 +86,7 @@
             "university": "University"
         },
         "defaults": {
-            "principal": "Principal"
+            "principal": "School Principal"
         }
     },
     "login": {
@@ -115,6 +115,98 @@
             "serverResponse": "Server response:",
             "dataSaved": "All data saved to localStorage:",
             "checkDatabaseName": "Checking databaseName saved:"
+        }
+    },
+    "admin": {
+        "welcome": "Welcome to the Admin Panel!",
+        "sectionsTitle": "Sections",
+        "sections": {
+            "home": "Home",
+            "profile": "My Profile",
+            "users": "Users",
+            "curators": "Class Teachers",
+            "calendar": "Study Calendar",
+            "schedule": "Schedule",
+            "timeSchedule": "Time Schedule",
+            "classrooms": "Classrooms",
+            "settings": "Settings",
+            "reports": "Reports"
+        },
+        "settings": {
+            "title": "System Settings",
+            "description": "System settings, roles, access rights, etc. will be here."
+        },
+        "reports": {
+            "title": "Reports & Statistics",
+            "description": "Various reports and system statistics will be here."
+        },
+        "buttons": {
+            "createDiary": "Create Diary",
+            "createNewDiary": "Create New Diary",
+            "editProfile": "Edit Profile"
+        },
+        "roles": {
+            "admin": "Administrator",
+            "teacher": "Teacher",
+            "student": "Student",
+            "parent": "Parent",
+            "user": "User"
+        },
+        "positions": {
+            "director": "Директор",
+            "deputyDirector": "Deputy Principal",
+            "headTeacher": "Head Teacher",
+            "methodologist": "Methodologist",
+            "psychologist": "Psychologist",
+            "socialPedagogue": "Social Pedagogue"
+        },
+        "profile": {
+            "profileInfo": "Profile Information",
+            "position": "Position",
+            "additionalSubjects": "Additional subjects",
+            "birthDate": "Date of Birth",
+            "registrationDate": "Registration Date",
+            "contactInfo": "Contact Information",
+            "email": "Email",
+            "phone": "Phone",
+            "status": "Status",
+            "adminDescription": "You have full access to all functions of the educational institution management system",
+            "limitedAccess": "Limited access to system functions"
+        },
+        "editPopup": {
+            "title": "Edit Profile",
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "Enter full name",
+            "email": "Email",
+            "phone": "Phone",
+            "position": "Position",
+            "positionPlaceholder": "Example: Principal",
+            "additionalPositions": "Additional Positions",
+            "additionalPositionsPlaceholder": "Comma separated: Math Teacher, Club Leader",
+            "additionalPositionsHint": "List positions separated by commas",
+            "birthDate": "Date of Birth",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "saving": "Saving...",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "emailRequired": "Email is required",
+                "emailInvalid": "Invalid email address",
+                "phoneRequired": "Phone is required",
+                "positionRequired": "Position is required"
+            }
+        },
+        "notifications": {
+            "updateSuccess": "Data updated successfully!"
+        },
+        "errors": {
+            "noDataFound": "No data found for update in localStorage",
+            "serverError": "Server error:",
+            "updateError": "Error during update",
+            "saveError": "Error saving data"
+        },
+        "defaults": {
+            "director": "Principal"
         }
     },
     "teacher": {
@@ -284,5 +376,80 @@
         "Основи здоров'я": "Health Basics",
         "Правознавство": "Law",
         "Економіка": "Economics"
+    },
+    "schedule": {
+        "title": "Schedule",
+        "semester": "Semester",
+        "selectSemester": "Select semester",
+        "lessonsCount": "{{count}} lessons",
+        "scheduleInfo": "Schedule Information",
+        "totalLessons": "Total lessons",
+        "selectedSemester": "Selected semester",
+        "academicYear": "Academic year",
+        "semesterStatus": "Semester status",
+        "teacher": "Teacher",
+        "legend": "Legend",
+        "legendSubject": "Subject",
+        "legendGroup": "Group/Class",
+        "legendClassroom": "Classroom",
+        "legendSubgroup": "Subgroup designation",
+        "number": "№",
+        "time": "Time",
+        "subject": "Subject",
+        "group": "Group",
+        "classroom": "Classroom",
+        "journal": "Journal",
+        "noTimeSlots": "Lesson times for this day are not configured",
+        "noLessons": "No lessons on this day",
+        "semesterFinished": "Finished semester",
+        "semesterFuture": "Future semester",
+        "notSelected": "Not selected",
+        "status": {
+            "active": "Active",
+            "past": "Completed",
+            "future": "Upcoming"
+        },
+        "days": {
+            "monday": "Monday",
+            "mondayShort": "Mon",
+            "tuesday": "Tuesday",
+            "tuesdayShort": "Tue",
+            "wednesday": "Wednesday",
+            "wednesdayShort": "Wed",
+            "thursday": "Thursday",
+            "thursdayShort": "Thu",
+            "friday": "Friday",
+            "fridayShort": "Fri",
+            "saturday": "Saturday",
+            "saturdayShort": "Sat",
+            "sunday": "Sunday",
+            "sundayShort": "Sun"
+        },
+        "semesters": {
+            "autumnWinter": "I. Autumn-Winter",
+            "winterSpring": "II. Winter-Spring"
+        },
+        "subgroups": {
+            "all": "Whole group",
+            "subgroup1": "Subgroup 1",
+            "subgroup2": "Subgroup 2",
+            "subgroup3": "Subgroup 3"
+        },
+        "classroomTypes": {
+            "classroom": "classroom",
+            "special": "special",
+            "laboratory": "laboratory"
+        },
+        "classrooms": {
+            "physicsLab": "Physics lab",
+            "chemistryLab": "Chemistry lab"
+        },
+        "defaults": {
+            "teacher": "Teacher"
+        },
+        "errors": {
+            "accessDenied": "Access denied. Please log in as a teacher.",
+            "loadData": "An error occurred while loading data"
+        }
     }
 }

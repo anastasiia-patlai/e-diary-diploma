@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     FaTimes,
     FaUser,
     FaEnvelope,
     FaPhone,
     FaBriefcase,
-    FaMapMarkerAlt,
     FaBirthdayCake,
     FaSave
 } from "react-icons/fa";
 
 const EditAdminPopup = ({ userData, onSave, onClose }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (userData) {
+            // Filter out the main position from the additional positions list
+            const additionalPositions = userData.positions
+                ? userData.positions
+                    .filter(pos => pos !== userData.position)
+                    .join(', ')
+                : "";
+
             setFormData({
                 fullName: userData.fullName || "",
                 email: userData.email || "",
                 phone: userData.phone || "",
                 position: userData.position || "",
-                positions: userData.positions ? userData.positions.join(', ') : "",
+                positions: additionalPositions,
                 address: userData.address || "",
                 birthDate: userData.birthDate ? userData.birthDate.split('T')[0] : ""
             });
@@ -48,21 +56,21 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
         const newErrors = {};
 
         if (!formData.fullName?.trim()) {
-            newErrors.fullName = "ПІБ обов'язкове поле";
+            newErrors.fullName = t('admin.editPopup.errors.fullNameRequired');
         }
 
         if (!formData.email?.trim()) {
-            newErrors.email = "Електронна пошта обов'язкова";
+            newErrors.email = t('admin.editPopup.errors.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = "Некоректна електронна пошта";
+            newErrors.email = t('admin.editPopup.errors.emailInvalid');
         }
 
         if (!formData.phone?.trim()) {
-            newErrors.phone = "Телефон обов'язковий";
+            newErrors.phone = t('admin.editPopup.errors.phoneRequired');
         }
 
         if (!formData.position?.trim()) {
-            newErrors.position = "Посада обов'язкова";
+            newErrors.position = t('admin.editPopup.errors.positionRequired');
         }
 
         setErrors(newErrors);
@@ -112,6 +120,28 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
         }
     };
 
+    // Reusable label style with flex for icon + text alignment
+    const labelStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#374151',
+        marginBottom: '8px'
+    };
+
+    const inputStyle = (hasError) => ({
+        width: '100%',
+        padding: '12px 16px',
+        border: `2px solid ${hasError ? '#ef4444' : '#d1d5db'}`,
+        borderRadius: '8px',
+        fontSize: '16px',
+        transition: 'all 0.2s',
+        outline: 'none',
+        boxSizing: 'border-box'
+    });
+
     return (
         <div
             style={{
@@ -142,7 +172,6 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                     position: 'relative'
                 }}
             >
-                {/* Заголовок і кнопка закриття */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -161,7 +190,7 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                         gap: '12px'
                     }}>
                         <FaUser color="rgba(105, 180, 185, 1)" />
-                        Редагування профілю
+                        {t('admin.editPopup.title')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -176,12 +205,12 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                             transition: 'all 0.2s'
                         }}
                         onMouseOver={(e) => {
-                            e.target.style.backgroundColor = '#f3f4f6';
-                            e.target.style.color = '#374151';
+                            e.currentTarget.style.backgroundColor = '#f3f4f6';
+                            e.currentTarget.style.color = '#374151';
                         }}
                         onMouseOut={(e) => {
-                            e.target.style.backgroundColor = 'transparent';
-                            e.target.style.color = '#6b7280';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            e.currentTarget.style.color = '#6b7280';
                         }}
                     >
                         <FaTimes />
@@ -189,50 +218,25 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
-                    }}>
-                        {/* ПІБ */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                        {/* Full Name */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                ПІБ *
+                            <label style={labelStyle}>
+                                {t('admin.editPopup.fullName')} *
                             </label>
                             <input
                                 type="text"
                                 name="fullName"
                                 value={formData.fullName || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: `2px solid ${errors.fullName ? '#ef4444' : '#d1d5db'}`,
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = errors.fullName ? '#ef4444' : 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = errors.fullName ? '#ef4444' : '#d1d5db';
-                                }}
-                                placeholder="Введіть ПІБ"
+                                style={inputStyle(errors.fullName)}
+                                onFocus={(e) => { e.target.style.borderColor = errors.fullName ? '#ef4444' : 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = errors.fullName ? '#ef4444' : '#d1d5db'; }}
+                                placeholder={t('admin.editPopup.fullNamePlaceholder')}
                             />
                             {errors.fullName && (
-                                <div style={{
-                                    color: '#ef4444',
-                                    fontSize: '14px',
-                                    marginTop: '4px'
-                                }}>
+                                <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
                                     {errors.fullName}
                                 </div>
                             )}
@@ -240,226 +244,111 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
 
                         {/* Email */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <FaEnvelope size={14} />
-                                Електронна пошта *
+                            <label style={labelStyle}>
+                                <FaEnvelope size={14} color="rgba(105, 180, 185, 1)" />
+                                {t('admin.editPopup.email')} *
                             </label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: `2px solid ${errors.email ? '#ef4444' : '#d1d5db'}`,
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = errors.email ? '#ef4444' : 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = errors.email ? '#ef4444' : '#d1d5db';
-                                }}
+                                style={inputStyle(errors.email)}
+                                onFocus={(e) => { e.target.style.borderColor = errors.email ? '#ef4444' : 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = errors.email ? '#ef4444' : '#d1d5db'; }}
                                 placeholder="example@school.edu.ua"
                             />
                             {errors.email && (
-                                <div style={{
-                                    color: '#ef4444',
-                                    fontSize: '14px',
-                                    marginTop: '4px'
-                                }}>
+                                <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
                                     {errors.email}
                                 </div>
                             )}
                         </div>
 
-                        {/* Телефон */}
+                        {/* Phone */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <FaPhone size={14} />
-                                Телефон *
+                            <label style={labelStyle}>
+                                <FaPhone size={14} color="rgba(105, 180, 185, 1)" />
+                                {t('admin.editPopup.phone')} *
                             </label>
                             <input
                                 type="tel"
                                 name="phone"
                                 value={formData.phone || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: `2px solid ${errors.phone ? '#ef4444' : '#d1d5db'}`,
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = errors.phone ? '#ef4444' : 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = errors.phone ? '#ef4444' : '#d1d5db';
-                                }}
+                                style={inputStyle(errors.phone)}
+                                onFocus={(e) => { e.target.style.borderColor = errors.phone ? '#ef4444' : 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = errors.phone ? '#ef4444' : '#d1d5db'; }}
                                 placeholder="+380 (XX) XXX-XXXX"
                             />
                             {errors.phone && (
-                                <div style={{
-                                    color: '#ef4444',
-                                    fontSize: '14px',
-                                    marginTop: '4px'
-                                }}>
+                                <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
                                     {errors.phone}
                                 </div>
                             )}
                         </div>
 
-                        {/* Посада */}
+                        {/* Position */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <FaBriefcase size={14} />
-                                Посада *
+                            <label style={labelStyle}>
+                                <FaBriefcase size={14} color="rgba(105, 180, 185, 1)" />
+                                {t('admin.editPopup.position')} *
                             </label>
                             <input
                                 type="text"
                                 name="position"
                                 value={formData.position || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: `2px solid ${errors.position ? '#ef4444' : '#d1d5db'}`,
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = errors.position ? '#ef4444' : 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = errors.position ? '#ef4444' : '#d1d5db';
-                                }}
-                                placeholder="Наприклад: Директор"
+                                style={inputStyle(errors.position)}
+                                onFocus={(e) => { e.target.style.borderColor = errors.position ? '#ef4444' : 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = errors.position ? '#ef4444' : '#d1d5db'; }}
+                                placeholder={t('admin.editPopup.positionPlaceholder')}
                             />
                             {errors.position && (
-                                <div style={{
-                                    color: '#ef4444',
-                                    fontSize: '14px',
-                                    marginTop: '4px'
-                                }}>
+                                <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px' }}>
                                     {errors.position}
                                 </div>
                             )}
                         </div>
 
-                        {/* Додаткові посади */}
+                        {/* Additional Positions */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                Додаткові посади
+                            <label style={labelStyle}>
+                                {t('admin.editPopup.additionalPositions')}
                             </label>
                             <input
                                 type="text"
                                 name="positions"
                                 value={formData.positions || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: '2px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#d1d5db';
-                                }}
-                                placeholder="Через кому: Вчитель математики, Керівник гуртка"
+                                style={inputStyle(false)}
+                                onFocus={(e) => { e.target.style.borderColor = 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = '#d1d5db'; }}
+                                placeholder={t('admin.editPopup.additionalPositionsPlaceholder')}
                             />
-                            <div style={{
-                                color: '#6b7280',
-                                fontSize: '12px',
-                                marginTop: '4px'
-                            }}>
-                                Перелічіть посади через кому
+                            <div style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px' }}>
+                                {t('admin.editPopup.additionalPositionsHint')}
                             </div>
                         </div>
 
-                        {/* Дата народження */}
+                        {/* Date of Birth */}
                         <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}>
-                                <FaBirthdayCake size={14} />
-                                Дата народження
+                            <label style={labelStyle}>
+                                <FaBirthdayCake size={14} color="rgba(105, 180, 185, 1)" />
+                                {t('admin.editPopup.birthDate')}
                             </label>
                             <input
                                 type="date"
                                 name="birthDate"
                                 value={formData.birthDate || ''}
                                 onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: '2px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    fontSize: '16px',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#d1d5db';
-                                }}
+                                style={inputStyle(false)}
+                                onFocus={(e) => { e.target.style.borderColor = 'rgba(105, 180, 185, 1)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = '#d1d5db'; }}
                             />
                         </div>
                     </div>
 
-                    {/* Кнопки дій */}
                     <div style={{
                         display: 'flex',
                         gap: '12px',
@@ -483,15 +372,15 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                                 transition: 'all 0.2s'
                             }}
                             onMouseOver={(e) => {
-                                e.target.style.borderColor = '#9ca3af';
-                                e.target.style.backgroundColor = '#f9fafb';
+                                e.currentTarget.style.borderColor = '#9ca3af';
+                                e.currentTarget.style.backgroundColor = '#f9fafb';
                             }}
                             onMouseOut={(e) => {
-                                e.target.style.borderColor = '#d1d5db';
-                                e.target.style.backgroundColor = 'white';
+                                e.currentTarget.style.borderColor = '#d1d5db';
+                                e.currentTarget.style.backgroundColor = 'white';
                             }}
                         >
-                            Скасувати
+                            {t('admin.editPopup.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -511,18 +400,14 @@ const EditAdminPopup = ({ userData, onSave, onClose }) => {
                                 gap: '8px'
                             }}
                             onMouseOver={(e) => {
-                                if (!isLoading) {
-                                    e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                }
+                                if (!isLoading) e.currentTarget.style.backgroundColor = 'rgba(85, 160, 165, 1)';
                             }}
                             onMouseOut={(e) => {
-                                if (!isLoading) {
-                                    e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                }
+                                if (!isLoading) e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 1)';
                             }}
                         >
                             <FaSave size={16} />
-                            {isLoading ? 'Збереження...' : 'Зберегти зміни'}
+                            {isLoading ? t('admin.editPopup.saving') : t('admin.editPopup.save')}
                         </button>
                     </div>
                 </form>
