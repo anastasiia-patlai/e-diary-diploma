@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaEnvelope, FaLock, FaSignInAlt } from "react-icons/fa";
+import LanguageSwitcher from "./i18n/components/LanguageSwitcher";
+
 
 function Login() {
     const { t } = useTranslation();
@@ -131,21 +133,12 @@ function Login() {
         position: "relative"
     };
 
-    // Стиль для контейнера перемикача мови
+    // Стиль для контейнера перемикача мови - ТІЛЬКИ ПОЗИЦІОНУВАННЯ, БЕЗ ФОНУ!
     const languageSwitcherStyle = {
         position: 'fixed',
-        height: isMobile ? 'auto' : '40px',
-        width: isMobile ? 'auto' : '100px',
         top: '18px',
         right: isMobile ? '16px' : '100px',
-        zIndex: 999,
-        ...(isMobile ? {} : {
-            backdropFilter: 'blur(10px)',
-            backgroundColor: 'rgba(146, 146, 146, 0.2)',
-            borderRadius: '12px',
-            padding: '5px 10px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)'
-        })
+        zIndex: 999
     };
 
     const cardStyle = {
@@ -159,6 +152,7 @@ function Login() {
         zIndex: 1000
     };
 
+    const handleLogout = () => { };
 
     return (
         <div
@@ -166,6 +160,7 @@ function Login() {
             style={backgroundStyle}
         >
             <div style={languageSwitcherStyle}>
+                <LanguageSwitcher onLogout={handleLogout} isLoginPage={true} />
             </div>
 
             <div

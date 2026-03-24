@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate as RouterNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate as RouterNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import Signup from "./pages/admins/Signup";
@@ -9,24 +9,9 @@ import AdminPage from "./pages/admins/AdminPage";
 import TeacherPage from "./pages/teachers/TeacherPage";
 import StudentPage from "./pages/students/StudentPage";
 import ParentPage from "./pages/parents/ParentPage";
-import LanguageSwitcher from "./i18n/components/LanguageSwitcher";
 
-function AppContent() {
+function App() {
   const { t } = useTranslation();
-  const location = useLocation();
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  // Перевіряємо чи ми на сторінці входу
-  const isLoginPage = location.pathname === '/login';
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   let user = null;
   try {
@@ -45,19 +30,7 @@ function AppContent() {
   };
 
   return (
-    <>
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: isMobile ? '16px' : '20px',
-        zIndex: 1000
-      }}>
-        <LanguageSwitcher
-          onLogout={handleLogout}
-          isLoginPage={isLoginPage}
-        />
-      </div>
-
+    <Router>
       <Routes>
         <Route
           path="/"
@@ -120,14 +93,6 @@ function AppContent() {
 
         <Route path="*" element={<RouterNavigate to="/welcome" />} />
       </Routes>
-    </>
-  );
-}
-
-function App() {
-  return (
-    <Router>
-      <AppContent />
     </Router>
   );
 }

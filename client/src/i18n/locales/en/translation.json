@@ -3,6 +3,92 @@
         "exit": "Exit",
         "loading": "Loading..."
     },
+    "welcome": {
+        "title": "Educational Institution Registration",
+        "subtitle": "Fill in the information about your educational institution",
+        "fullName": "Full name",
+        "namedAfter": "named after",
+        "optional": "Optional field",
+        "databaseHint": "This name will be used to create your institution's database",
+        "phoneHint": "Format: +380XXXXXXXXX",
+        "sections": {
+            "institutionInfo": "Educational Institution Information",
+            "adminInfo": "System Administrator Data"
+        },
+        "labels": {
+            "institutionType": "Institution Type",
+            "institutionNumber": "Institution Number",
+            "specialization": "Specialization",
+            "namedAfter": "Named after",
+            "city": "City",
+            "address": "Address",
+            "databaseName": "Database Name",
+            "adminFullName": "Full Name",
+            "adminPosition": "Position",
+            "adminEmail": "Email",
+            "adminPhone": "Phone Number",
+            "password": "Password",
+            "confirmPassword": "Confirm Password"
+        },
+        "placeholders": {
+            "institutionNumber": "Example: 1",
+            "specialization": "Example: specialized in English language studies",
+            "namedAfter": "Example: Taras Shevchenko",
+            "city": "Example: Kyiv",
+            "address": "Example: Shevchenko St., 1",
+            "databaseName": "Name will be generated automatically",
+            "adminFullName": "Example: Ivanenko Petro Sydorovych",
+            "adminPosition": "Example: Principal",
+            "adminEmail": "Example: ivanenko.petro@gmail.com",
+            "adminPhone": "+380XXXXXXXXX",
+            "password": "Minimum 6 characters",
+            "confirmPassword": "Repeat password"
+        },
+        "buttons": {
+            "register": "Register Educational Institution",
+            "registering": "Registering..."
+        },
+        "errors": {
+            "institutionTypeRequired": "Institution type is required",
+            "numberRequired": "Institution number is required",
+            "numberEmpty": "Institution number cannot be empty",
+            "cityRequired": "City is required",
+            "cityEmpty": "City cannot be empty",
+            "addressRequired": "Address is required",
+            "addressEmpty": "Address cannot be empty",
+            "adminNameRequired": "Administrator's full name is required",
+            "adminNameEmpty": "Administrator's full name cannot be empty",
+            "adminPositionRequired": "Position is required",
+            "adminPositionEmpty": "Position cannot be empty",
+            "emailRequired": "Email is required",
+            "emailInvalid": "Invalid email address",
+            "phoneRequired": "Phone number is required",
+            "phoneInvalid": "Invalid phone number. Format: +380XXXXXXXXX",
+            "passwordRequired": "Password is required",
+            "passwordMinLength": "Password must be at least 6 characters",
+            "confirmPasswordRequired": "Password confirmation is required",
+            "passwordMismatch": "Passwords do not match",
+            "formError": "Please fix the errors in the form",
+            "numberRequiredForType": "For the selected institution type, the number is required",
+            "schoolExists": "Educational institution already exists. If you want to create a new one, contact the administrator.",
+            "databaseExists": "A database with this name already exists. Try changing the institution name or city.",
+            "registrationError": "Error registering educational institution",
+            "serverError": "Server error. Please try again later."
+        },
+        "success": {
+            "registrationSuccess": "Educational institution successfully registered! Now log in to the system."
+        },
+        "institutionTypes": {
+            "school": "School",
+            "gymnasium": "Gymnasium",
+            "lyceum": "Lyceum",
+            "college": "College",
+            "university": "University"
+        },
+        "defaults": {
+            "principal": "Principal"
+        }
+    },
     "login": {
         "title": "Login to System",
         "subtitle": "Electronic Diary",

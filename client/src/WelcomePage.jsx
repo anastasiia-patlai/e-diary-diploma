@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import {
     FaSchool,
     FaUser,
@@ -14,8 +15,13 @@ import {
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import LanguageSwitcher from './i18n/components/LanguageSwitcher';
 
 const WelcomePage = () => {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
     const [formData, setFormData] = useState({
         institutionType: 'school',
         number: '',
@@ -24,7 +30,7 @@ const WelcomePage = () => {
         city: '',
         address: '',
         adminFullName: '',
-        adminPosition: 'Директор',
+        adminPosition: t('welcome.defaults.principal'),
         adminEmail: '',
         adminPhone: '',
         adminPassword: '',
@@ -37,17 +43,15 @@ const WelcomePage = () => {
     const [institutionFullName, setInstitutionFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-    const navigate = useNavigate();
 
     const API_BASE_URL = 'http://localhost:3001/api';
 
     const institutionTypes = [
-        { value: 'school', label: 'Школа' },
-        { value: 'gymnasium', label: 'Гімназія' },
-        { value: 'lyceum', label: 'Ліцей' },
-        { value: 'college', label: 'Коледж' },
-        { value: 'university', label: 'Університет' }
+        { value: 'school', label: t('welcome.institutionTypes.school') },
+        { value: 'gymnasium', label: t('welcome.institutionTypes.gymnasium') },
+        { value: 'lyceum', label: t('welcome.institutionTypes.lyceum') },
+        { value: 'college', label: t('welcome.institutionTypes.college') },
+        { value: 'university', label: t('welcome.institutionTypes.university') }
     ];
 
     const backgroundStyle = {
@@ -56,7 +60,8 @@ const WelcomePage = () => {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         minHeight: "100vh",
-        padding: isMobile ? '1rem' : '0'
+        padding: isMobile ? '1rem' : '0',
+        position: 'relative'
     };
 
     // Відслідковуємо зміну розміру вікна
@@ -91,45 +96,45 @@ const WelcomePage = () => {
 
         switch (name) {
             case 'institutionType':
-                if (!value) error = 'Тип закладу обов\'язковий';
+                if (!value) error = t('welcome.errors.institutionTypeRequired');
                 break;
             case 'number':
                 if (['school', 'gymnasium', 'lyceum'].includes(formData.institutionType)) {
-                    if (!value) error = 'Номер закладу обов\'язковий';
-                    else if (!value.trim()) error = 'Номер закладу не може бути пустим';
+                    if (!value) error = t('welcome.errors.numberRequired');
+                    else if (!value.trim()) error = t('welcome.errors.numberEmpty');
                 }
                 break;
             case 'city':
-                if (!value) error = 'Місто обов\'язкове';
-                else if (!value.trim()) error = 'Місто не може бути пустим';
+                if (!value) error = t('welcome.errors.cityRequired');
+                else if (!value.trim()) error = t('welcome.errors.cityEmpty');
                 break;
             case 'address':
-                if (!value) error = 'Адреса обов\'язкова';
-                else if (!value.trim()) error = 'Адреса не може бути пустою';
+                if (!value) error = t('welcome.errors.addressRequired');
+                else if (!value.trim()) error = t('welcome.errors.addressEmpty');
                 break;
             case 'adminFullName':
-                if (!value) error = 'ПІБ адміністратора обов\'язковий';
-                else if (!value.trim()) error = 'ПІБ адміністратора не може бути пустим';
+                if (!value) error = t('welcome.errors.adminNameRequired');
+                else if (!value.trim()) error = t('welcome.errors.adminNameEmpty');
                 break;
             case 'adminPosition':
-                if (!value) error = 'Посада обов\'язкова';
-                else if (!value.trim()) error = 'Посада не може бути пустою';
+                if (!value) error = t('welcome.errors.adminPositionRequired');
+                else if (!value.trim()) error = t('welcome.errors.adminPositionEmpty');
                 break;
             case 'adminEmail':
-                if (!value) error = 'Електронна пошта обов\'язкова';
-                else if (!/\S+@\S+\.\S+/.test(value)) error = 'Некоректна електронна адреса';
+                if (!value) error = t('welcome.errors.emailRequired');
+                else if (!/\S+@\S+\.\S+/.test(value)) error = t('welcome.errors.emailInvalid');
                 break;
             case 'adminPhone':
-                if (!value) error = 'Номер телефону обов\'язковий';
-                else if (!/^\+380\d{9}$/.test(value.replace(/\s/g, ''))) error = 'Некоректний номер телефону. Формат: +380XXXXXXXXX';
+                if (!value) error = t('welcome.errors.phoneRequired');
+                else if (!/^\+380\d{9}$/.test(value.replace(/\s/g, ''))) error = t('welcome.errors.phoneInvalid');
                 break;
             case 'adminPassword':
-                if (!value) error = 'Пароль обов\'язковий';
-                else if (value.length < 6) error = 'Пароль має містити щонайменше 6 символів';
+                if (!value) error = t('welcome.errors.passwordRequired');
+                else if (value.length < 6) error = t('welcome.errors.passwordMinLength');
                 break;
             case 'confirmPassword':
-                if (!value) error = 'Підтвердження пароля обов\'язкове';
-                else if (value !== formData.adminPassword) error = 'Паролі не співпадають';
+                if (!value) error = t('welcome.errors.confirmPasswordRequired');
+                else if (value !== formData.adminPassword) error = t('welcome.errors.passwordMismatch');
                 break;
             default:
                 error = '';
@@ -177,11 +182,11 @@ const WelcomePage = () => {
 
     const generateInstitutionFullName = (type, number, name, honoraryName) => {
         const typeNames = {
-            school: 'Школа',
-            gymnasium: 'Гімназія',
-            lyceum: 'Ліцей',
-            college: 'Коледж',
-            university: 'Університет'
+            school: t('welcome.institutionTypes.school'),
+            gymnasium: t('welcome.institutionTypes.gymnasium'),
+            lyceum: t('welcome.institutionTypes.lyceum'),
+            college: t('welcome.institutionTypes.college'),
+            university: t('welcome.institutionTypes.university')
         };
 
         let fullName = typeNames[type];
@@ -195,7 +200,7 @@ const WelcomePage = () => {
         }
 
         if (honoraryName) {
-            fullName += ` імені ${honoraryName}`;
+            fullName += ` ${t('welcome.namedAfter')} ${honoraryName}`;
         }
 
         return fullName;
@@ -279,12 +284,12 @@ const WelcomePage = () => {
         });
 
         if (Object.values(errors).some((err) => err)) {
-            setError('Будь ласка, виправте помилки в формі');
+            setError(t('welcome.errors.formError'));
             return;
         }
 
         if (['school', 'gymnasium', 'lyceum'].includes(formData.institutionType) && !formData.number) {
-            setError('Для обраного типу закладу номер є обов\'язковим');
+            setError(t('welcome.errors.numberRequiredForType'));
             return;
         }
 
@@ -295,31 +300,33 @@ const WelcomePage = () => {
 
             navigate('/login', {
                 state: {
-                    message: 'Навчальний заклад успішно зареєстровано! Тепер увійдіть в систему.'
+                    message: t('welcome.success.registrationSuccess')
                 }
             });
 
         } catch (error) {
             console.error('Error registering school:', error);
 
-            // Обробка помилок
             if (error.response?.status === 400) {
                 if (error.response?.data?.message === 'Навчальний заклад вже зареєстрований в системі') {
-                    setError('Навчальний заклад вже існує. Якщо ви хочете створити новий, зверніться до адміністратора.');
+                    setError(t('welcome.errors.schoolExists'));
                 } else if (error.response?.data?.message === 'База даних з такою назвою вже існує') {
-                    setError('База даних з такою назвою вже існує. Спробуйте змінити назву закладу або місто.');
+                    setError(t('welcome.errors.databaseExists'));
                 } else {
-                    setError(error.response?.data?.message || 'Помилка при реєстрації навчального закладу');
+                    setError(error.response?.data?.message || t('welcome.errors.registrationError'));
                 }
             } else if (error.response?.status === 500) {
-                setError('Помилка сервера. Спробуйте пізніше.');
+                setError(t('welcome.errors.serverError'));
             } else {
-                setError('Помилка при реєстрації навчального закладу');
+                setError(t('welcome.errors.registrationError'));
             }
         } finally {
             setLoading(false);
         }
     };
+
+    // Пустий обробник для LanguageSwitcher (на WelcomePage немає виходу)
+    const handleLogout = () => { };
 
     // АДАПТИВНІ КОЛОНКИ
     const getResponsiveCol = () => {
@@ -337,7 +344,7 @@ const WelcomePage = () => {
                 <Form.Group className="mb-3">
                     <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                         {!isMobile && <FaSchool className="me-2" />}
-                        Тип закладу *
+                        {t('welcome.labels.institutionType')} *
                     </Form.Label>
                     <Form.Select
                         name="institutionType"
@@ -369,7 +376,7 @@ const WelcomePage = () => {
                     <Form.Group className="mb-3">
                         <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                             <FaHashtag className="me-2" />
-                            Номер закладу *
+                            {t('welcome.labels.institutionNumber')} *
                         </Form.Label>
                         <Form.Control
                             type="text"
@@ -378,7 +385,7 @@ const WelcomePage = () => {
                             value={formData.number}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Наприклад: 1"
+                            placeholder={t('welcome.placeholders.institutionNumber')}
                             required
                             size={isMobile ? "lg" : undefined}
                             style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -398,7 +405,7 @@ const WelcomePage = () => {
                     <Form.Group className="mb-3">
                         <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                             <FaHashtag className="me-2" />
-                            Номер закладу
+                            {t('welcome.labels.institutionNumber')}
                         </Form.Label>
                         <Form.Control
                             type="text"
@@ -407,12 +414,12 @@ const WelcomePage = () => {
                             value={formData.number}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Наприклад: 1"
+                            placeholder={t('welcome.placeholders.institutionNumber')}
                             size={isMobile ? "lg" : undefined}
                             style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
-                            Необов'язкове поле для коледжу
+                            {t('welcome.optional')}
                         </Form.Text>
                     </Form.Group>
                 </Col>
@@ -425,7 +432,7 @@ const WelcomePage = () => {
                 <Col xs={12} md={colSize} key="name">
                     <Form.Group className="mb-3">
                         <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
-                            Спеціалізація закладу
+                            {t('welcome.labels.specialization')}
                         </Form.Label>
                         <Form.Control
                             type="text"
@@ -434,12 +441,12 @@ const WelcomePage = () => {
                             value={formData.name}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Наприклад: спеціалізована на вивченні англійської мови"
+                            placeholder={t('welcome.placeholders.specialization')}
                             size={isMobile ? "lg" : undefined}
                             style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
-                            Необов'язкове поле
+                            {t('welcome.optional')}
                         </Form.Text>
                     </Form.Group>
                 </Col>
@@ -452,7 +459,7 @@ const WelcomePage = () => {
                 <Col xs={12} md={colSize} key="honoraryName">
                     <Form.Group className="mb-3">
                         <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
-                            Імені
+                            {t('welcome.labels.namedAfter')}
                         </Form.Label>
                         <Form.Control
                             type="text"
@@ -461,12 +468,12 @@ const WelcomePage = () => {
                             value={formData.honoraryName}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Наприклад: Тараса Шевченка"
+                            placeholder={t('welcome.placeholders.namedAfter')}
                             size={isMobile ? "lg" : undefined}
                             style={{ fontSize: isMobile ? '14px' : '16px' }}
                         />
                         <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
-                            Необов'язкове поле
+                            {t('welcome.optional')}
                         </Form.Text>
                     </Form.Group>
                 </Col>
@@ -480,7 +487,41 @@ const WelcomePage = () => {
 
     return (
         <Container fluid className="min-vh-100 d-flex align-items-center justify-content-center py-3" style={backgroundStyle}>
+            {/* LanguageSwitcher для десктопу - у верхньому правому куті */}
+            {!isMobile && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    zIndex: 1000,
+                    backgroundColor: 'rgba(105, 180, 185, 0.7)',
+                    borderRadius: '12px',
+                    padding: '2px',
+                    backdropFilter: 'blur(4px)',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)'
+                }}>
+                    <LanguageSwitcher onLogout={handleLogout} isLoginPage={false} />
+                </div>
+            )}
+
             <div className={isMobile ? "w-100 px-2" : "w-100"} style={{ maxWidth: isMobile ? '100%' : '785px' }}>
+                {/* LanguageSwitcher для мобільної версії - компактний, без зайвого фону */}
+                {isMobile && (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        marginBottom: '10px',
+                        marginTop: '5px',
+                        // backgroundColor: 'rgba(105, 180, 185, 0.7)',
+                        borderRadius: '12px',
+                        padding: '2px',
+                        // backdropFilter: 'blur(4px)',
+                        // boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)'
+                    }}>
+                        <LanguageSwitcher onLogout={handleLogout} isLoginPage={false} />
+                    </div>
+                )}
+
                 <Card className="shadow-lg border-0" style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     margin: isMobile ? '0.5rem' : '0'
@@ -491,10 +532,10 @@ const WelcomePage = () => {
                     }}>
                         <FaSchool size={isMobile ? 32 : 48} className="mb-2" />
                         <h2 className="mb-0" style={{ fontSize: isMobile ? '20px' : '24px' }}>
-                            Реєстрація навчального закладу
+                            {t('welcome.title')}
                         </h2>
                         <p className="mb-0 mt-2 opacity-75" style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                            Заповніть інформацію про ваш навчальний заклад
+                            {t('welcome.subtitle')}
                         </p>
                     </Card.Header>
 
@@ -512,7 +553,7 @@ const WelcomePage = () => {
                                     fontSize: isMobile ? '16px' : '18px'
                                 }}>
                                     {!isMobile && <FaSchool className="me-2" />}
-                                    Інформація про навчальний заклад
+                                    {t('welcome.sections.institutionInfo')}
                                 </h5>
 
                                 <Row>
@@ -524,7 +565,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaCity className="me-2" />
-                                                Місто *
+                                                {t('welcome.labels.city')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="text"
@@ -533,7 +574,7 @@ const WelcomePage = () => {
                                                 value={formData.city}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Наприклад: Київ"
+                                                placeholder={t('welcome.placeholders.city')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -547,7 +588,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaMapMarkerAlt className="me-2" />
-                                                Адреса *
+                                                {t('welcome.labels.address')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="text"
@@ -556,7 +597,7 @@ const WelcomePage = () => {
                                                 value={formData.address}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Наприклад: вул. Шевченка, 1"
+                                                placeholder={t('welcome.placeholders.address')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -570,26 +611,26 @@ const WelcomePage = () => {
 
                                 {institutionFullName && (
                                     <Alert variant="info" className="mb-2" style={{ fontSize: isMobile ? '14px' : '16px' }}>
-                                        <strong>Повна назва:</strong> {institutionFullName}
+                                        <strong>{t('welcome.fullName')}:</strong> {institutionFullName}
                                     </Alert>
                                 )}
 
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                         <FaDatabase className="me-2" />
-                                        Назва бази даних
+                                        {t('welcome.labels.databaseName')}
                                     </Form.Label>
                                     <Form.Control
                                         type="text"
                                         value={databaseName}
                                         readOnly
                                         className="bg-light"
-                                        placeholder="Назва згенерується автоматично"
+                                        placeholder={t('welcome.placeholders.databaseName')}
                                         size={isMobile ? "lg" : undefined}
                                         style={{ fontSize: isMobile ? '14px' : '16px' }}
                                     />
                                     <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
-                                        Ця назва буде використана для створення бази даних вашого закладу
+                                        {t('welcome.databaseHint')}
                                     </Form.Text>
                                 </Form.Group>
                             </div>
@@ -602,7 +643,7 @@ const WelcomePage = () => {
                                     fontSize: isMobile ? '16px' : '18px'
                                 }}>
                                     {!isMobile && <FaUserTie className="me-2" />}
-                                    Дані адміністратора системи
+                                    {t('welcome.sections.adminInfo')}
                                 </h5>
 
                                 <Row>
@@ -610,7 +651,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaUser className="me-2" />
-                                                ПІБ адміністратора *
+                                                {t('welcome.labels.adminFullName')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="text"
@@ -619,7 +660,7 @@ const WelcomePage = () => {
                                                 value={formData.adminFullName}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Наприклад: Іваненко Петро Сидорович"
+                                                placeholder={t('welcome.placeholders.adminFullName')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -633,7 +674,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaUserTie className="me-2" />
-                                                Посада *
+                                                {t('welcome.labels.adminPosition')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="text"
@@ -642,7 +683,7 @@ const WelcomePage = () => {
                                                 value={formData.adminPosition}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Наприклад: Директор"
+                                                placeholder={t('welcome.placeholders.adminPosition')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -659,7 +700,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaEnvelope className="me-2" />
-                                                Електронна пошта *
+                                                {t('welcome.labels.adminEmail')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="email"
@@ -668,7 +709,7 @@ const WelcomePage = () => {
                                                 value={formData.adminEmail}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Наприклад: ivanenko.petro@gmail.com"
+                                                placeholder={t('welcome.placeholders.adminEmail')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -682,7 +723,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaPhone className="me-2" />
-                                                Номер телефону *
+                                                {t('welcome.labels.adminPhone')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="tel"
@@ -691,7 +732,7 @@ const WelcomePage = () => {
                                                 value={formData.adminPhone}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="+380XXXXXXXXX"
+                                                placeholder={t('welcome.placeholders.adminPhone')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -700,7 +741,7 @@ const WelcomePage = () => {
                                                 {errors.adminPhone}
                                             </div>
                                             <Form.Text className="text-muted" style={{ fontSize: isMobile ? '14px' : '12px' }}>
-                                                Формат: +380XXXXXXXXX
+                                                {t('welcome.phoneHint')}
                                             </Form.Text>
                                         </Form.Group>
                                     </Col>
@@ -711,7 +752,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaLock className="me-2" />
-                                                Пароль *
+                                                {t('welcome.labels.password')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="password"
@@ -720,7 +761,7 @@ const WelcomePage = () => {
                                                 value={formData.adminPassword}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Мінімум 6 символів"
+                                                placeholder={t('welcome.placeholders.password')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -734,7 +775,7 @@ const WelcomePage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label style={{ fontSize: isMobile ? '16px' : '14px' }}>
                                                 <FaLock className="me-2" />
-                                                Підтвердження пароля *
+                                                {t('welcome.labels.confirmPassword')} *
                                             </Form.Label>
                                             <Form.Control
                                                 type="password"
@@ -743,7 +784,7 @@ const WelcomePage = () => {
                                                 value={formData.confirmPassword}
                                                 onChange={handleChange}
                                                 onBlur={handleBlur}
-                                                placeholder="Повторіть пароль"
+                                                placeholder={t('welcome.placeholders.confirmPassword')}
                                                 required
                                                 size={isMobile ? "lg" : undefined}
                                                 style={{ fontSize: isMobile ? '14px' : '16px' }}
@@ -779,10 +820,10 @@ const WelcomePage = () => {
                                 {loading ? (
                                     <>
                                         <Spinner animation="border" size={isMobile ? "sm" : "sm"} className="me-2" />
-                                        Реєстрація...
+                                        {t('welcome.buttons.registering')}
                                     </>
                                 ) : (
-                                    'Зареєструвати навчальний заклад'
+                                    t('welcome.buttons.register')
                                 )}
                             </Button>
                         </Form>

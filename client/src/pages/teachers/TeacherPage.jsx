@@ -30,6 +30,7 @@ import JournalTab from './journal_tab/JournalTab';
 import GradebookPage from './journal_tab/GradebookPage';
 import AttendanceTab from "./attendance_tab/AttendanceTab";
 import ClassAttendance from "./attendance_tab/ClassAttendance";
+import LanguageSwitcher from "../../i18n/components/LanguageSwitcher";
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const { t } = useTranslation();
@@ -399,27 +400,30 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     {getHeaderTitle()} {userData?.subject ? `(${userData.subject})` : ''}
                 </h1>
 
-                <button
-                    onClick={onLogout}
-                    style={{
-                        backgroundColor: '#ef4444',
-                        color: 'white',
-                        padding: isMobile ? '6px 12px' : '8px 16px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: isMobile ? '14px' : '16px',
-                        transition: 'background-color 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                        e.target.style.backgroundColor = '#db1a1aff';
-                    }}
-                    onMouseOut={(e) => {
-                        e.target.style.backgroundColor = '#ef4444';
-                    }}
-                >
-                    {t("common.exit")}
-                </button>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <LanguageSwitcher onLogout={onLogout} isLoginPage={false} />
+                    <button
+                        onClick={onLogout}
+                        style={{
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            padding: isMobile ? '6px 12px' : '8px 16px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: isMobile ? '14px' : '16px',
+                            transition: 'background-color 0.3s ease'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.backgroundColor = '#db1a1aff';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.backgroundColor = '#ef4444';
+                        }}
+                    >
+                        {t("common.exit")}
+                    </button>
+                </div>
             </header>
 
             <div style={{

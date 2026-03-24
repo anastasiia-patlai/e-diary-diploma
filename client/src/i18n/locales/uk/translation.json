@@ -3,6 +3,92 @@
         "exit": "Вихід",
         "loading": "Завантаження..."
     },
+    "welcome": {
+        "title": "Реєстрація навчального закладу",
+        "subtitle": "Заповніть інформацію про ваш навчальний заклад",
+        "fullName": "Повна назва",
+        "namedAfter": "імені",
+        "optional": "Необов'язкове поле",
+        "databaseHint": "Ця назва буде використана для створення бази даних вашого закладу",
+        "phoneHint": "Формат: +380XXXXXXXXX",
+        "sections": {
+            "institutionInfo": "Інформація про навчальний заклад",
+            "adminInfo": "Дані адміністратора системи"
+        },
+        "labels": {
+            "institutionType": "Тип закладу",
+            "institutionNumber": "Номер закладу",
+            "specialization": "Спеціалізація",
+            "namedAfter": "Імені",
+            "city": "Місто",
+            "address": "Адреса",
+            "databaseName": "Назва бази даних",
+            "adminFullName": "ПІБ адміністратора",
+            "adminPosition": "Посада",
+            "adminEmail": "Електронна пошта",
+            "adminPhone": "Номер телефону",
+            "password": "Пароль",
+            "confirmPassword": "Підтвердження пароля"
+        },
+        "placeholders": {
+            "institutionNumber": "Наприклад: 1",
+            "specialization": "Наприклад: спеціалізована на вивченні англійської мови",
+            "namedAfter": "Наприклад: Тараса Шевченка",
+            "city": "Наприклад: Київ",
+            "address": "Наприклад: вул. Шевченка, 1",
+            "databaseName": "Назва згенерується автоматично",
+            "adminFullName": "Наприклад: Іваненко Петро Сидорович",
+            "adminPosition": "Наприклад: Директор",
+            "adminEmail": "Наприклад: ivanenko.petro@gmail.com",
+            "adminPhone": "+380XXXXXXXXX",
+            "password": "Мінімум 6 символів",
+            "confirmPassword": "Повторіть пароль"
+        },
+        "buttons": {
+            "register": "Зареєструвати навчальний заклад",
+            "registering": "Реєстрація..."
+        },
+        "errors": {
+            "institutionTypeRequired": "Тип закладу обов'язковий",
+            "numberRequired": "Номер закладу обов'язковий",
+            "numberEmpty": "Номер закладу не може бути пустим",
+            "cityRequired": "Місто обов'язкове",
+            "cityEmpty": "Місто не може бути пустим",
+            "addressRequired": "Адреса обов'язкова",
+            "addressEmpty": "Адреса не може бути пустою",
+            "adminNameRequired": "ПІБ адміністратора обов'язковий",
+            "adminNameEmpty": "ПІБ адміністратора не може бути пустим",
+            "adminPositionRequired": "Посада обов'язкова",
+            "adminPositionEmpty": "Посада не може бути пустою",
+            "emailRequired": "Електронна пошта обов'язкова",
+            "emailInvalid": "Некоректна електронна адреса",
+            "phoneRequired": "Номер телефону обов'язковий",
+            "phoneInvalid": "Некоректний номер телефону. Формат: +380XXXXXXXXX",
+            "passwordRequired": "Пароль обов'язковий",
+            "passwordMinLength": "Пароль має містити щонайменше 6 символів",
+            "confirmPasswordRequired": "Підтвердження пароля обов'язкове",
+            "passwordMismatch": "Паролі не співпадають",
+            "formError": "Будь ласка, виправте помилки в формі",
+            "numberRequiredForType": "Для обраного типу закладу номер є обов'язковим",
+            "schoolExists": "Навчальний заклад вже існує. Якщо ви хочете створити новий, зверніться до адміністратора.",
+            "databaseExists": "База даних з такою назвою вже існує. Спробуйте змінити назву закладу або місто.",
+            "registrationError": "Помилка при реєстрації навчального закладу",
+            "serverError": "Помилка сервера. Спробуйте пізніше."
+        },
+        "success": {
+            "registrationSuccess": "Навчальний заклад успішно зареєстровано! Тепер увійдіть в систему."
+        },
+        "institutionTypes": {
+            "school": "Школа",
+            "gymnasium": "Гімназія",
+            "lyceum": "Ліцей",
+            "college": "Коледж",
+            "university": "Університет"
+        },
+        "defaults": {
+            "principal": "Директор"
+        }
+    },
     "login": {
         "title": "Вхід в систему",
         "subtitle": "Електронний щоденник",
