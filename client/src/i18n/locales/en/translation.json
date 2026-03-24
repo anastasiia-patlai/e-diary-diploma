@@ -160,11 +160,129 @@
             "title": "Journal"
         },
         "buttons": {
-            "backToSchedule": "Back to Journals List"
+            "backToSchedule": "Back to Journals List",
+            "createDiary": "Create Diary",
+            "createNewDiary": "Create New Diary",
+            "editProfile": "Edit Profile"
         },
         "defaults": {
             "position": "Teacher",
             "subject": "Mathematics"
+        },
+        "roles": {
+            "admin": "Administrator",
+            "teacher": "Teacher",
+            "student": "Student",
+            "parent": "Parent",
+            "user": "User"
+        },
+        "teacherTypes": {
+            "young": "Primary School Teacher (Grades 1-4)",
+            "middle": "Middle School Teacher (Grades 5-9)",
+            "senior": "High School Teacher (Grades 10-11)",
+            "middleSenior": "Middle and High School Teacher",
+            "all": "All Grades Teacher"
+        },
+        "info": {
+            "personalInfo": "Personal Information",
+            "fullName": "Full Name",
+            "teacherType": "Teacher Type",
+            "qualification": "Qualification",
+            "dateOfBirth": "Date of Birth",
+            "registrationDate": "Registration Date",
+            "contactInfo": "Contact Information",
+            "email": "Email",
+            "phone": "Phone",
+            "teachesSubjects": "Teaches Subjects",
+            "notSpecified": "Not specified"
+        },
+        "types": {
+            "middleAndHighSchool": "Middle and High School Teacher",
+            "middleSchool": "Middle School Teacher",
+            "highSchool": "High School Teacher",
+            "elementarySchool": "Elementary School Teacher",
+            "subjectTeacher": "Subject Teacher",
+            "classTeacher": "Class Teacher"
+        },
+        "qualifications": {
+            "highest": "Highest Category",
+            "first": "First Category",
+            "second": "Second Category",
+            "specialistHighest": "Specialist of Highest Category",
+            "specialistFirst": "Specialist of First Category",
+            "specialistSecond": "Specialist of Second Category",
+            "specialist": "Specialist",
+            "juniorSpecialist": "Junior Specialist",
+            "noCategory": "Without Category"
+        },
+        "profile": {
+            "profileInfo": "Profile Information",
+            "teacherType": "Teacher Type",
+            "qualificationCategory": "Qualification Category",
+            "birthDate": "Date of Birth",
+            "registrationDate": "Registration Date",
+            "contactInfo": "Contact Information & Subjects",
+            "email": "Email",
+            "phone": "Phone",
+            "subjects": "Teaches Subjects",
+            "noSubjects": "No subjects added",
+            "status": "Status",
+            "accessDescription": "You have access to teacher functions: journal management, grading, homework management, and communication with students and parents."
+        },
+        "editPopup": {
+            "title": "Edit Profile",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "birthDate": "Date of Birth",
+            "dateFormat": "Format: DD-MM-YYYY",
+            "currentProfessionalInfo": "Current Professional Information",
+            "contactAdmin": "To change this data, contact the school administrator",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "fullNameMinLength": "Full name must be at least 2 characters",
+                "emailRequired": "Email is required",
+                "emailInvalid": "Invalid email format",
+                "phoneRequired": "Phone is required",
+                "phoneInvalid": "Invalid phone format"
+            }
+        },
+        "notifications": {
+            "updateSuccess": "Data updated successfully!"
+        },
+        "errors": {
+            "noDataFound": "No data found for update in localStorage",
+            "serverError": "Server error:",
+            "updateError": "Error during update",
+            "saveError": "Error saving data",
+            "loadError": "Failed to load data"
         }
+    },
+    "subjects": {
+        "Математика": "Mathematics",
+        "Алгебра": "Algebra",
+        "Геометрія": "Geometry",
+        "Українська мова": "Ukrainian Language",
+        "Українська література": "Ukrainian Literature",
+        "Англійська мова": "English Language",
+        "Німецька мова": "German Language",
+        "Французька мова": "French Language",
+        "Історія": "History",
+        "Історія України": "History of Ukraine",
+        "Всесвітня історія": "World History",
+        "Фізика": "Physics",
+        "Хімія": "Chemistry",
+        "Біологія": "Biology",
+        "Географія": "Geography",
+        "Інформатика": "Computer Science",
+        "Фізична культура": "Physical Education",
+        "Трудове навчання": "Labor Education",
+        "Музичне мистецтво": "Music Art",
+        "Образотворче мистецтво": "Fine Arts",
+        "Основи здоров'я": "Health Basics",
+        "Правознавство": "Law",
+        "Економіка": "Economics"
     }
 }

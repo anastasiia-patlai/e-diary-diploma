@@ -1,8 +1,10 @@
-// Notification.jsx
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FaCheckCircle, FaExclamationCircle, FaTimes } from "react-icons/fa";
 
 const Notification = ({ message, type = "success", onClose, duration = 3000 }) => {
+    const { t } = useTranslation();
+
     useEffect(() => {
         if (duration > 0) {
             const timer = setTimeout(onClose, duration);
@@ -102,6 +104,7 @@ const Notification = ({ message, type = "success", onClose, duration = 3000 }) =
                 onMouseOut={(e) => {
                     e.target.style.backgroundColor = "transparent";
                 }}
+                aria-label={t('common.close')}
             >
                 <FaTimes size={14} />
             </button>

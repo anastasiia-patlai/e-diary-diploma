@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
 import {
     FaUser,
     FaEnvelope,
@@ -20,6 +21,7 @@ import EditTeacherPopup from "./EditTeacherPopup";
 import Notification from "./Notification";
 
 const TeacherInfo = ({ userData }) => {
+    const { t } = useTranslation();
     const [showEditPopup, setShowEditPopup] = useState(false);
     const [currentUserData, setCurrentUserData] = useState(userData);
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
@@ -45,7 +47,6 @@ const TeacherInfo = ({ userData }) => {
 
                 console.log("🔄 Завантаження повних даних вчителя...");
 
-                // Завантажуємо дані через API /users/:id
                 const response = await fetch(`/api/users/${userData.id}?databaseName=${encodeURIComponent(databaseName)}`);
                 const result = await response.json();
 
@@ -54,7 +55,6 @@ const TeacherInfo = ({ userData }) => {
                     setCurrentUserData(prev => ({
                         ...prev,
                         ...result,
-                        // Зберігаємо всі поля
                         teacherType: result.teacherType,
                         category: result.category,
                         dateOfBirth: result.dateOfBirth,
@@ -86,11 +86,18 @@ const TeacherInfo = ({ userData }) => {
         }
     }, [currentUserData]);
 
+    // Функція для перекладу предметів
+    const translateSubject = (subject) => {
+        if (!subject) return subject;
+        // Перевіряємо чи є переклад в словнику
+        const translated = t(`subjects.${subject}`, { defaultValue: subject });
+        return translated;
+    };
+
     const handleCreateNewSchool = () => {
         navigate('/');
     };
 
-    // ПЕРЕВІРКА, ЧИ КОРИСТУВАЧ Є ДИРЕКТОРОМ
     const isDirector = () => {
         const displayData = currentUserData || userData;
         const position = displayData?.position?.toLowerCase();
@@ -99,7 +106,6 @@ const TeacherInfo = ({ userData }) => {
             position?.includes('керівник');
     };
 
-    // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
             const width = window.innerWidth;
@@ -112,7 +118,7 @@ const TeacherInfo = ({ userData }) => {
     }, []);
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'Не вказано';
+        if (!dateString) return t('common.notSpecified');
         try {
             return new Date(dateString).toLocaleDateString('uk-UA', {
                 year: 'numeric',
@@ -120,39 +126,64 @@ const TeacherInfo = ({ userData }) => {
                 day: 'numeric'
             });
         } catch {
-            return 'Не вказано';
+            return t('common.notSpecified');
         }
     };
 
     const getRoleDisplayName = (role) => {
         const roles = {
-            'admin': 'Адміністратор',
-            'teacher': 'Вчитель',
-            'student': 'Учень',
-            'parent': 'Батько'
+            'admin': t('teacher.roles.admin'),
+            'teacher': t('teacher.roles.teacher'),
+            'student': t('teacher.roles.student'),
+            'parent': t('teacher.roles.parent')
         };
-        return roles[role] || 'Користувач';
+        return roles[role] || t('teacher.roles.user');
     };
 
     const getTeacherTypeDisplayName = (teacherType) => {
         const types = {
-            'young': 'Викладач молодших класів (1-4)',
-            'middle': 'Викладач середніх класів (5-9)',
-            'senior': 'Викладач старших класів (10-11)',
-            'middle-senior': 'Викладач середніх та старших класів',
-            'all': 'Викладач усіх класів',
-            '': 'Не вказано'
+            'young': t('teacher.teacherTypes.young'),
+            'middle': t('teacher.teacherTypes.middle'),
+            'senior': t('teacher.teacherTypes.senior'),
+            'middle-senior': t('teacher.teacherTypes.middleSenior'),
+            'all': t('teacher.teacherTypes.all'),
+            '': t('common.notSpecified')
         };
-        return types[teacherType] || teacherType || 'Не вказано';
+        return types[teacherType] || teacherType || t('common.notSpecified');
     };
 
-    // Функція для отримання відображуваного типу викладача з allowedCategories
+    // Функція для перекладу категорії кваліфікації
+    const getQualificationTranslation = (category) => {
+        if (!category) return t('common.notSpecified');
+
+        const qualificationMap = {
+            'Вища категорія': t('teacher.qualifications.highest'),
+            'Перша категорія': t('teacher.qualifications.first'),
+            'Друга категорія': t('teacher.qualifications.second'),
+            'Спеціаліст вищої категорії': t('teacher.qualifications.specialistHighest'),
+            'Спеціаліст першої категорії': t('teacher.qualifications.specialistFirst'),
+            'Спеціаліст другої категорії': t('teacher.qualifications.specialistSecond'),
+            'Спеціаліст': t('teacher.qualifications.specialist'),
+            'Молодший спеціаліст': t('teacher.qualifications.juniorSpecialist'),
+            'Без категорії': t('teacher.qualifications.noCategory'),
+            'Higher category': t('teacher.qualifications.highest'),
+            'First category': t('teacher.qualifications.first'),
+            'Second category': t('teacher.qualifications.second'),
+            'Specialist of highest category': t('teacher.qualifications.specialistHighest'),
+            'Specialist of first category': t('teacher.qualifications.specialistFirst'),
+            'Specialist of second category': t('teacher.qualifications.specialistSecond'),
+            'Specialist': t('teacher.qualifications.specialist'),
+            'Junior specialist': t('teacher.qualifications.juniorSpecialist'),
+            'Without category': t('teacher.qualifications.noCategory')
+        };
+
+        return qualificationMap[category] || category;
+    };
+
     const getTeacherTypeFromAllowedCategories = (allowedCategories) => {
         if (!allowedCategories || !Array.isArray(allowedCategories) || allowedCategories.length === 0) {
             return '';
         }
-
-        console.log("Конвертуємо allowedCategories в teacherType:", allowedCategories);
 
         const categories = allowedCategories;
         if (categories.includes('young') && categories.includes('middle') && categories.includes('senior')) {
@@ -186,10 +217,9 @@ const TeacherInfo = ({ userData }) => {
             console.log('💾 Збереження даних вчителя:', updatedData);
 
             if (!databaseName || !userId) {
-                throw new Error('Не вдалося знайти дані для оновлення в localStorage');
+                throw new Error(t('teacher.errors.noDataFound'));
             }
 
-            // Перевіряємо, що тільки дозволені поля змінюються
             const allowedFields = ['fullName', 'email', 'phone', 'dateOfBirth'];
             const dataToSend = {};
 
@@ -212,11 +242,10 @@ const TeacherInfo = ({ userData }) => {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || `Помилка сервера: ${response.status}`);
+                throw new Error(result.message || `${t('teacher.errors.serverError')} ${response.status}`);
             }
 
             if (result.success) {
-                // Оновлюємо лише дозволені поля
                 setCurrentUserData(prevData => ({
                     ...prevData,
                     fullName: result.user.fullName || prevData.fullName,
@@ -234,40 +263,29 @@ const TeacherInfo = ({ userData }) => {
                 };
                 localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
 
-                showNotification('Дані успішно оновлено!');
+                showNotification(t('teacher.notifications.updateSuccess'));
                 setShowEditPopup(false);
             } else {
-                throw new Error(result.message || 'Помилка при оновленні');
+                throw new Error(result.message || t('teacher.errors.updateError'));
             }
 
         } catch (error) {
             console.error('Помилка збереження даних вчителя:', error);
-            showNotification(`Помилка при збереженні даних: ${error.message}`, "error");
+            showNotification(`${t('teacher.errors.saveError')}: ${error.message}`, "error");
             throw error;
         }
     };
 
-    // Обробка даних для відображення
     const getDisplayData = () => {
         const data = currentUserData || userData;
         if (!data) return null;
 
-        console.log("Обробка даних для відображення:");
-        console.log("Оригінальні дані:", data);
-
-        // Визначаємо teacherType з пріоритетом:
-        // 1. Якщо є teacherType в даних
-        // 2. Якщо немає teacherType, але є allowedCategories - конвертуємо
         let teacherType = data.teacherType;
 
         if (!teacherType && data.allowedCategories && Array.isArray(data.allowedCategories) && data.allowedCategories.length > 0) {
             teacherType = getTeacherTypeFromAllowedCategories(data.allowedCategories);
-            console.log("Конвертовано allowedCategories -> teacherType:", teacherType);
         }
 
-        console.log("Фінальний teacherType:", teacherType);
-
-        // Визначаємо предмети
         let positions = data.positions;
         if ((!positions || positions.length === 0) && data.position) {
             if (data.position.includes(',')) {
@@ -277,7 +295,6 @@ const TeacherInfo = ({ userData }) => {
             }
         }
 
-        // Визначаємо дату народження
         const birthDate = data.dateOfBirth || data.birthDate;
 
         const result = {
@@ -288,13 +305,6 @@ const TeacherInfo = ({ userData }) => {
             category: data.category || '',
             position: data.position || ''
         };
-
-        console.log("Результат обробки:", {
-            teacherType: result.teacherType,
-            category: result.category,
-            birthDate: result.birthDate,
-            formattedBirthDate: formatDate(result.birthDate)
-        });
 
         return result;
     };
@@ -311,7 +321,7 @@ const TeacherInfo = ({ userData }) => {
                 fontSize: isMobile ? '16px' : '18px',
                 color: '#666'
             }}>
-                Завантаження інформації...
+                {t('common.loading')}
             </div>
         );
     }
@@ -326,12 +336,12 @@ const TeacherInfo = ({ userData }) => {
                 fontSize: isMobile ? '16px' : '18px',
                 color: '#666'
             }}>
-                Не вдалося завантажити дані
+                {t('teacher.errors.loadError')}
             </div>
         );
     }
 
-    const useColumns = !isMobile && !isTablet; // Тільки для великих екранів
+    const useColumns = !isMobile && !isTablet;
 
     return (
         <>
@@ -340,7 +350,6 @@ const TeacherInfo = ({ userData }) => {
                 margin: '0 auto',
                 padding: isMobile ? '0 16px' : '0'
             }}>
-                {/* КНОПКИ ДІЙ */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'flex-end',
@@ -348,7 +357,6 @@ const TeacherInfo = ({ userData }) => {
                     marginBottom: isMobile ? '16px' : '24px',
                     flexWrap: 'wrap'
                 }}>
-                    {/* КНОПКА СТВОРЕННЯ НОВОЇ ШКОЛИ - ТІЛЬКИ ДЛЯ ДИРЕКТОРА */}
                     {isDirector() && (
                         <button
                             onClick={handleCreateNewSchool}
@@ -385,7 +393,7 @@ const TeacherInfo = ({ userData }) => {
                             }}
                         >
                             <FaPlusCircle size={isMobile ? 14 : 16} />
-                            {isMobile ? 'Створити щоденник' : 'Створити новий щоденник'}
+                            {isMobile ? t('teacher.buttons.createDiary') : t('teacher.buttons.createNewDiary')}
                         </button>
                     )}
 
@@ -424,7 +432,7 @@ const TeacherInfo = ({ userData }) => {
                         }}
                     >
                         <FaEdit size={isMobile ? 14 : 16} />
-                        Редагувати профіль
+                        {t('teacher.buttons.editProfile')}
                     </button>
                 </div>
 
@@ -435,7 +443,6 @@ const TeacherInfo = ({ userData }) => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                     border: '1px solid #e5e7eb'
                 }}>
-                    {/* ЗАГОЛОВОК З ФОТО */}
                     <div style={{
                         display: 'flex',
                         flexDirection: isMobile ? 'column' : 'row',
@@ -492,13 +499,11 @@ const TeacherInfo = ({ userData }) => {
                         </div>
                     </div>
 
-                    {/* ОСНОВНИЙ КОНТЕНТ - АДАПТИВНА СТРУКТУРА */}
                     <div style={{
                         display: 'flex',
                         flexDirection: useColumns ? 'row' : 'column',
                         gap: useColumns ? '40px' : (isMobile ? '24px' : '32px')
                     }}>
-                        {/* ПРОФІЛЬНА ІНФОРМАЦІЯ - ЛІВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
                         <div style={{
                             flex: useColumns ? 1 : 'none',
                             width: useColumns ? '50%' : '100%'
@@ -509,14 +514,13 @@ const TeacherInfo = ({ userData }) => {
                                 fontWeight: '600',
                                 color: '#374151'
                             }}>
-                                Профільна інформація
+                                {t('teacher.profile.profileInfo')}
                             </h3>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
-                                {/* Тип викладача*/}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -537,7 +541,7 @@ const TeacherInfo = ({ userData }) => {
                                         justifyContent: 'center',
                                         flexShrink: 0
                                     }}>
-                                        <FaLock color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                        <FaChalkboardTeacher color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
@@ -545,7 +549,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Тип викладача
+                                            {t('teacher.profile.teacherType')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -558,7 +562,6 @@ const TeacherInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
-                                {/* Категорія кваліфікації (ТІЛЬКИ ДЛЯ ПЕРЕГЛЯДУ) */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -579,7 +582,7 @@ const TeacherInfo = ({ userData }) => {
                                         justifyContent: 'center',
                                         flexShrink: 0
                                     }}>
-                                        <FaLock color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
+                                        <FaGraduationCap color="rgba(105, 180, 185, 1)" size={isMobile ? 14 : 16} />
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{
@@ -587,7 +590,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Категорія кваліфікації
+                                            {t('teacher.profile.qualificationCategory')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -595,12 +598,11 @@ const TeacherInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.category || 'Не вказано'}
+                                            {getQualificationTranslation(displayData.category)}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Дата народження */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -629,7 +631,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Дата народження
+                                            {t('teacher.profile.birthDate')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -641,7 +643,6 @@ const TeacherInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
-                                {/* Дата реєстрації */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -670,7 +671,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Дата реєстрації
+                                            {t('teacher.profile.registrationDate')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -684,7 +685,6 @@ const TeacherInfo = ({ userData }) => {
                             </div>
                         </div>
 
-                        {/* КОНТАКТНА ІНФОРМАЦІЯ ТА ПРЕДМЕТИ - ПРАВИЙ СТОВПЧИК НА ДЕСКТОПІ */}
                         <div style={{
                             flex: useColumns ? 1 : 'none',
                             width: useColumns ? '50%' : '100%'
@@ -695,14 +695,13 @@ const TeacherInfo = ({ userData }) => {
                                 fontWeight: '600',
                                 color: '#374151'
                             }}>
-                                Контактна інформація та предмети
+                                {t('teacher.profile.contactInfo')}
                             </h3>
                             <div style={{
                                 display: 'flex',
                                 flexDirection: 'column',
                                 gap: isMobile ? '14px' : '16px'
                             }}>
-                                {/* Email */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -731,7 +730,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Електронна пошта
+                                            {t('teacher.profile.email')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -739,12 +738,11 @@ const TeacherInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.email || 'Не вказано'}
+                                            {displayData.email || t('common.notSpecified')}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Телефон */}
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
@@ -773,7 +771,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            Телефон
+                                            {t('teacher.profile.phone')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
@@ -781,12 +779,11 @@ const TeacherInfo = ({ userData }) => {
                                             fontWeight: '500',
                                             wordBreak: 'break-word'
                                         }}>
-                                            {displayData.phone || 'Не вказано'}
+                                            {displayData.phone || t('common.notSpecified')}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Предмети */}
                                 <div style={{
                                     padding: isMobile ? '16px 12px' : '20px',
                                     backgroundColor: 'rgba(105, 180, 185, 0.05)',
@@ -806,7 +803,7 @@ const TeacherInfo = ({ userData }) => {
                                             fontWeight: '600',
                                             color: '#1f2937'
                                         }}>
-                                            Викладає предмети
+                                            {t('teacher.profile.subjects')}
                                         </h4>
                                     </div>
 
@@ -853,7 +850,7 @@ const TeacherInfo = ({ userData }) => {
                                                         fontWeight: '500',
                                                         flex: 1
                                                     }}>
-                                                        {subject}
+                                                        {translateSubject(subject)}
                                                     </div>
                                                 </div>
                                             ))}
@@ -865,14 +862,13 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             fontSize: isMobile ? '14px' : '16px'
                                         }}>
-                                            Предмети не додані
+                                            {t('teacher.profile.noSubjects')}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {/* ДОДАТКОВИЙ ІНФОРМАЦІЙНИЙ БЛОК */}
                     <div style={{
                         marginTop: useColumns ? '10px' : '10px',
                         padding: isMobile ? '16px 12px' : '20px',
@@ -891,7 +887,7 @@ const TeacherInfo = ({ userData }) => {
                                 fontSize: isMobile ? '15px' : '16px',
                                 fontWeight: '600',
                             }}>
-                                Статус: {getRoleDisplayName(displayData.role)}
+                                {t('teacher.profile.status')}: {getRoleDisplayName(displayData.role)}
                             </span>
                         </div>
                         <p style={{
@@ -900,8 +896,7 @@ const TeacherInfo = ({ userData }) => {
                             color: '#6b7280',
                             lineHeight: '1.5'
                         }}>
-                            Ви маєте доступ до функцій вчителя: ведення журналу, виставлення оцінок,
-                            управління домашніми завданнями та комунікація з учнями та батьками.
+                            {t('teacher.profile.accessDescription')}
                         </p>
                     </div>
                 </div>

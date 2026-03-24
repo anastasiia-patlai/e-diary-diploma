@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { FaTimes, FaInfoCircle, FaLock } from "react-icons/fa";
 
 const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
-    // Функція для ініціалізації даних - тільки дозволені поля
+    const { t } = useTranslation();
+
     const initializeFormData = () => {
         console.log("📝 EditTeacherPopup - ініціалізація даних:", userData);
 
-        // Обробка дати народження
         let dateOfBirthValue = "";
         if (userData.dateOfBirth) {
             dateOfBirthValue = new Date(userData.dateOfBirth).toISOString().split('T')[0];
@@ -14,7 +15,6 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
             dateOfBirthValue = new Date(userData.birthDate).toISOString().split('T')[0];
         }
 
-        // Повертаємо лише дозволені для редагування поля
         return {
             fullName: userData.fullName || "",
             email: userData.email || "",
@@ -34,6 +34,41 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
             document.body.style.overflow = 'unset';
         };
     }, []);
+
+    // Функція для перекладу предметів
+    const translateSubject = (subject) => {
+        if (!subject) return subject;
+        const translated = t(`subjects.${subject}`, { defaultValue: subject });
+        return translated;
+    };
+
+    // Функція для перекладу категорії кваліфікації
+    const getQualificationTranslation = (category) => {
+        if (!category) return t('common.notSpecified');
+
+        const qualificationMap = {
+            'Вища категорія': t('teacher.qualifications.highest'),
+            'Перша категорія': t('teacher.qualifications.first'),
+            'Друга категорія': t('teacher.qualifications.second'),
+            'Спеціаліст вищої категорії': t('teacher.qualifications.specialistHighest'),
+            'Спеціаліст першої категорії': t('teacher.qualifications.specialistFirst'),
+            'Спеціаліст другої категорії': t('teacher.qualifications.specialistSecond'),
+            'Спеціаліст': t('teacher.qualifications.specialist'),
+            'Молодший спеціаліст': t('teacher.qualifications.juniorSpecialist'),
+            'Без категорії': t('teacher.qualifications.noCategory'),
+            'Higher category': t('teacher.qualifications.highest'),
+            'First category': t('teacher.qualifications.first'),
+            'Second category': t('teacher.qualifications.second'),
+            'Specialist of highest category': t('teacher.qualifications.specialistHighest'),
+            'Specialist of first category': t('teacher.qualifications.specialistFirst'),
+            'Specialist of second category': t('teacher.qualifications.specialistSecond'),
+            'Specialist': t('teacher.qualifications.specialist'),
+            'Junior specialist': t('teacher.qualifications.juniorSpecialist'),
+            'Without category': t('teacher.qualifications.noCategory')
+        };
+
+        return qualificationMap[category] || category;
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -58,18 +93,17 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
 
         switch (name) {
             case "fullName":
-                if (!value.trim()) error = "ПІБ обов'язкове поле";
-                else if (value.trim().length < 2) error = "ПІБ повинно містити щонайменше 2 символи";
+                if (!value.trim()) error = t('teacher.editPopup.errors.fullNameRequired');
+                else if (value.trim().length < 2) error = t('teacher.editPopup.errors.fullNameMinLength');
                 break;
             case "email":
-                if (!value.trim()) error = "Електронна пошта обов'язкова";
-                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = "Невірний формат електронної пошти";
+                if (!value.trim()) error = t('teacher.editPopup.errors.emailRequired');
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = t('teacher.editPopup.errors.emailInvalid');
                 break;
             case "phone":
-                if (!value.trim()) error = "Телефон обов'язковий";
-                else if (!/^[\d+\s\-()]{10,}$/.test(value.replace(/[\s\-()]/g, ''))) error = "Невірний формат телефону";
+                if (!value.trim()) error = t('teacher.editPopup.errors.phoneRequired');
+                else if (!/^[\d+\s\-()]{10,}$/.test(value.replace(/[\s\-()]/g, ''))) error = t('teacher.editPopup.errors.phoneInvalid');
                 break;
-            // Поле dateOfBirth не обов'язкове і не має спеціальної валідації
             default:
                 break;
         }
@@ -93,12 +127,10 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
             try {
                 console.log("💾 Збереження даних:", formData);
 
-                // Готуємо дані для збереження - тільки дозволені поля
                 const dataToSave = {
                     fullName: formData.fullName.trim(),
                     email: formData.email.trim(),
                     phone: formData.phone.trim(),
-                    // dateOfBirth може бути пустим рядком - конвертуємо в null
                     dateOfBirth: formData.dateOfBirth || null
                 };
 
@@ -113,22 +145,20 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
         return `form-control ${touched[fieldName] && errors[fieldName] ? 'is-invalid' : ''}`;
     };
 
-    // Функція для відображення типу вчителя
     const getTeacherTypeDisplayName = (teacherType) => {
         const types = {
-            'young': 'Викладач молодших класів (1-4)',
-            'middle': 'Викладач середніх класів (5-9)',
-            'senior': 'Викладач старших класів (10-11)',
-            'middle-senior': 'Викладач середніх та старших класів',
-            'all': 'Викладач усіх класів',
-            '': 'Не вказано'
+            'young': t('teacher.teacherTypes.young'),
+            'middle': t('teacher.teacherTypes.middle'),
+            'senior': t('teacher.teacherTypes.senior'),
+            'middle-senior': t('teacher.teacherTypes.middleSenior'),
+            'all': t('teacher.teacherTypes.all'),
+            '': t('common.notSpecified')
         };
-        return types[teacherType] || teacherType || 'Не вказано';
+        return types[teacherType] || teacherType || t('common.notSpecified');
     };
 
-    // Функція для форматування дати
     const formatDate = (dateString) => {
-        if (!dateString) return 'Не вказано';
+        if (!dateString) return t('common.notSpecified');
         try {
             return new Date(dateString).toLocaleDateString('uk-UA', {
                 year: 'numeric',
@@ -136,7 +166,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                 day: 'numeric'
             });
         } catch {
-            return 'Не вказано';
+            return t('common.notSpecified');
         }
     };
 
@@ -165,7 +195,6 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                 flexDirection: 'column',
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}>
-                {/* ХЕДЕР */}
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -180,7 +209,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                         fontWeight: '600',
                         color: '#1f2937'
                     }}>
-                        Редагування профілю
+                        {t('teacher.editPopup.title')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -197,20 +226,18 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                         }}
                         onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
                         onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-                        aria-label="Закрити"
+                        aria-label={t('common.close')}
                     >
                         <FaTimes size={isMobile ? 18 : 20} color="#6b7280" />
                     </button>
                 </div>
 
-                {/* ФОРМА */}
                 <div style={{
                     flex: 1,
                     overflowY: 'auto',
                     padding: isMobile ? '20px 16px' : '24px'
                 }}>
                     <form onSubmit={handleSubmit}>
-                        {/* ПІБ */}
                         <div className="mb-4">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '15px' : '16px',
@@ -218,7 +245,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 color: '#374151',
                                 marginBottom: '8px'
                             }}>
-                                ПІБ *
+                                {t('teacher.editPopup.fullName')} *
                             </label>
                             <input
                                 type="text"
@@ -248,7 +275,6 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                             )}
                         </div>
 
-                        {/* Email */}
                         <div className="mb-4">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '15px' : '16px',
@@ -256,7 +282,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 color: '#374151',
                                 marginBottom: '8px'
                             }}>
-                                Електронна пошта *
+                                {t('teacher.editPopup.email')} *
                             </label>
                             <input
                                 type="email"
@@ -286,7 +312,6 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                             )}
                         </div>
 
-                        {/* Телефон */}
                         <div className="mb-4">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '15px' : '16px',
@@ -294,7 +319,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 color: '#374151',
                                 marginBottom: '8px'
                             }}>
-                                Телефон *
+                                {t('teacher.editPopup.phone')} *
                             </label>
                             <input
                                 type="tel"
@@ -325,7 +350,6 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                             )}
                         </div>
 
-                        {/* Дата народження */}
                         <div className="mb-4">
                             <label className="form-label" style={{
                                 fontSize: isMobile ? '15px' : '16px',
@@ -333,7 +357,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 color: '#374151',
                                 marginBottom: '8px'
                             }}>
-                                Дата народження
+                                {t('teacher.editPopup.birthDate')}
                             </label>
                             <input
                                 type="date"
@@ -357,11 +381,10 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 display: 'block',
                                 marginTop: '6px'
                             }}>
-                                Формат: ДД-ММ-РРРР
+                                {t('teacher.editPopup.dateFormat')}
                             </small>
                         </div>
 
-                        {/* БЛОК ПОТОЧНОЇ ІНФОРМАЦІЇ (ТІЛЬКИ ДЛЯ ПЕРЕГЛЯДУ) */}
                         <div style={{
                             margin: '20px 0',
                             padding: isMobile ? '16px' : '20px',
@@ -379,7 +402,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 gap: '8px'
                             }}>
                                 <FaLock size={14} color="#9ca3af" />
-                                Поточна професійна інформація
+                                {t('teacher.editPopup.currentProfessionalInfo')}
                             </h4>
 
                             <div style={{
@@ -398,7 +421,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                         color: '#6b7280',
                                         marginBottom: '4px'
                                     }}>
-                                        Тип викладача
+                                        {t('teacher.profile.teacherType')}
                                     </div>
                                     <div style={{
                                         fontSize: isMobile ? '14px' : '15px',
@@ -421,7 +444,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                         color: '#6b7280',
                                         marginBottom: '4px'
                                     }}>
-                                        Категорія кваліфікації
+                                        {t('teacher.profile.qualificationCategory')}
                                     </div>
                                     <div style={{
                                         fontSize: isMobile ? '14px' : '15px',
@@ -429,7 +452,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                         color: '#1f2937',
                                         wordBreak: 'break-word'
                                     }}>
-                                        {userData.category || 'Не вказано'}
+                                        {getQualificationTranslation(userData.category)}
                                     </div>
                                 </div>
 
@@ -445,7 +468,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                         color: '#6b7280',
                                         marginBottom: '4px'
                                     }}>
-                                        Предмети
+                                        {t('teacher.profile.subjects')}
                                     </div>
                                     <div style={{
                                         fontSize: isMobile ? '14px' : '15px',
@@ -454,8 +477,8 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                         wordBreak: 'break-word'
                                     }}>
                                         {userData.positions && userData.positions.length > 0
-                                            ? userData.positions.join(', ')
-                                            : 'Не вказано'}
+                                            ? userData.positions.map(s => translateSubject(s)).join(', ')
+                                            : t('common.notSpecified')}
                                     </div>
                                 </div>
                             </div>
@@ -474,12 +497,11 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                     lineHeight: '1.5',
                                     textAlign: 'center'
                                 }}>
-                                    Для зміни цих даних зверніться до адміністратора школи
+                                    {t('teacher.editPopup.contactAdmin')}
                                 </p>
                             </div>
                         </div>
 
-                        {/* КНОПКИ */}
                         <div style={{
                             display: 'flex',
                             gap: isMobile ? '12px' : '16px',
@@ -505,7 +527,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 onMouseOver={(e) => e.target.style.backgroundColor = '#e5e7eb'}
                                 onMouseOut={(e) => e.target.style.backgroundColor = '#f3f4f6'}
                             >
-                                Скасувати
+                                {t('teacher.editPopup.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -525,7 +547,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 onMouseOut={(e) => e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)'}
                                 disabled={Object.keys(errors).some(key => errors[key])}
                             >
-                                Зберегти зміни
+                                {t('teacher.editPopup.save')}
                             </button>
                         </div>
                     </form>
