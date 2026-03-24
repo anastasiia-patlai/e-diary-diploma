@@ -54,7 +54,6 @@ const StatCard = ({ title, value, icon, color, backgroundColor }) => {
                 </div>
             </div>
 
-            {/* Прогрес бар (декоративний) */}
             <div style={{
                 marginTop: '16px',
                 height: '4px',
@@ -65,7 +64,7 @@ const StatCard = ({ title, value, icon, color, backgroundColor }) => {
                 <div style={{
                     height: '100%',
                     backgroundColor: color,
-                    width: '70%', // Фіксована ширина для візуального ефекту
+                    width: '70%',
                     borderRadius: '2px'
                 }} />
             </div>

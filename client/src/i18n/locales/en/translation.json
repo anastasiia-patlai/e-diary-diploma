@@ -140,6 +140,36 @@
             "title": "Reports & Statistics",
             "description": "Various reports and system statistics will be here."
         },
+        "mainPage": {
+            "title": "Dashboard",
+            "locale": "en-US",
+            "databaseName": "Database name",
+            "notSet": "Not set",
+            "stats": {
+                "totalUsers": "Total Users",
+                "students": "Students",
+                "teachers": "Teachers",
+                "parents": "Parents",
+                "groups": "Groups",
+                "subjects": "Active Subjects"
+            },
+            "systemInfo": {
+                "title": "System Information",
+                "status": "System Status",
+                "active": "Active",
+                "lastUpdate": "Last Update",
+                "database": "Database",
+                "version": "System Version"
+            },
+            "buttons": {
+                "tryAgain": "Try Again"
+            },
+            "errors": {
+                "noDatabase": "Failed to get database information",
+                "loadError": "Error loading statistics",
+                "loadErrorTitle": "Loading Error"
+            }
+        },
         "buttons": {
             "createDiary": "Create Diary",
             "createNewDiary": "Create New Diary",
