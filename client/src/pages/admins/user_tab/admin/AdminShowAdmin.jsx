@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from "axios";
 import AdminHeader from './AdminHeader';
 import AdminList from './AdminList';
@@ -9,6 +10,7 @@ import EditAdminPopup from './EditAdminPopup';
 import DeleteAdminPopup from './DeleteAdminPopup';
 
 const AdminShowAdmin = () => {
+    const { t } = useTranslation();
     const [admins, setAdmins] = useState([]);
     const [filteredAdmins, setFilteredAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -87,15 +89,15 @@ const AdminShowAdmin = () => {
             setCurrentAdminId(currentUserId || "");
         } else {
             console.error("Database name не знайдено!");
-            setError("Не вдалося визначити базу даних школи");
+            setError(t('admin.showAdmin.errors.noDatabase'));
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const fetchAdmins = async () => {
         if (!databaseName) {
             console.error("Database name відсутній для запиту адміністраторів");
-            setError("Не вказано базу даних");
+            setError(t('admin.showAdmin.errors.noDatabaseSpecified'));
             setLoading(false);
             return;
         }
@@ -121,7 +123,7 @@ const AdminShowAdmin = () => {
                 console.error("Статус помилки:", err.response.status);
                 console.error("Дані помилки:", err.response.data);
             }
-            setError(err.response?.data?.error || "Помилка завантаження адміністраторів");
+            setError(err.response?.data?.error || t('admin.showAdmin.errors.loadError'));
         } finally {
             setLoading(false);
         }
@@ -208,7 +210,7 @@ const AdminShowAdmin = () => {
     const isMobile = windowWidth < 768;
 
     if (loading) {
-        return <LoadingState message="Завантаження адміністраторів..." isMobile={isMobile} />;
+        return <LoadingState message={t('admin.showAdmin.loading')} isMobile={isMobile} />;
     }
 
     if (error) {
@@ -246,15 +248,15 @@ const AdminShowAdmin = () => {
                         color: '#374151',
                         fontSize: isMobile ? '16px' : '18px'
                     }}>
-                        Інших адміністраторів не знайдено
+                        {t('admin.showAdmin.noAdmins')}
                     </h4>
                     <p style={{
                         margin: 0,
                         fontSize: isMobile ? '14px' : '16px'
                     }}>
                         {searchQuery
-                            ? `За запитом "${searchQuery}" інших адміністраторів не знайдено`
-                            : 'У системі немає інших адміністраторів'
+                            ? t('admin.showAdmin.noResults', { query: searchQuery })
+                            : t('admin.showAdmin.noOtherAdmins')
                         }
                     </p>
                 </div>

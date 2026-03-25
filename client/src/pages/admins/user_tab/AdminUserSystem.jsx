@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
     FaUserGraduate,
     FaChalkboardTeacher,
@@ -15,6 +16,7 @@ import AdminShowParent from "./parent/AdminShowParent";
 import AdminShowAdmin from "./admin/AdminShowAdmin";
 
 const AdminUserSystem = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState("students");
     const [showPopup, setShowPopup] = useState(false);
     const [databaseName, setDatabaseName] = useState("");
@@ -36,10 +38,8 @@ const AdminUserSystem = () => {
 
     useEffect(() => {
         const getDatabaseName = () => {
-            // СПРОБА 1: ОКРЕМЕ ПОЛЕ databaseName
             let dbName = localStorage.getItem('databaseName');
 
-            // СПРОБА 2: З ОБ'ЄКТАа user
             if (!dbName) {
                 const userStr = localStorage.getItem('user');
                 if (userStr) {
@@ -52,7 +52,6 @@ const AdminUserSystem = () => {
                 }
             }
 
-            // СПРОБА 3: З ОБ'ЄКТА userInfo
             if (!dbName) {
                 const userInfoStr = localStorage.getItem('userInfo');
                 if (userInfoStr) {
@@ -70,10 +69,6 @@ const AdminUserSystem = () => {
                 console.log("Database name отримано:", dbName);
             } else {
                 console.warn("Database name не знайдено в localStorage!");
-                console.log("Доступні дані в localStorage:");
-                console.log("- databaseName:", localStorage.getItem('databaseName'));
-                console.log("- user:", localStorage.getItem('user'));
-                console.log("- userInfo:", localStorage.getItem('userInfo'));
             }
         };
 
@@ -82,7 +77,7 @@ const AdminUserSystem = () => {
 
     const handleAddUser = () => {
         if (!databaseName) {
-            alert("Помилка: не вдалося визначити базу даних школи. Будь ласка, перезавантажте сторінку або увійдіть знову.");
+            alert(t('admin.userSystem.errors.noDatabase'));
             console.error("Database name відсутній при спробі додати користувача");
             return;
         }
@@ -105,15 +100,15 @@ const AdminUserSystem = () => {
     };
 
     const tabButtons = [
-        { id: "students", label: "Учні/Студенти", icon: <FaUserGraduate /> },
-        { id: "teachers", label: "Викладачі", icon: <FaChalkboardTeacher /> },
-        { id: "parents", label: "Батьки", icon: <FaUserFriends /> },
-        { id: "admins", label: "Адміністратори", icon: <FaUserShield /> }
+        { id: "students", label: t('admin.userSystem.tabs.students'), icon: <FaUserGraduate /> },
+        { id: "teachers", label: t('admin.userSystem.tabs.teachers'), icon: <FaChalkboardTeacher /> },
+        { id: "parents", label: t('admin.userSystem.tabs.parents'), icon: <FaUserFriends /> },
+        { id: "admins", label: t('admin.userSystem.tabs.admins'), icon: <FaUserShield /> }
     ];
 
     const getActiveTabLabel = () => {
         const activeTabObj = tabButtons.find(tab => tab.id === activeTab);
-        return activeTabObj ? activeTabObj.label : "Учні/Студенти";
+        return activeTabObj ? activeTabObj.label : t('admin.userSystem.tabs.students');
     };
 
     return (
@@ -137,17 +132,8 @@ const AdminUserSystem = () => {
                         fontWeight: '500',
                         textAlign: 'left'
                     }}>
-                        Управління користувачами
+                        {t('admin.userSystem.title')}
                     </h3>
-                    {/* {databaseName && !isMobile && (
-                        <small style={{
-                            color: '#666',
-                            fontSize: isMobile ? '10px' : '12px',
-                            marginTop: isMobile ? '4px' : '0'
-                        }}>
-                            База даних: {databaseName}
-                        </small>
-                    )} */}
                 </div>
 
                 <button
@@ -181,14 +167,12 @@ const AdminUserSystem = () => {
                     }}
                 >
                     <FaUserPlus size={isMobile ? 14 : 16} />
-                    Додати користувача
+                    {t('admin.userSystem.addUser')}
                 </button>
             </div>
 
-            {/* МОБІЛЬНЕ МЕНЮ ТАБІВ */}
             {isMobile ? (
                 <div style={{ marginBottom: '20px' }}>
-                    {/* КНОПКА ВИБОРУ ТАБУ НА МОБІЛЬНИХ ПРИСТРОЯХ */}
                     <button
                         onClick={toggleMobileMenu}
                         style={{
@@ -214,7 +198,6 @@ const AdminUserSystem = () => {
                         {showMobileMenu ? <FaTimes size={18} /> : <FaBars size={18} />}
                     </button>
 
-                    {/* ВИСПАДАЮЧИЙ СПИСОК ТАБІВ */}
                     {showMobileMenu && (
                         <div style={{
                             backgroundColor: 'white',
@@ -253,7 +236,6 @@ const AdminUserSystem = () => {
                     )}
                 </div>
             ) : (
-                /* ДЕСКОТНЕ МЕНЮ ТАЮІВ */
                 <div style={{
                     display: 'flex',
                     borderBottom: '1px solid #e5e7eb',
@@ -299,7 +281,6 @@ const AdminUserSystem = () => {
                 </div>
             )}
 
-            {/* КОНТЕНТ */}
             <div style={{
                 padding: isMobile ? '0 8px' : '0'
             }}>
@@ -320,7 +301,6 @@ const AdminUserSystem = () => {
                 )}
             </div>
 
-            {/* ПОПАП ДЛЯ РЕЄСТРАЦІЇ */}
             {showPopup && (
                 <Signup
                     onClose={handleClosePopup}

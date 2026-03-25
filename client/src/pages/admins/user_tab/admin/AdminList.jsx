@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import AdminCard from './AdminCard';
 
 const AdminList = ({ admins, searchQuery, onEdit, onDelete, isMobile }) => {
+    const { t } = useTranslation();
+
     if (admins.length === 0) {
         return (
             <div style={{
@@ -17,8 +20,8 @@ const AdminList = ({ admins, searchQuery, onEdit, onDelete, isMobile }) => {
                     fontSize: isMobile ? '14px' : '16px'
                 }}>
                     {searchQuery
-                        ? `Адміністратори за запитом "${searchQuery}" не знайдені`
-                        : 'Адміністратори не знайдені'
+                        ? t('admin.list.noResults', { query: searchQuery })
+                        : t('admin.list.noAdmins')
                     }
                 </p>
             </div>

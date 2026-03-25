@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaSort, FaSearch } from "react-icons/fa";
 
 const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSortToggle, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             display: 'flex',
@@ -23,7 +26,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                     fontSize: isMobile ? '18px' : '20px',
                     whiteSpace: 'nowrap'
                 }}>
-                    Адміністратори ({adminCount})
+                    {t('admin.header.title', { count: adminCount })}
                 </h3>
                 <button
                     onClick={onSortToggle}
@@ -42,7 +45,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                     }}
                 >
                     <FaSort size={isMobile ? 12 : 14} />
-                    {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
+                    {sortOrder === 'asc' ? t('admin.header.sortAZ') : t('admin.header.sortZA')}
                 </button>
             </div>
 
@@ -60,7 +63,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                 }} />
                 <input
                     type="text"
-                    placeholder="Пошук адміністраторів..."
+                    placeholder={t('admin.header.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     style={{

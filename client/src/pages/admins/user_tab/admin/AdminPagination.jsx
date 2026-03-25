@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     FaChevronLeft, FaChevronRight, FaAngleDoubleLeft, FaAngleDoubleRight
 } from "react-icons/fa";
@@ -16,6 +17,8 @@ const AdminPagination = ({
     onPageChange,
     isMobile
 }) => {
+    const { t } = useTranslation();
+
     const getPageNumbers = () => {
         const pages = [];
         const maxVisiblePages = isMobile ? 3 : 5;
@@ -52,13 +55,17 @@ const AdminPagination = ({
                     fontSize: isMobile ? '13px' : '14px',
                     color: '#6b7280'
                 }}>
-                    Показано {startIndex + 1}-{Math.min(endIndex, totalItems)} з {totalItems}
+                    {t('admin.pagination.showing', {
+                        start: startIndex + 1,
+                        end: Math.min(endIndex, totalItems),
+                        total: totalItems
+                    })}
                 </div>
                 <div style={{
                     fontSize: isMobile ? '13px' : '14px',
                     color: '#6b7280'
                 }}>
-                    Сторінка {currentPage} з {totalPages}
+                    {t('admin.pagination.page', { current: currentPage, total: totalPages })}
                 </div>
             </div>
 
@@ -111,7 +118,7 @@ const AdminPagination = ({
                         }}
                     >
                         <FaChevronLeft size={isMobile ? 10 : 12} />
-                        {!isMobile && 'Попередня'}
+                        {!isMobile && t('admin.pagination.previous')}
                     </button>
 
                     {getPageNumbers().map(page => (
@@ -150,7 +157,7 @@ const AdminPagination = ({
                             fontSize: isMobile ? '12px' : '14px'
                         }}
                     >
-                        {!isMobile && 'Наступна'}
+                        {!isMobile && t('admin.pagination.next')}
                         <FaChevronRight size={isMobile ? 10 : 12} />
                     </button>
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaUser, FaPhone, FaEnvelope, FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
 
 const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -34,19 +36,19 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
         let error = '';
         switch (name) {
             case 'fullName':
-                if (!value.trim()) error = 'ПІБ обов\'язкове поле';
+                if (!value.trim()) error = t('admin.editPopup.errors.fullNameRequired');
                 break;
             case 'phone':
-                if (!/^\+380\d{9}$/.test(value)) error = 'Телефон у форматі +380XXXXXXXXX';
+                if (!/^\+380\d{9}$/.test(value)) error = t('admin.editPopup.errors.phoneInvalid');
                 break;
             case 'email':
-                if (!/\S+@\S+\.\S+/.test(value)) error = 'Некоректна електронна адреса';
+                if (!/\S+@\S+\.\S+/.test(value)) error = t('admin.editPopup.errors.emailInvalid');
                 break;
             case 'jobPosition':
-                if (!value.trim()) error = 'Посада обов\'язкова';
+                if (!value.trim()) error = t('admin.editPopup.errors.positionRequired');
                 break;
             case 'dateOfBirth':
-                if (!value) error = 'Дата народження обов\'язкова';
+                if (!value) error = t('admin.editPopup.errors.birthDateRequired');
                 else {
                     const birthDate = new Date(value);
                     const today = new Date();
@@ -54,9 +56,9 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     minDate.setFullYear(today.getFullYear() - 100);
 
                     if (birthDate > today) {
-                        error = 'Дата народження не може бути у майбутньому';
+                        error = t('admin.editPopup.errors.birthDateFuture');
                     } else if (birthDate < minDate) {
-                        error = 'Дата народження не може бути більше 100 років тому';
+                        error = t('admin.editPopup.errors.birthDateTooOld');
                     }
                 }
                 break;
@@ -78,7 +80,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
         e.preventDefault();
 
         if (!databaseName) {
-            setErrors({ submit: 'Не вказано базу даних' });
+            setErrors({ submit: t('admin.editPopup.errors.noDatabase') });
             return;
         }
 
@@ -102,7 +104,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                 }
             );
 
-            setSuccessMessage('Адміністратора успішно оновлено');
+            setSuccessMessage(t('admin.editPopup.success'));
 
             setTimeout(() => {
                 onUpdate(response.data.admin);
@@ -111,7 +113,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
 
         } catch (err) {
             console.error('Помилка оновлення адміністратора:', err);
-            setErrors({ submit: err.response?.data?.error || 'Помилка оновлення адміністратора' });
+            setErrors({ submit: err.response?.data?.error || t('admin.editPopup.errors.updateError') });
         } finally {
             setLoading(false);
         }
@@ -180,30 +182,14 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <FaTimes />
                 </button>
 
-                <h4 className="text-center mb-4">Редагувати адміністратора</h4>
+                <h4 className="text-center mb-4">{t('admin.editPopup.title')}</h4>
 
-                {/* {databaseName && (
-                    <div style={{
-                        fontSize: '12px',
-                        color: '#666',
-                        marginBottom: '15px',
-                        padding: '5px 10px',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '4px',
-                        textAlign: 'center'
-                    }}>
-                        База даних: {databaseName}
-                    </div>
-                )} */}
-
-                {/* ПОВІДОМЛЕННЯ ПРО УСПІХ*/}
                 {successMessage && (
                     <div className="alert alert-success" role="alert">
                         {successMessage}
                     </div>
                 )}
 
-                {/* ЗАГАЛЬНА ПОМИЛКА */}
                 {errors.submit && (
                     <div className="alert alert-danger" role="alert">
                         {errors.submit}
@@ -214,7 +200,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaUser className="me-2" />
-                            ПІБ
+                            {t('admin.editPopup.fullName')}
                         </label>
                         <input
                             type="text"
@@ -222,7 +208,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className={getInputClass('fullName')}
                             value={formData.fullName}
                             onChange={handleChange}
-                            placeholder="Введіть ПІБ"
+                            placeholder={t('admin.editPopup.fullNamePlaceholder')}
                             required
                         />
                         <div className="invalid-feedback">{errors.fullName}</div>
@@ -231,7 +217,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaPhone className="me-2" />
-                            Телефон
+                            {t('admin.editPopup.phone')}
                         </label>
                         <input
                             type="tel"
@@ -248,7 +234,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaEnvelope className="me-2" />
-                            Електронна пошта
+                            {t('admin.editPopup.email')}
                         </label>
                         <input
                             type="email"
@@ -265,7 +251,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaBriefcase className="me-2" />
-                            Посада
+                            {t('admin.editPopup.position')}
                         </label>
                         <input
                             type="text"
@@ -273,7 +259,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className={getInputClass('jobPosition')}
                             value={formData.jobPosition}
                             onChange={handleChange}
-                            placeholder="Введіть посаду"
+                            placeholder={t('admin.editPopup.positionPlaceholder')}
                             required
                         />
                         <div className="invalid-feedback">{errors.jobPosition}</div>
@@ -282,7 +268,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-4">
                         <label className="form-label">
                             <FaCalendarAlt className="me-2" />
-                            Дата народження
+                            {t('admin.editPopup.birthDate')}
                         </label>
                         <input
                             type="date"
@@ -304,7 +290,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className="btn btn-secondary flex-fill"
                             disabled={loading}
                         >
-                            Скасувати
+                            {t('admin.editPopup.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -315,7 +301,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                                 borderColor: 'rgba(105, 180, 185, 1)'
                             }}
                         >
-                            {loading ? 'Оновлення...' : 'Оновити'}
+                            {loading ? t('admin.editPopup.saving') : t('admin.editPopup.save')}
                         </button>
                     </div>
                 </form>

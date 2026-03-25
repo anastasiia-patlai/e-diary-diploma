@@ -183,7 +183,7 @@
             "user": "User"
         },
         "positions": {
-            "director": "Директор",
+            "director": "Principal",
             "deputyDirector": "Deputy Principal",
             "headTeacher": "Head Teacher",
             "methodologist": "Methodologist",
@@ -237,6 +237,93 @@
         },
         "defaults": {
             "director": "Principal"
+        },
+        "userSystem": {
+            "title": "User Management",
+            "addUser": "Add User",
+            "tabs": {
+                "students": "Students",
+                "teachers": "Teachers",
+                "parents": "Parents",
+                "admins": "Administrators"
+            },
+            "errors": {
+                "noDatabase": "Error: Could not determine the school database. Please reload the page or log in again."
+            }
+        },
+        "header": {
+            "title": "Administrators ({{count}})",
+            "sortAZ": "A-Z",
+            "sortZA": "Z-A",
+            "searchPlaceholder": "Search administrators..."
+        },
+        "list": {
+            "noResults": "No administrators found for the query \"{{query}}\"",
+            "noAdmins": "No administrators found"
+        },
+        "pagination": {
+            "showing": "Showing {{start}}-{{end}} of {{total}}",
+            "page": "Page {{current}} of {{total}}",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "card": {
+            "edit": "Edit",
+            "delete": "Delete",
+            "birthDate": "Date of birth",
+            "ageYear": "year",
+            "ageYears": "years"
+        },
+        "editAdminPopup": {
+            "title": "Edit Administrator",
+            "fullName": "Full Name",
+            "fullNamePlaceholder": "Enter full name",
+            "phone": "Phone",
+            "email": "Email",
+            "position": "Position",
+            "positionPlaceholder": "Enter position",
+            "birthDate": "Date of Birth",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving...",
+            "success": "Administrator successfully updated",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "phoneInvalid": "Phone number must be in format +380XXXXXXXXX",
+                "emailInvalid": "Invalid email address",
+                "positionRequired": "Position is required",
+                "birthDateRequired": "Date of birth is required",
+                "birthDateFuture": "Date of birth cannot be in the future",
+                "birthDateTooOld": "Date of birth cannot be more than 100 years ago",
+                "noDatabase": "Database not specified",
+                "updateError": "Error updating administrator"
+            }
+        },
+        "deletePopup": {
+            "title": "Delete Administrator",
+            "confirmQuestion": "Are you sure you want to delete this administrator?",
+            "warning": "This action cannot be undone!",
+            "confirm": "Yes, delete",
+            "cancel": "Cancel",
+            "deleting": "Deleting...",
+            "errors": {
+                "noDatabase": "Database not specified",
+                "deleteError": "Error deleting administrator"
+            }
+        },
+        "errorState": {
+            "retry": "Try Again"
+        },
+        "showAdmin": {
+            "loading": "Loading administrators...",
+            "noAdmins": "No other administrators found",
+            "noResults": "No other administrators found for the query \"{{query}}\"",
+            "noOtherAdmins": "There are no other administrators in the system",
+            "errors": {
+                "noDatabase": "Failed to determine the school database",
+                "noDatabaseSpecified": "Database not specified",
+                "loadError": "Error loading administrators"
+            }
         }
     },
     "teacher": {

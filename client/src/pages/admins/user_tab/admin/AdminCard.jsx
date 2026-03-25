@@ -1,7 +1,9 @@
 import React from 'react';
-import { FaUserShield, FaEnvelope, FaPhone, FaCalendarAlt, FaEdit, FaTrash, FaBriefcase, FaEllipsisV } from "react-icons/fa";
+import { useTranslation } from 'react-i18next';
+import { FaUserShield, FaEnvelope, FaPhone, FaCalendarAlt, FaEdit, FaTrash, FaEllipsisV, FaBriefcase } from "react-icons/fa";
 
 const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
+    const { t } = useTranslation();
     const [showMobileMenu, setShowMobileMenu] = React.useState(false);
 
     const calculateAge = (birthDate) => {
@@ -16,6 +18,25 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
         }
 
         return age;
+    };
+
+    const getAgeSuffix = (age) => {
+        const lastDigit = age % 10;
+        const lastTwoDigits = age % 100;
+
+        if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+            return t('admin.card.ageYears');
+        }
+
+        if (lastDigit === 1) {
+            return t('admin.card.ageYear');
+        }
+
+        if (lastDigit >= 2 && lastDigit <= 4) {
+            return t('admin.card.ageYears');
+        }
+
+        return t('admin.card.ageYears');
     };
 
     const age = admin.dateOfBirth ? calculateAge(admin.dateOfBirth) : null;
@@ -160,7 +181,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                                     }}
                                 >
                                     <FaEdit size={10} />
-                                    Редагувати
+                                    {t('admin.card.edit')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -182,7 +203,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                                     }}
                                 >
                                     <FaTrash size={10} />
-                                    Видалити
+                                    {t('admin.card.delete')}
                                 </button>
                             </div>
                         )}
@@ -205,7 +226,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                             }}
                         >
                             <FaEdit size={12} />
-                            Редагувати
+                            {t('admin.card.edit')}
                         </button>
                         <button
                             onClick={() => onDelete(admin)}
@@ -223,7 +244,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                             }}
                         >
                             <FaTrash size={12} />
-                            Видалити
+                            {t('admin.card.delete')}
                         </button>
                     </div>
                 )}
@@ -241,7 +262,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                 }}>
                     <FaCalendarAlt size={isMobile ? 12 : 14} />
                     <span>
-                        Дата народження: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
+                        {t('admin.card.birthDate')}: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
                         {age && (
                             <span style={{ fontWeight: '500', marginLeft: '6px' }}>
                                 ({age} {getAgeSuffix(age)})
@@ -252,25 +273,6 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
             )}
         </div>
     );
-};
-
-const getAgeSuffix = (age) => {
-    const lastDigit = age % 10;
-    const lastTwoDigits = age % 100;
-
-    if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-        return 'років';
-    }
-
-    if (lastDigit === 1) {
-        return 'рік';
-    }
-
-    if (lastDigit >= 2 && lastDigit <= 4) {
-        return 'роки';
-    }
-
-    return 'років';
 };
 
 export default AdminCard;

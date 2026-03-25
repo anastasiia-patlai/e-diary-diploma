@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaExclamationTriangle } from "react-icons/fa";
 
 const ErrorState = ({ error, onRetry, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             textAlign: 'center',
@@ -37,7 +40,7 @@ const ErrorState = ({ error, onRetry, isMobile }) => {
                     fontWeight: '500'
                 }}
             >
-                Спробувати знову
+                {t('admin.errorState.retry')}
             </button>
         </div>
     );

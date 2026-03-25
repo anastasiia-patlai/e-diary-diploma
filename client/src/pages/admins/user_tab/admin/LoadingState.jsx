@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const LoadingState = ({ message = "Завантаження...", isMobile }) => {
+const LoadingState = ({ message, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             textAlign: 'center',
@@ -24,7 +27,7 @@ const LoadingState = ({ message = "Завантаження...", isMobile }) => 
             <p style={{
                 margin: 0,
                 fontSize: isMobile ? '14px' : '16px'
-            }}>{message}</p>
+            }}>{message || t('common.loading')}</p>
 
             <style>
                 {`

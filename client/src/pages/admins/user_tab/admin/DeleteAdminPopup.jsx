@@ -1,14 +1,16 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 
 const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleDelete = async () => {
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t('admin.deletePopup.errors.noDatabase'));
             return;
         }
 
@@ -22,7 +24,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
             onDelete(admin._id);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || "Помилка при видаленні адміністратора");
+            setError(err.response?.data?.error || t('admin.deletePopup.errors.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -55,7 +57,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#dc2626' }}>
-                        Видалення адміністратора
+                        {t('admin.deletePopup.title')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -83,7 +85,6 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                     </div>
                 )}
 
-                {/* ПОПЕРЕДЖЕННЯ */}
                 <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -96,7 +97,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px', flexShrink: 0 }} />
                     <div>
                         <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
-                            Ви впевнені, що хочете видалити адміністратора?
+                            {t('admin.deletePopup.confirmQuestion')}
                         </p>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             <strong>{admin.fullName}</strong>
@@ -116,7 +117,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                             )}
                         </p>
                         <p style={{ margin: '12px 0 0 0', fontSize: '14px', color: '#dc2626' }}>
-                            Цю дію неможливо буде скасувати!
+                            {t('admin.deletePopup.warning')}
                         </p>
                     </div>
                 </div>
@@ -137,7 +138,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {loading ? 'Видалення...' : 'Так, видалити'}
+                        {loading ? t('admin.deletePopup.deleting') : t('admin.deletePopup.confirm')}
                     </button>
                     <button
                         onClick={onClose}
@@ -154,7 +155,7 @@ const DeleteAdminPopup = ({ admin, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        Скасувати
+                        {t('admin.deletePopup.cancel')}
                     </button>
                 </div>
             </div>
