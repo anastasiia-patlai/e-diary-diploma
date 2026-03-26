@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaUserClock, FaTimes, FaTrash, FaExclamationCircle } from 'react-icons/fa';
 
+const COLUMN_TYPE_NAMES = {
+    self: 'Самостійна',
+    control: 'Контрольна',
+    theme: 'Тематична',
+    quarter: 'За чверть',
+    semester: 'Семестрова',
+};
+
+const COLUMN_TYPE_COLORS = {
+    self: { color: '#378ADD', bg: '#E6F1FB', textCol: '#0C447C' },
+    control: { color: '#D85A30', bg: '#FAECE7', textCol: '#712B13' },
+    theme: { color: '#639922', bg: '#EAF3DE', textCol: '#27500A' },
+    quarter: { color: '#7F77DD', bg: '#EEEDFE', textCol: '#3C3489' },
+    semester: { color: '#BA7517', bg: '#FAEEDA', textCol: '#633806' },
+};
+
 const GradeModal = ({
     show,
     onHide,
@@ -14,7 +30,9 @@ const GradeModal = ({
     date,
     studentId,
     studentName,
-    hasAttendance
+    hasAttendance,
+    isColumnMode = false,
+    columnType = null
 }) => {
     const [mode, setMode] = useState('grade');
     const [grade, setGrade] = useState('');
@@ -35,7 +53,6 @@ const GradeModal = ({
         if (mode === 'grade') {
             onSave({ type: 'grade', value: parseInt(grade) });
         } else {
-            // В режимі відвідуваності — завжди ставимо "н"
             onSave({
                 type: 'attendance',
                 status: 'absent',
@@ -56,6 +73,9 @@ const GradeModal = ({
 
     if (!show) return null;
 
+    const colTypeInfo = columnType ? COLUMN_TYPE_COLORS[columnType] : null;
+    const colTypeName = columnType ? COLUMN_TYPE_NAMES[columnType] : null;
+
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -70,7 +90,7 @@ const GradeModal = ({
                 width: isMobile ? '95%' : '420px',
                 maxWidth: '420px'
             }}>
-                {/* Шапка */}
+                {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>
                         {studentName}
@@ -80,39 +100,53 @@ const GradeModal = ({
                     </button>
                 </div>
 
-                {/* Дата */}
-                <div style={{ backgroundColor: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#0369a1' }}>
-                    {date?.formatted} ({date?.dayName})
-                </div>
+                {/* Context info */}
+                {isColumnMode && colTypeInfo ? (
+                    <div style={{
+                        backgroundColor: colTypeInfo.bg, padding: '10px 12px',
+                        borderRadius: '8px', marginBottom: '20px',
+                        display: 'flex', alignItems: 'center', gap: '8px'
+                    }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colTypeInfo.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '14px', color: colTypeInfo.textCol, fontWeight: '500' }}>
+                            {colTypeName}
+                        </span>
+                    </div>
+                ) : date ? (
+                    <div style={{ backgroundColor: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#0369a1' }}>
+                        {date?.formatted} ({date?.dayName || date?.dayOfWeek})
+                    </div>
+                ) : null}
 
-                {/* Перемикач режимів */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                    {[
-                        { key: 'grade', icon: <FaStar size={13} />, label: 'Оцінка' },
-                        { key: 'attendance', icon: <FaUserClock size={13} />, label: 'Відвідуваність' }
-                    ].map(tab => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setMode(tab.key)}
-                            style={{
-                                flex: 1, padding: '9px 10px',
-                                border: `2px solid ${mode === tab.key ? 'rgba(105,180,185,1)' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                backgroundColor: mode === tab.key ? 'rgba(105,180,185,0.08)' : 'white',
-                                color: mode === tab.key ? 'rgba(105,180,185,1)' : '#6b7280',
-                                cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                                fontWeight: mode === tab.key ? '600' : 'normal',
-                                fontSize: '14px',
-                                transition: 'all 0.15s'
-                            }}
-                        >
-                            {tab.icon} {tab.label}
-                        </button>
-                    ))}
-                </div>
+                {/* Mode toggle — only in regular (non-column) mode */}
+                {!isColumnMode && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                        {[
+                            { key: 'grade', icon: <FaStar size={13} />, label: 'Оцінка' },
+                            { key: 'attendance', icon: <FaUserClock size={13} />, label: 'Відвідуваність' }
+                        ].map(tab => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setMode(tab.key)}
+                                style={{
+                                    flex: 1, padding: '9px 10px',
+                                    border: `2px solid ${mode === tab.key ? 'rgba(105,180,185,1)' : '#e5e7eb'}`,
+                                    borderRadius: '8px',
+                                    backgroundColor: mode === tab.key ? 'rgba(105,180,185,0.08)' : 'white',
+                                    color: mode === tab.key ? 'rgba(105,180,185,1)' : '#6b7280',
+                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                    fontWeight: mode === tab.key ? '600' : 'normal',
+                                    fontSize: '14px', transition: 'all 0.15s'
+                                }}
+                            >
+                                {tab.icon} {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
-                {/* ── Режим оцінки ── */}
+                {/* Grade input */}
                 {mode === 'grade' && (
                     <select
                         value={grade}
@@ -131,20 +165,11 @@ const GradeModal = ({
                     </select>
                 )}
 
-                {/* ── Режим відвідуваності ── */}
-                {mode === 'attendance' && (
+                {/* Attendance input (only in regular mode) */}
+                {mode === 'attendance' && !isColumnMode && (
                     <div style={{ marginBottom: '20px' }}>
                         {hasAttendance ? (
-                            // Вже є "н" — показуємо інфо-блок
-                            <div style={{
-                                backgroundColor: '#fef2f2',
-                                border: '1px solid #fecaca',
-                                borderRadius: '10px',
-                                padding: '16px',
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '12px'
-                            }}>
+                            <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                                 <FaExclamationCircle size={18} style={{ color: '#ef4444', marginTop: '1px', flexShrink: 0 }} />
                                 <div>
                                     <div style={{ fontWeight: '600', color: '#991b1b', marginBottom: '4px', fontSize: '14px' }}>
@@ -156,17 +181,8 @@ const GradeModal = ({
                                 </div>
                             </div>
                         ) : (
-                            // Немає "н" — форма для виставлення
                             <>
-                                <div style={{
-                                    backgroundColor: '#f9fafb',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '10px',
-                                    padding: '14px',
-                                    marginBottom: '12px',
-                                    fontSize: '13px',
-                                    color: '#6b7280'
-                                }}>
+                                <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '14px', marginBottom: '12px', fontSize: '13px', color: '#6b7280' }}>
                                     Буде поставлено відмітку про <strong style={{ color: '#374151' }}>відсутність</strong> на цьому уроці
                                 </div>
                                 <input
@@ -174,49 +190,28 @@ const GradeModal = ({
                                     placeholder="Причина відсутності (необов'язково)"
                                     value={attendanceReason}
                                     onChange={(e) => setAttendanceReason(e.target.value)}
-                                    style={{
-                                        width: '100%', padding: '10px 12px',
-                                        border: '1px solid #e5e7eb', borderRadius: '8px',
-                                        fontSize: '14px', boxSizing: 'border-box'
-                                    }}
+                                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
                                 />
                             </>
                         )}
                     </div>
                 )}
 
-                {/* Кнопки дій */}
-                <div style={{
-                    display: 'flex', gap: '8px', justifyContent: 'flex-end',
-                    borderTop: '1px solid #f3f4f6', paddingTop: '16px'
-                }}>
-                    {/* Видалити оцінку */}
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', borderTop: '1px solid #f3f4f6', paddingTop: '16px' }}>
                     {existingGrade && mode === 'grade' && (
-                        <button onClick={onDelete} style={{
-                            backgroundColor: '#ef4444', color: 'white',
-                            padding: '9px 16px', border: 'none', borderRadius: '7px',
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px'
-                        }}>
+                        <button onClick={onDelete} style={{ backgroundColor: '#ef4444', color: 'white', padding: '9px 16px', border: 'none', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
                             <FaTrash size={12} /> Видалити оцінку
                         </button>
                     )}
 
-                    {/* Видалити "н" */}
-                    {hasAttendance && mode === 'attendance' && (
-                        <button onClick={handleDeleteAttendance} style={{
-                            backgroundColor: '#ef4444', color: 'white',
-                            padding: '9px 16px', border: 'none', borderRadius: '7px',
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px'
-                        }}>
+                    {hasAttendance && mode === 'attendance' && !isColumnMode && (
+                        <button onClick={handleDeleteAttendance} style={{ backgroundColor: '#ef4444', color: 'white', padding: '9px 16px', border: 'none', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
                             <FaTrash size={12} /> Видалити н
                         </button>
                     )}
 
-                    <button onClick={onHide} style={{
-                        backgroundColor: 'transparent', border: '1px solid #e5e7eb',
-                        padding: '9px 16px', borderRadius: '7px', cursor: 'pointer',
-                        color: '#6b7280', fontSize: '14px'
-                    }}>
+                    <button onClick={onHide} style={{ backgroundColor: 'transparent', border: '1px solid #e5e7eb', padding: '9px 16px', borderRadius: '7px', cursor: 'pointer', color: '#6b7280', fontSize: '14px' }}>
                         Скасувати
                     </button>
 

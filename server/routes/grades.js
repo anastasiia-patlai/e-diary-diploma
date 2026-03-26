@@ -2,35 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { getSchoolDBConnection } = require('../config/databaseManager');
 
-// Отримати всі оцінки для уроку
+const toDateStr = (d) => {
+    if (!d) return null;
+    if (typeof d === 'string') return d.split('T')[0];
+    if (d instanceof Date) return d.toISOString().split('T')[0];
+    return String(d);
+};
+
+// GET all grades for a schedule
 router.get('/schedule/:scheduleId', async (req, res) => {
     try {
         const { databaseName } = req.query;
         const { scheduleId } = req.params;
-
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
-
-        console.log(`Fetching grades for schedule ${scheduleId} in database ${databaseName}`);
-
-        // Перевіряємо, чи функція існує
-        if (typeof getSchoolDBConnection !== 'function') {
-            console.error('getSchoolDBConnection is not a function');
-            return res.status(500).json({ error: 'Внутрішня помилка сервера: databaseManager не налаштовано правильно' });
-        }
+        if (!databaseName) return res.status(400).json({ error: 'Не вказано databaseName' });
 
         const connection = getSchoolDBConnection(databaseName);
-
-        if (!connection) {
-            return res.status(500).json({ error: `Не вдалося отримати з'єднання з базою даних: ${databaseName}` });
-        }
-
         const Grade = require('../models/Grade')(connection);
 
         const grades = await Grade.find({ schedule: scheduleId })
             .populate('student', 'fullName');
-
         res.json(grades);
     } catch (error) {
         console.error('Error fetching grades:', error);
@@ -38,79 +28,93 @@ router.get('/schedule/:scheduleId', async (req, res) => {
     }
 });
 
-// Створити оцінку
+// POST — create grade (with explicit duplicate check)
 router.post('/', async (req, res) => {
     try {
-        const { databaseName, student, schedule, date, value } = req.body;
-
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
-
-        console.log('Creating grade:', { databaseName, student, schedule, date, value });
+        const { databaseName, student, schedule, date, value, columnId, gradeType } = req.body;
+        if (!databaseName) return res.status(400).json({ error: 'Не вказано databaseName' });
 
         const connection = getSchoolDBConnection(databaseName);
         const Grade = require('../models/Grade')(connection);
 
-        // Перевірка чи існує вже оцінка
-        const existingGrade = await Grade.findOne({ student, schedule, date });
-        if (existingGrade) {
-            return res.status(409).json({ error: 'Оцінка для цього учня на цю дату вже існує' });
+        // Build duplicate check query depending on whether this is a column grade or regular grade
+        const dupQuery = {
+            student,
+            schedule,
+            date: new Date(date)
+        };
+        if (columnId) {
+            dupQuery.columnId = columnId;
+        } else {
+            dupQuery.columnId = null;
         }
 
-        const grade = new Grade({ student, schedule, date, value });
+        const existingGrade = await Grade.findOne(dupQuery);
+        if (existingGrade) {
+            // Update in place instead of returning 409 — prevents double grades
+            existingGrade.value = value;
+            if (gradeType) existingGrade.gradeType = gradeType;
+            await existingGrade.save();
+            await existingGrade.populate('student', 'fullName');
+            return res.status(200).json(existingGrade);
+        }
+
+        const grade = new Grade({
+            student,
+            schedule,
+            date: new Date(date),
+            value,
+            columnId: columnId || null,
+            gradeType: gradeType || 'regular'
+        });
         await grade.save();
-
-        // Важливо: population після збереження
         await grade.populate('student', 'fullName');
-
-        console.log('Grade created successfully:', grade);
-
         res.status(201).json(grade);
     } catch (error) {
         console.error('Error creating grade:', error);
+        if (error.code === 11000) {
+            // Fallback: find and update
+            try {
+                const { databaseName, student, schedule, date, value, columnId, gradeType } = req.body;
+                const connection = getSchoolDBConnection(databaseName);
+                const Grade = require('../models/Grade')(connection);
+                const dupQuery = { student, schedule, date: new Date(date), columnId: columnId || null };
+                const existing = await Grade.findOneAndUpdate(
+                    dupQuery,
+                    { value, gradeType: gradeType || 'regular' },
+                    { new: true }
+                ).populate('student', 'fullName');
+                if (existing) return res.status(200).json(existing);
+            } catch (e) {
+                console.error('Fallback update failed:', e);
+            }
+        }
         res.status(400).json({ error: error.message });
     }
 });
 
-// Оновити оцінку
+// PUT — update grade by id
 router.put('/:id', async (req, res) => {
     try {
-        const { databaseName, value } = req.body;
+        const { databaseName, value, columnId, gradeType } = req.body;
         const { id } = req.params;
-
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
-
-        if (!value) {
-            return res.status(400).json({ error: 'Не вказано значення оцінки' });
-        }
-
-        // Перевіряємо, чи функція існує
-        if (typeof getSchoolDBConnection !== 'function') {
-            console.error('getSchoolDBConnection is not a function');
-            return res.status(500).json({ error: 'Внутрішня помилка сервера: databaseManager не налаштовано правильно' });
-        }
+        if (!databaseName) return res.status(400).json({ error: 'Не вказано databaseName' });
+        if (!value) return res.status(400).json({ error: 'Не вказано значення оцінки' });
 
         const connection = getSchoolDBConnection(databaseName);
-
-        if (!connection) {
-            return res.status(500).json({ error: `Не вдалося отримати з'єднання з базою даних: ${databaseName}` });
-        }
-
         const Grade = require('../models/Grade')(connection);
+
+        const updateFields = { value };
+        if (gradeType !== undefined) updateFields.gradeType = gradeType;
+        if (columnId !== undefined) updateFields.columnId = columnId || null;
 
         const grade = await Grade.findByIdAndUpdate(
             id,
-            { value },
+            updateFields,
             { new: true, runValidators: true }
         ).populate('student', 'fullName');
 
-        if (!grade) {
-            return res.status(404).json({ error: 'Оцінку не знайдено' });
-        }
-
+        if (!grade) return res.status(404).json({ error: 'Оцінку не знайдено' });
         res.json(grade);
     } catch (error) {
         console.error('Error updating grade:', error);
@@ -118,35 +122,18 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Видалити оцінку
+// DELETE — remove grade by id
 router.delete('/:id', async (req, res) => {
     try {
         const { databaseName } = req.body;
         const { id } = req.params;
-
-        if (!databaseName) {
-            return res.status(400).json({ error: 'Не вказано databaseName' });
-        }
-
-        // Перевіряємо, чи функція існує
-        if (typeof getSchoolDBConnection !== 'function') {
-            console.error('getSchoolDBConnection is not a function');
-            return res.status(500).json({ error: 'Внутрішня помилка сервера: databaseManager не налаштовано правильно' });
-        }
+        if (!databaseName) return res.status(400).json({ error: 'Не вказано databaseName' });
 
         const connection = getSchoolDBConnection(databaseName);
-
-        if (!connection) {
-            return res.status(500).json({ error: `Не вдалося отримати з'єднання з базою даних: ${databaseName}` });
-        }
-
         const Grade = require('../models/Grade')(connection);
 
         const grade = await Grade.findByIdAndDelete(id);
-        if (!grade) {
-            return res.status(404).json({ error: 'Оцінку не знайдено' });
-        }
-
+        if (!grade) return res.status(404).json({ error: 'Оцінку не знайдено' });
         res.json({ message: 'Оцінку видалено' });
     } catch (error) {
         console.error('Error deleting grade:', error);
