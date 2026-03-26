@@ -24,6 +24,10 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
+    // All scheduleIds for this journal (same subject+group+subgroup, different days)
+    const [allScheduleIds, setAllScheduleIds] = useState([scheduleId]);
+    // All dayOfWeek orders covered by this journal
+    const [allDayOrders, setAllDayOrders] = useState([]);
 
     // --- journal columns state ---
     const [journalColumns, setJournalColumns] = useState([]);
@@ -44,8 +48,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     }, [scheduleId, databaseName]);
 
     useEffect(() => {
-        if (currentLesson && selectedSemester) generateDatesForMonth(currentMonth);
-    }, [currentMonth, currentLesson, selectedSemester, holidays]);
+        if ((allDayOrders.length > 0 || currentLesson) && selectedSemester) generateDatesForMonth(currentMonth);
+    }, [currentMonth, currentLesson, selectedSemester, holidays, allDayOrders]);
 
     useEffect(() => {
         if (databaseName) loadSemesters();
@@ -132,15 +136,43 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const loadJournalData = async () => {
         setLoading(true);
         try {
+            // Load the primary schedule entry
             const lessonResponse = await axios.get(`/api/schedule/${scheduleId}`, { params: { databaseName } });
-            setCurrentLesson(lessonResponse.data);
+            const primaryLesson = lessonResponse.data;
+            setCurrentLesson(primaryLesson);
 
-            if (lessonResponse.data.group?._id) {
+            // Find ALL schedule entries for the same subject+group+subgroup (different days/times)
+            // This ensures dates from all weekdays are shown in the journal
+            try {
+                const allSchedulesResponse = await axios.get('/api/schedule', {
+                    params: {
+                        databaseName,
+                        teacher: primaryLesson.teacher?._id,
+                        group: primaryLesson.group?._id,
+                        semester: primaryLesson.semester?._id,
+                    }
+                });
+                const siblings = allSchedulesResponse.data.filter(s =>
+                    s.subject === primaryLesson.subject &&
+                    (s.group?._id || s.group)?.toString() === (primaryLesson.group?._id || primaryLesson.group)?.toString() &&
+                    (s.subgroup || 'all') === (primaryLesson.subgroup || 'all')
+                );
+                const ids = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
+                const dayOrders = [...new Set(siblings.map(s => s.dayOfWeek?.order).filter(Boolean))];
+                setAllScheduleIds(ids);
+                setAllDayOrders(dayOrders.length > 0 ? dayOrders : [primaryLesson.dayOfWeek?.order].filter(Boolean));
+            } catch (err) {
+                console.error('Помилка завантаження суміжних розкладів:', err.message);
+                setAllScheduleIds([scheduleId]);
+                setAllDayOrders([primaryLesson.dayOfWeek?.order].filter(Boolean));
+            }
+
+            if (primaryLesson.group?._id) {
                 try {
-                    const studentsResponse = await axios.get(`/api/groups/${lessonResponse.data.group._id}`, { params: { databaseName } });
+                    const studentsResponse = await axios.get(`/api/groups/${primaryLesson.group._id}`, { params: { databaseName } });
                     let studentsList = [];
-                    if (lessonResponse.data.subgroup && lessonResponse.data.subgroup !== 'all') {
-                        const subgroupNumber = parseInt(lessonResponse.data.subgroup);
+                    if (primaryLesson.subgroup && primaryLesson.subgroup !== 'all') {
+                        const subgroupNumber = parseInt(primaryLesson.subgroup);
                         const subgroup = studentsResponse.data.subgroups?.find(sg => sg.order === subgroupNumber);
                         if (subgroup?.students) studentsList = subgroup.students;
                     } else {
@@ -152,8 +184,19 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 }
             }
 
+            // Load grades from ALL sibling schedules via /by-schedules
             try {
-                const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, { params: { databaseName } });
+                // Re-use the sibling ids we just fetched above
+                const siblingIds = (await axios.get('/api/schedule', {
+                    params: { databaseName, teacher: primaryLesson.teacher?._id, group: primaryLesson.group?._id, semester: primaryLesson.semester?._id }
+                })).data
+                    .filter(s => s.subject === primaryLesson.subject && (s.subgroup || 'all') === (primaryLesson.subgroup || 'all'))
+                    .map(s => s._id);
+
+                const idsParam = (siblingIds.length > 0 ? siblingIds : [scheduleId]).join(',');
+                const gradesResponse = await axios.get('/api/grades/by-schedules', {
+                    params: { databaseName, ids: idsParam }
+                });
                 setGrades(gradesResponse.data || []);
             } catch (err) {
                 console.error('Помилка завантаження оцінок:', err.message);
@@ -212,22 +255,25 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const generateDatesForMonth = (monthDate) => {
-        if (!currentLesson?.dayOfWeek?.order || !selectedSemester) return;
-        const dates = [];
+        // Use all day orders from sibling schedules (same subject+group+subgroup, different days)
+        const dayOrders = allDayOrders.length > 0 ? allDayOrders : (currentLesson?.dayOfWeek?.order ? [currentLesson.dayOfWeek.order] : []);
+        if (dayOrders.length === 0 || !selectedSemester) return;
+
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const dayOfWeekOrder = currentLesson.dayOfWeek.order;
-        const targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
         const semesterStart = new Date(selectedSemester.startDate);
         const semesterEnd = new Date(selectedSemester.endDate);
+        // Convert DB day orders (1=Mon..7=Sun) to JS getDay() (0=Sun..6=Sat)
+        const targetDays = new Set(dayOrders.map(order => order === 7 ? 0 : order));
 
+        const dates = [];
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
             const currentDate = new Date(d);
             currentDate.setHours(12, 0, 0, 0);
             if (currentDate < semesterStart || currentDate > semesterEnd) continue;
-            if (currentDate.getDay() === targetDayOfWeek) {
+            if (targetDays.has(currentDate.getDay())) {
                 const isHoliday = holidays.some(holiday => {
                     const hs = new Date(holiday.startDate); hs.setHours(12, 0, 0, 0);
                     const he = new Date(holiday.endDate); he.setHours(12, 0, 0, 0);
@@ -243,6 +289,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 });
             }
         }
+        // Sort chronologically
+        dates.sort((a, b) => a.date - b.date);
         setDates(dates);
     };
 
@@ -396,10 +444,16 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 );
                 if (!gradeDate) { alert('Дату не визначено'); return; }
 
+                // Find the correct scheduleId for the day this grade falls on
+                // (there may be multiple schedules for the same journal on different days)
+                const gradeDateObj = new Date(gradeDate);
+                const gradeDayJs = gradeDateObj.getDay(); // 0=Sun..6=Sat
+                const scheduleForDate = scheduleId; // fallback to primary
+
                 const gradePayload = {
                     value: data.value,
                     databaseName,
-                    schedule: scheduleId,
+                    schedule: scheduleForDate,
                     student: selectedCell.studentId,
                     date: gradeDate,
                     columnId: selectedCell.columnId || null,
@@ -426,7 +480,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 setSuccess('Оцінку збережено');
             } else {
                 const attendancePayload = {
-                    databaseName, scheduleId,
+                    databaseName,
+                    scheduleId: scheduleId, // primary scheduleId; attendance API finds by date
                     date: selectedCell.date.fullDate,
                     records: [{ student: selectedCell.studentId, status: data.status, reason: data.reason || '' }]
                 };

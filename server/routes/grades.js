@@ -28,6 +28,28 @@ router.get('/schedule/:scheduleId', async (req, res) => {
     }
 });
 
+
+// GET grades for multiple scheduleIds (comma-separated)
+// e.g. /api/grades/by-schedules?ids=id1,id2&databaseName=xxx
+router.get('/by-schedules', async (req, res) => {
+    try {
+        const { databaseName, ids } = req.query;
+        if (!databaseName) return res.status(400).json({ error: 'Не вказано databaseName' });
+        if (!ids) return res.status(400).json({ error: 'Не вказано ids' });
+
+        const connection = getSchoolDBConnection(databaseName);
+        const Grade = require('../models/Grade')(connection);
+
+        const idArray = ids.split(',').map(id => id.trim()).filter(Boolean);
+        const grades = await Grade.find({ schedule: { $in: idArray } })
+            .populate('student', 'fullName');
+        res.json(grades);
+    } catch (error) {
+        console.error('Error fetching grades by schedules:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST — create grade (with explicit duplicate check)
 router.post('/', async (req, res) => {
     try {

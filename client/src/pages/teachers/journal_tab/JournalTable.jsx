@@ -440,6 +440,7 @@ const JournalTable = ({
                 {/* Instruction - left block */}
                 <div style={{
                     flex: '1 1 300px',
+                    marginTop: '15px',
                     backgroundColor: '#fafafa',
                     border: '1px solid #e5e7eb',
                     borderRadius: '12px',
@@ -477,6 +478,7 @@ const JournalTable = ({
                 {/* Legend - right block */}
                 <div style={{
                     flex: '1 1 300px',
+                    marginTop: '15px',
                     backgroundColor: '#fafafa',
                     border: '1px solid #e5e7eb',
                     borderRadius: '12px',
