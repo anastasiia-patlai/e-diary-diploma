@@ -24,11 +24,13 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
+    // All dayOfWeek orders for this journal (same subject+group+subgroup, possibly different days)
+    const [allDayOrders, setAllDayOrders] = useState([]);
 
     // --- journal columns state ---
     const [journalColumns, setJournalColumns] = useState([]);
     const [showAddColumn, setShowAddColumn] = useState(false);
-    const [addColumnDate, setAddColumnDate] = useState(null); // fullDate string passed from JournalTable
+    const [addColumnAfterIdx, setAddColumnAfterIdx] = useState(null);
 
     useEffect(() => {
         let timer;
@@ -44,8 +46,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     }, [scheduleId, databaseName]);
 
     useEffect(() => {
-        if (currentLesson && selectedSemester) generateDatesForMonth(currentMonth);
-    }, [currentMonth, currentLesson, selectedSemester, holidays]);
+        if ((allDayOrders.length > 0 || currentLesson) && selectedSemester) generateDatesForMonth(currentMonth);
+    }, [currentMonth, currentLesson, selectedSemester, holidays, allDayOrders]);
 
     useEffect(() => {
         if (databaseName) loadSemesters();
@@ -86,18 +88,17 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 type
             });
             const newCol = res.data;
-            // Keep columns sorted by date so they appear in chronological order
+
             setJournalColumns(prev => {
-                const next = [...prev, newCol];
-                next.sort((a, b) => {
-                    if (a.date < b.date) return -1;
-                    if (a.date > b.date) return 1;
-                    return a.order - b.order;
-                });
+                const next = [...prev];
+                if (addColumnAfterIdx === null || addColumnAfterIdx >= prev.length - 1) {
+                    next.push(newCol);
+                } else {
+                    next.splice(addColumnAfterIdx + 1, 0, newCol);
+                }
                 return next;
             });
             setShowAddColumn(false);
-            setAddColumnDate(null);
             setSuccess('Стовпець додано');
         } catch (err) {
             console.error('Помилка додавання колонки:', err);
@@ -105,6 +106,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const handleDeleteColumn = async (columnId) => {
+        if (!window.confirm('Видалити цей стовпець? Оцінки у ньому також будуть видалені.')) return;
         try {
             await axios.delete(`/api/journal-columns/${columnId}`, {
                 data: { databaseName }
@@ -117,8 +119,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     };
 
-    const openAddColumn = (fullDate) => {
-        setAddColumnDate(fullDate);
+    const openAddColumn = (afterIdx) => {
+        setAddColumnAfterIdx(afterIdx);
         setShowAddColumn(true);
     };
 
@@ -133,14 +135,58 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         setLoading(true);
         try {
             const lessonResponse = await axios.get(`/api/schedule/${scheduleId}`, { params: { databaseName } });
-            setCurrentLesson(lessonResponse.data);
+            const primaryLesson = lessonResponse.data;
+            setCurrentLesson(primaryLesson);
 
-            if (lessonResponse.data.group?._id) {
+            // Find ALL schedule entries for the same subject+group+subgroup (different days/times)
+            try {
+                const allSchedulesResponse = await axios.get('/api/schedule', {
+                    params: {
+                        databaseName,
+                        teacher: primaryLesson.teacher?._id,
+                        group: primaryLesson.group?._id,
+                        semester: primaryLesson.semester?._id,
+                    }
+                });
+                const siblings = allSchedulesResponse.data.filter(s =>
+                    s.subject === primaryLesson.subject &&
+                    (s.group?._id || s.group)?.toString() === (primaryLesson.group?._id || primaryLesson.group)?.toString() &&
+                    (s.subgroup || 'all') === (primaryLesson.subgroup || 'all')
+                );
+                const dayOrders = [...new Set(siblings.map(s => s.dayOfWeek?.order).filter(Boolean))];
+                setAllDayOrders(dayOrders.length > 0 ? dayOrders : [primaryLesson.dayOfWeek?.order].filter(Boolean));
+
+                // Load grades from ALL sibling schedules at once
+                const siblingIds = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
+                const idsParam = siblingIds.join(',');
                 try {
-                    const studentsResponse = await axios.get(`/api/groups/${lessonResponse.data.group._id}`, { params: { databaseName } });
+                    const gradesResponse = await axios.get('/api/grades/by-schedules', {
+                        params: { databaseName, ids: idsParam }
+                    });
+                    setGrades(gradesResponse.data || []);
+                } catch (err) {
+                    console.error('Помилка завантаження оцінок:', err.message);
+                    // Fallback to single schedule
+                    const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, { params: { databaseName } });
+                    setGrades(gradesResponse.data || []);
+                }
+            } catch (err) {
+                console.error('Помилка завантаження суміжних розкладів:', err.message);
+                setAllDayOrders([primaryLesson.dayOfWeek?.order].filter(Boolean));
+                try {
+                    const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, { params: { databaseName } });
+                    setGrades(gradesResponse.data || []);
+                } catch (e) {
+                    console.error('Помилка завантаження оцінок:', e.message);
+                }
+            }
+
+            if (primaryLesson.group?._id) {
+                try {
+                    const studentsResponse = await axios.get(`/api/groups/${primaryLesson.group._id}`, { params: { databaseName } });
                     let studentsList = [];
-                    if (lessonResponse.data.subgroup && lessonResponse.data.subgroup !== 'all') {
-                        const subgroupNumber = parseInt(lessonResponse.data.subgroup);
+                    if (primaryLesson.subgroup && primaryLesson.subgroup !== 'all') {
+                        const subgroupNumber = parseInt(primaryLesson.subgroup);
                         const subgroup = studentsResponse.data.subgroups?.find(sg => sg.order === subgroupNumber);
                         if (subgroup?.students) studentsList = subgroup.students;
                     } else {
@@ -150,13 +196,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 } catch (err) {
                     console.error('Помилка завантаження студентів:', err.message);
                 }
-            }
-
-            try {
-                const gradesResponse = await axios.get(`/api/grades/schedule/${scheduleId}`, { params: { databaseName } });
-                setGrades(gradesResponse.data || []);
-            } catch (err) {
-                console.error('Помилка завантаження оцінок:', err.message);
             }
         } catch (err) {
             console.error('Помилка завантаження журналу:', err);
@@ -212,22 +251,27 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const generateDatesForMonth = (monthDate) => {
-        if (!currentLesson?.dayOfWeek?.order || !selectedSemester) return;
-        const dates = [];
+        // Use all day orders from sibling schedules (same subject+group+subgroup, different days)
+        const dayOrders = allDayOrders.length > 0
+            ? allDayOrders
+            : (currentLesson?.dayOfWeek?.order ? [currentLesson.dayOfWeek.order] : []);
+        if (dayOrders.length === 0 || !selectedSemester) return;
+
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const dayOfWeekOrder = currentLesson.dayOfWeek.order;
-        const targetDayOfWeek = dayOfWeekOrder === 7 ? 0 : dayOfWeekOrder;
         const semesterStart = new Date(selectedSemester.startDate);
         const semesterEnd = new Date(selectedSemester.endDate);
+        // Convert DB day orders (1=Mon..7=Sun) to JS getDay() (0=Sun..6=Sat)
+        const targetDays = new Set(dayOrders.map(order => order === 7 ? 0 : order));
 
+        const dates = [];
         for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
             const currentDate = new Date(d);
             currentDate.setHours(12, 0, 0, 0);
             if (currentDate < semesterStart || currentDate > semesterEnd) continue;
-            if (currentDate.getDay() === targetDayOfWeek) {
+            if (targetDays.has(currentDate.getDay())) {
                 const isHoliday = holidays.some(holiday => {
                     const hs = new Date(holiday.startDate); hs.setHours(12, 0, 0, 0);
                     const he = new Date(holiday.endDate); he.setHours(12, 0, 0, 0);
@@ -243,6 +287,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 });
             }
         }
+        // Sort chronologically (important when multiple days of week)
+        dates.sort((a, b) => a.date - b.date);
         setDates(dates);
     };
 
@@ -644,9 +690,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             {showAddColumn && (
                 <AddColumnPopup
                     dates={dates}
-                    preselectedDate={addColumnDate}
                     onAdd={handleAddColumn}
-                    onClose={() => { setShowAddColumn(false); setAddColumnDate(null); }}
+                    onClose={() => setShowAddColumn(false)}
                 />
             )}
         </div>
