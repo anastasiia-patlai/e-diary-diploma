@@ -58,6 +58,19 @@ const renderAttendanceStatus = (attendance) => {
 
 const DASH = <span style={{ color: '#d1d5db' }}>—</span>;
 
+// Скорочує ПІБ для мобільної версії: "Кириленко Софія Андріївна" → "Кириленко С. А."
+const abbreviateName = (fullName) => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length < 2) return fullName;
+    const [last, first, patronymic] = parts;
+    const initials = [first, patronymic]
+        .filter(Boolean)
+        .map(p => p[0].toUpperCase() + '.')
+        .join(' ');
+    return `${last} ${initials}`;
+};
+
 const JournalTable = ({
     students,
     dates,
@@ -112,34 +125,86 @@ const JournalTable = ({
 
     return (
         <>
-            {/* Custom delete confirm modal */}
             {deleteConfirm && (
                 <div style={{
-                    position: 'fixed', inset: 0, zIndex: 2000,
-                    backgroundColor: 'rgba(0,0,0,0.45)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000,
                 }}>
                     <div style={{
-                        background: 'white', borderRadius: '12px', padding: '28px 24px',
-                        width: '340px', maxWidth: '95vw',
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '28px 24px',
+                        width: '340px',
+                        maxWidth: '95vw',
                         border: '0.5px solid #e5e7eb',
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
                     }}>
-                        <div style={{ fontWeight: '500', fontSize: '16px', marginBottom: '10px', color: '#111827' }}>
+                        <div style={{
+                            fontWeight: '500',
+                            fontSize: '16px',
+                            marginBottom: '10px',
+                            color: '#111827'
+                        }}>
                             Видалити стовпець?
                         </div>
-                        <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#6b7280',
+                            marginBottom: '24px',
+                            lineHeight: '1.5'
+                        }}>
                             Стовпець <strong style={{ color: '#374151' }}>{deleteConfirm.label}</strong> та всі оцінки в ньому будуть видалені. Це незворотно.
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <div style={{
+                            display: 'flex',
+                            gap: '8px',
+                            justifyContent: 'flex-end'
+                        }}>
                             <button
                                 onClick={() => setDeleteConfirm(null)}
-                                style={{ padding: '9px 18px', borderRadius: '7px', border: '1px solid #e5e7eb', background: 'transparent', cursor: 'pointer', fontSize: '14px', color: '#6b7280' }}
+                                style={{
+                                    padding: '9px 18px',
+                                    borderRadius: '7px',
+                                    border: '1px solid #e5e7eb',
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    color: '#6b7280',
+                                    transition: 'all 0.15s',
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#f3f4f6';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = 'transparent';
+                                }}
                             >
                                 Скасувати
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                style={{ padding: '9px 18px', borderRadius: '7px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
+                                style={{
+                                    padding: '9px 18px',
+                                    borderRadius: '7px',
+                                    border: 'none',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: '500',
+                                    transition: 'all 0.15s',
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.backgroundColor = '#dc2626';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.backgroundColor = '#ef4444';
+                                }}
                             >
                                 Видалити
                             </button>
@@ -352,7 +417,7 @@ const JournalTable = ({
                                     boxShadow: '2px 0 0 #e5e7eb', zIndex: 1,
                                     whiteSpace: 'nowrap',
                                 }}>
-                                    {student.fullName}
+                                    {isMobile ? abbreviateName(student.fullName) : student.fullName}
                                 </td>
 
                                 {dates.map((date) => {
