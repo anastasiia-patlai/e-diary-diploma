@@ -24,6 +24,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
+    const [showInfoPopup, setShowInfoPopup] = useState(false);
     // All dayOfWeek orders for this journal (same subject+group+subgroup, possibly different days)
     const [allDayOrders, setAllDayOrders] = useState([]);
 
@@ -588,21 +589,119 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             <JournalHeader lesson={currentLesson} isMobile={isMobile} />
 
             {!loadingSemesters && semesters.length > 0 && (
-                <div style={{ marginBottom: '20px', backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        <label style={{ fontWeight: '500', color: '#374151' }}>Навчальний семестр:</label>
-                        <select
-                            value={selectedSemester?._id || ''}
-                            onChange={(e) => handleSemesterChange(e.target.value)}
-                            style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px', minWidth: '200px' }}
-                        >
-                            {semesters.map(semester => (
-                                <option key={semester._id} value={semester._id}>
-                                    {semester.name} {semester.year} {semester.isActive ? '(активний)' : ''}
-                                </option>
-                            ))}
-                        </select>
+                <div style={{ marginBottom: '20px', backgroundColor: 'white', padding: '16px', borderRadius: '8px', border: '1px solid #e5e7eb', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <label style={{ fontWeight: '500', color: '#374151' }}>Навчальний семестр:</label>
+                            <select
+                                value={selectedSemester?._id || ''}
+                                onChange={(e) => handleSemesterChange(e.target.value)}
+                                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #e5e7eb', fontSize: '14px', minWidth: '200px' }}
+                            >
+                                {semesters.map(semester => (
+                                    <option key={semester._id} value={semester._id}>
+                                        {semester.name} {semester.year} {semester.isActive ? '(активний)' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Info button */}
+                        <button
+                            onClick={() => setShowInfoPopup(v => !v)}
+                            title="Довідка по журналу"
+                            style={{
+                                width: '28px', height: '28px',
+                                borderRadius: '50%',
+                                border: '1.5px solid #d1d5db',
+                                backgroundColor: showInfoPopup ? 'rgba(105,180,185,1)' : 'white',
+                                color: showInfoPopup ? 'white' : '#6b7280',
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '14px', fontWeight: '600',
+                                flexShrink: 0,
+                                transition: 'all 0.15s',
+                            }}
+                        >?</button>
                     </div>
+
+                    {/* Info popup — inline, no fixed positioning */}
+                    {showInfoPopup && (
+                        <div style={{
+                            marginTop: '16px',
+                            borderTop: '1px solid #e5e7eb',
+                            paddingTop: '16px',
+                            display: 'flex', gap: '20px', flexWrap: 'wrap',
+                        }}>
+                            {/* Instruction — left */}
+                            <div style={{ flex: '1 1 260px', minWidth: '220px' }}>
+                                <div style={{ fontSize: '14px', color: '#374151', fontWeight: '600', marginBottom: '10px' }}>
+                                    Як користуватись:
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {(isMobile ? [
+                                        'Натисніть на клітинку — поставте оцінку або відмітку про відсутність',
+                                        'Натисніть «+» під датою — додайте стовпець оцінювання',
+                                        'Натисніть на заголовок стовпця — з\'явиться «×» для видалення',
+                                        'Оцінка за урок та оцінка в стовпці — незалежні',
+                                    ] : [
+                                        'Натисніть на клітинку — поставте оцінку або відмітку про відсутність',
+                                        'Наведіть на дату — з\'явиться «+» для додавання стовпця оцінювання',
+                                        'Наведіть на заголовок стовпця — з\'явиться «×» для видалення',
+                                        'Оцінка за урок та оцінка в стовпці — незалежні',
+                                    ]).map((tip, i) => (
+                                        <span key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '14px', color: '#4b5563', lineHeight: '1.45' }}>
+                                            <span style={{
+                                                backgroundColor: '#e5e7eb', color: '#374151',
+                                                borderRadius: '50%', width: '18px', height: '18px',
+                                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '11px', fontWeight: '600', flexShrink: 0, marginTop: '1px',
+                                            }}>{i + 1}</span>
+                                            {tip}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{ width: '1px', backgroundColor: '#e5e7eb', flexShrink: 0, alignSelf: 'stretch' }} />
+
+                            {/* Legend — right */}
+                            <div style={{ flex: '1 1 260px', minWidth: '220px' }}>
+                                <div style={{ fontSize: '13px', color: '#374151', fontWeight: '600', marginBottom: '10px' }}>
+                                    Позначення:
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4b5563' }}>
+                                        <span style={{ backgroundColor: 'rgba(105,180,185,1)', color: 'white', width: '26px', height: '26px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '500', fontSize: '12px', flexShrink: 0 }}>10</span>
+                                        <span>— оцінка за урок</span>
+                                    </span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4b5563' }}>
+                                        <span style={{ backgroundColor: '#ef4444', color: 'white', width: '26px', height: '26px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '500', fontSize: '12px', flexShrink: 0 }}>Н</span>
+                                        <span>— повна відсутність</span>
+                                    </span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4b5563' }}>
+                                        <span style={{ backgroundColor: '#ef4444', color: 'white', width: '26px', height: '26px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '500', fontSize: '11px', flexShrink: 0 }}>2/6</span>
+                                        <span>— часткова відсутність</span>
+                                    </span>
+                                    {[
+                                        { label: 'С/р', fullName: 'Самостійна робота', bg: '#e0f4f5', textCol: '#0e6b72', border: '#69b4b9' },
+                                        { label: 'К/р', fullName: 'Контрольна робота', bg: '#e0f4f5', textCol: '#0e6b72', border: '#69b4b9' },
+                                        { label: 'Т/о', fullName: 'Тематична оцінка', bg: '#e0f4f5', textCol: '#0e6b72', border: '#69b4b9' },
+                                        { label: 'За чверть', fullName: 'Оцінка за чверть', bg: '#EEEDFE', textCol: '#3C3489', border: '#7F77DD' },
+                                        { label: 'Семестрова', fullName: 'Семестрова оцінка', bg: '#FAEEDA', textCol: '#633806', border: '#BA7517' },
+                                    ].map(t => (
+                                        <span key={t.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4b5563' }}>
+                                            <span style={{ backgroundColor: t.bg, color: t.textCol, fontSize: '11px', padding: '2px 7px', borderRadius: '4px', fontWeight: '500', border: `1.5px solid ${t.border}`, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                {t.label}
+                                            </span>
+                                            <span>— {t.fullName}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
