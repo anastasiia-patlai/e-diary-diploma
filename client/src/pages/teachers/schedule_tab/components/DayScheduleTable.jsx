@@ -31,7 +31,7 @@ const DayScheduleTable = ({
 
     return (
         <div>
-            <div className="d-flex align-items-center justify-content-between mb-3">
+            <div className="d-flex align-items-center justify-content-between mb-2">
                 <h5 className="mb-0">
                     <FaCalendarAlt className="me-2" />
                     {day.name}
@@ -50,6 +50,13 @@ const DayScheduleTable = ({
                     </Badge>
                 ) : null}
             </div>
+
+            {!hasLessons && (
+                <Alert variant="secondary" className="mb-2" style={{ margin: '15px 0 15px 0' }}>
+                    <FaCalendarAlt className="me-2" />
+                    Немає занять на цей день
+                </Alert>
+            )}
 
             {isMobile ? (
                 <div className="d-flex flex-column gap-3">
@@ -236,13 +243,6 @@ const DayScheduleTable = ({
                         </tbody>
                     </Table>
                 </div>
-            )}
-
-            {!hasLessons && (
-                <Alert variant="secondary" className="mt-3">
-                    <FaCalendarAlt className="me-2" />
-                    Немає занять на цей день
-                </Alert>
             )}
         </div>
     );
