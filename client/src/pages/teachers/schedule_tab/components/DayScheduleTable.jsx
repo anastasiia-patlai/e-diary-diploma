@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, Alert, Badge } from 'react-bootstrap';
-import { FaCalendarAlt, FaClock, FaBook, FaUserFriends, FaDoorOpen } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaBook, FaUserFriends, FaDoorOpen, FaUsers } from 'react-icons/fa';
 
 const DayScheduleTable = ({
     day,
@@ -103,6 +103,19 @@ const DayScheduleTable = ({
                                         </div>
                                         <div className="col-6">
                                             <div className="d-flex align-items-start">
+                                                <FaUsers className="me-2 text-info mt-1" />
+                                                <div>
+                                                    <div className="text-muted small">Підгрупа</div>
+                                                    <div className="fw-medium">
+                                                        {lesson?.subgroup && lesson.subgroup !== 'all'
+                                                            ? getSubgroupLabel(lesson.subgroup)
+                                                            : 'Вся група'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-12">
+                                            <div className="d-flex align-items-start">
                                                 <FaDoorOpen className="me-2 text-warning mt-1" />
                                                 <div>
                                                     <div className="text-muted small">Аудиторія</div>
@@ -122,16 +135,16 @@ const DayScheduleTable = ({
                     })}
                 </div>
             ) : (
-                <div className="table-responsive">
-                    <Table bordered hover className="align-middle">
+                <div className="table-responsive" style={{ overflowX: 'auto' }}>
+                    <Table bordered hover className="align-middle" style={{ tableLayout: 'fixed', width: '100%' }}>
                         <thead className="table-light">
                             <tr>
-                                <th width="80">№</th>
-                                <th width="120">Час</th>
-                                <th width="160">Предмет</th>
-                                <th width="150">Група</th>
-                                <th width="170">Аудиторія</th>
-                                <th width="100">Журнал</th>
+                                <th style={{ width: '45px', minWidth: '45px' }}>№</th>
+                                <th style={{ width: '100px', minWidth: '100px' }}>Час</th>
+                                <th style={{ width: '140px', minWidth: '140px' }}>Предмет</th>
+                                <th style={{ width: '100px', minWidth: '100px' }}>Група</th>
+                                <th style={{ width: '100px', minWidth: '100px' }}>Підгрупа</th>
+                                <th style={{ width: '140px', minWidth: '140px' }}>Аудиторія</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -148,7 +161,7 @@ const DayScheduleTable = ({
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.backgroundColor = 'white';
                                         }}>
-                                        <td className="text-center fw-bold">
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                             <div style={{
                                                 backgroundColor: '#e9ecef',
                                                 color: '#495057',
@@ -156,7 +169,8 @@ const DayScheduleTable = ({
                                                 padding: '4px 8px',
                                                 fontWeight: '600',
                                                 display: 'inline-block',
-                                                minWidth: '30px'
+                                                minWidth: '32px',
+                                                textAlign: 'center'
                                             }}>
                                                 {slot.order}
                                             </div>
@@ -179,16 +193,23 @@ const DayScheduleTable = ({
                                         </td>
                                         <td>
                                             {lesson ? (
-                                                <div>
-                                                    <div className="d-flex align-items-center">
-                                                        <FaUserFriends className="me-2 text-secondary" />
-                                                        <span className="fw-medium">{lesson.group?.name}</span>
-                                                    </div>
-                                                    {lesson.subgroup && lesson.subgroup !== 'all' && (
-                                                        <Badge bg="info" className="ms-2 mt-1">
-                                                            {getSubgroupLabel(lesson.subgroup)}
-                                                        </Badge>
-                                                    )}
+                                                <div className="d-flex align-items-center">
+                                                    <FaUserFriends className="me-2 text-secondary" />
+                                                    <span>{lesson.group?.name || '—'}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted">—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {lesson ? (
+                                                <div className="d-flex align-items-center">
+                                                    <FaUsers className="me-2 text-info" />
+                                                    <span>
+                                                        {lesson.subgroup && lesson.subgroup !== 'all'
+                                                            ? getSubgroupLabel(lesson.subgroup)
+                                                            : 'Вся група'}
+                                                    </span>
                                                 </div>
                                             ) : (
                                                 <span className="text-muted">—</span>
@@ -199,31 +220,12 @@ const DayScheduleTable = ({
                                                 <div className="d-flex align-items-center">
                                                     <FaDoorOpen className="me-2 text-warning" />
                                                     <div>
-                                                        <div className="fw-medium">{lesson.classroom.name}</div>
+                                                        <span>{lesson.classroom.name}</span>
                                                         {lesson.classroom.type && (
-                                                            <small className="text-muted">({lesson.classroom.type})</small>
+                                                            <small className="text-muted d-block">({lesson.classroom.type})</small>
                                                         )}
                                                     </div>
                                                 </div>
-                                            ) : (
-                                                <span className="text-muted">—</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {lesson ? (
-                                                <button
-                                                    onClick={() => onOpenGradebook(lesson._id)}
-                                                    style={{
-                                                        backgroundColor: 'transparent',
-                                                        border: '1px solid rgba(105, 180, 185, 1)',
-                                                        color: 'rgba(105, 180, 185, 1)',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    Журнал
-                                                </button>
                                             ) : (
                                                 <span className="text-muted">—</span>
                                             )}

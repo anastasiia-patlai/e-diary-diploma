@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Spinner, Alert, Tab } from 'react-bootstrap';
+import { Container, Spinner, Alert, Tab, Row, Col } from 'react-bootstrap';
 import axios from 'axios';
 import TeacherScheduleHeader from './components/TeacherScheduleHeader';
 import DaysOfWeekTabs from './components/DaysOfWeekTabs';
@@ -444,32 +444,36 @@ const TeacherScheduleTab = () => {
                 <Tab.Content>
                     {daysOfWeek.map(day => (
                         <Tab.Pane key={day._id} eventKey={day._id}>
-                            <div className="p-3">
-                                <DayScheduleTable
-                                    day={day}
-                                    timeSlots={timeSlots}
-                                    scheduleData={scheduleData}
-                                    getLessonForTimeSlot={getLessonForTimeSlot}
-                                    formatTime={formatTime}
-                                    getSubgroupLabel={getSubgroupLabel}
-                                    weekDate={currentWeekDates[day.order - 1]}
-                                    showDates={showDates}
-                                    semesterStatus={semesterStatus}
-                                    isMobile={isMobile}
-                                />
-                            </div>
+                            {/* ГОРИЗОНТАЛЬНЕ РОЗТАШУВАННЯ ТАБЛИЦІ ТА ІНФОБЛОКУ */}
+                            <Row className="g-4 p-3">
+                                <Col md={8} lg={9} xl={9}>
+                                    <DayScheduleTable
+                                        day={day}
+                                        timeSlots={timeSlots}
+                                        scheduleData={scheduleData}
+                                        getLessonForTimeSlot={getLessonForTimeSlot}
+                                        formatTime={formatTime}
+                                        getSubgroupLabel={getSubgroupLabel}
+                                        weekDate={currentWeekDates[day.order - 1]}
+                                        showDates={showDates}
+                                        semesterStatus={semesterStatus}
+                                        isMobile={isMobile}
+                                    />
+                                </Col>
+                                <Col md={4} lg={3} xl={3}>
+                                    <ScheduleInfoCards
+                                        scheduleData={scheduleData}
+                                        selectedSemesterData={selectedSemesterData}
+                                        semesterStatus={semesterStatus}
+                                        teacherName={teacherName}
+                                        isMobile={isMobile}
+                                    />
+                                </Col>
+                            </Row>
                         </Tab.Pane>
                     ))}
                 </Tab.Content>
             </DaysOfWeekTabs>
-
-            <ScheduleInfoCards
-                scheduleData={scheduleData}
-                selectedSemesterData={selectedSemesterData}
-                semesterStatus={semesterStatus}
-                teacherName={teacherName}
-                isMobile={isMobile}
-            />
 
             <style jsx="true">{`
                 .table-row-hover:hover {
