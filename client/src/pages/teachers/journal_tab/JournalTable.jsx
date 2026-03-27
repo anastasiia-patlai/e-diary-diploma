@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 
 const COLUMN_TYPES = {
-    self: { label: 'С/р', short: 'С/р', fullName: 'Самостійна робота', color: '#69b4b9', bg: '#e0f4f5', textCol: '#0e6b72' },
-    control: { label: 'К/р', short: 'К/р', fullName: 'Контрольна робота', color: '#69b4b9', bg: '#e0f4f5', textCol: '#0e6b72' },
-    theme: { label: 'Т/о', short: 'Тем', fullName: 'Тематична оцінка', color: '#69b4b9', bg: '#e0f4f5', textCol: '#0e6b72' },
+    self: { label: 'С/р', short: 'С/р', fullName: 'Самостійна робота', color: '#378ADD', bg: '#E6F1FB', textCol: '#0C447C' },
+    control: { label: 'К/р', short: 'К/р', fullName: 'Контрольна робота', color: '#D85A30', bg: '#FAECE7', textCol: '#712B13' },
+    theme: { label: 'Т/о', short: 'Тем', fullName: 'Тематична оцінка', color: '#639922', bg: '#EAF3DE', textCol: '#27500A' },
     quarter: { label: 'За чверть', short: 'Ч', fullName: 'Оцінка за чверть', color: '#7F77DD', bg: '#EEEDFE', textCol: '#3C3489' },
     semester: { label: 'Семестрова', short: 'Сем', fullName: 'Семестрова оцінка', color: '#BA7517', bg: '#FAEEDA', textCol: '#633806' },
 };
 
-// type border colors (left accent line on assessment columns)
 const TYPE_ACCENT = {
-    self: '#69b4b9',
-    control: '#69b4b9',
-    theme: '#69b4b9',
+    self: '#378ADD',
+    control: '#D85A30',
+    theme: '#639922',
     quarter: '#7F77DD',
     semester: '#BA7517',
 };
@@ -349,8 +348,7 @@ const JournalTable = ({
                                                         borderBottom: '2px solid #e5e7eb',
                                                         borderLeft: `2px solid ${accent}`,
                                                         position: 'sticky', top: 0,
-                                                        backgroundColor: isColHov ? t.bg : '#f9fafb',
-                                                        zIndex: 1,
+                                                        backgroundColor: t.bg, zIndex: 1,
                                                         transition: 'background-color 0.15s',
                                                     }}
                                                 >
@@ -482,7 +480,7 @@ const JournalTable = ({
                                                             borderBottom: '1px solid #e5e7eb',
                                                             borderLeft: `2px solid ${accent}`,
                                                             cursor: 'pointer',
-                                                            backgroundColor: isColHov ? t.bg : 'inherit',
+                                                            backgroundColor: t.bg,
                                                             transition: 'background-color 0.15s',
                                                             height: '46px',
                                                         }}
