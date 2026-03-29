@@ -155,7 +155,7 @@ const TeacherPage = ({ onLogout, userFullName }) => {
         { name: t("teacher.sections.schedule"), icon: <FaCalendarAlt /> },
         { name: t("teacher.sections.journal"), icon: <FaBook /> },
         { name: t("teacher.sections.attendance"), icon: <FaUserCheck /> },
-        { name: t("teacher.sections.homework"), icon: <FaTasks /> },
+        // { name: t("teacher.sections.homework"), icon: <FaTasks /> },
         { name: t("teacher.sections.myStudents"), icon: <FaUsers /> },
         { name: t("teacher.sections.reports"), icon: <FaChartBar /> },
         { name: t("teacher.sections.tests"), icon: <FaClipboardList /> },
@@ -271,40 +271,40 @@ const TeacherPage = ({ onLogout, userFullName }) => {
                     />
                 );
 
-            case t("teacher.sections.homework"):
-                return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.homework.title")}</h3>
-                        <div style={{ marginTop: '20px' }}>
-                            <button style={{
-                                backgroundColor: 'rgba(105, 180, 185, 1)',
-                                color: 'white',
-                                padding: '10px 20px',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                marginBottom: '20px'
-                            }}>
-                                + {t("teacher.homework.createButton")}
-                            </button>
-                            <div style={{
-                                display: 'grid',
-                                gap: '15px',
-                                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
-                            }}>
-                                <div style={{
-                                    padding: '15px',
-                                    border: '1px solid #e5e7eb',
-                                    borderRadius: '8px'
-                                }}>
-                                    <h4>{t("teacher.homework.mathExample")}</h4>
-                                    <p>{t("teacher.homework.classExample")}: 9А</p>
-                                    <p>{t("teacher.homework.deadline")}: 15.03.2024</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+            // case t("teacher.sections.homework"):
+            //     return (
+            //         <div>
+            //             <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.homework.title")}</h3>
+            //             <div style={{ marginTop: '20px' }}>
+            //                 <button style={{
+            //                     backgroundColor: 'rgba(105, 180, 185, 1)',
+            //                     color: 'white',
+            //                     padding: '10px 20px',
+            //                     border: 'none',
+            //                     borderRadius: '6px',
+            //                     cursor: 'pointer',
+            //                     marginBottom: '20px'
+            //                 }}>
+            //                     + {t("teacher.homework.createButton")}
+            //                 </button>
+            //                 <div style={{
+            //                     display: 'grid',
+            //                     gap: '15px',
+            //                     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))'
+            //                 }}>
+            //                     <div style={{
+            //                         padding: '15px',
+            //                         border: '1px solid #e5e7eb',
+            //                         borderRadius: '8px'
+            //                     }}>
+            //                         <h4>{t("teacher.homework.mathExample")}</h4>
+            //                         <p>{t("teacher.homework.classExample")}: 9А</p>
+            //                         <p>{t("teacher.homework.deadline")}: 15.03.2024</p>
+            //                     </div>
+            //                 </div>
+            //             </div>
+            //         </div>
+            //     );
 
             case t("teacher.sections.myStudents"):
                 return <MyStudents databaseName={databaseName} />;
