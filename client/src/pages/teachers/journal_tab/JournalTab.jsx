@@ -73,7 +73,7 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
 
     const getGroupDisplayName = (journal) => {
         if (journal.subgroup && journal.subgroup !== 'all') {
-            return `${journal.groupName} (Підгрупа ${journal.subgroup})`;
+            return `${journal.groupName}`;
         }
         return journal.groupName;
     };
@@ -159,7 +159,7 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
                             </span>
                         </div>
 
-                        <div style={{ padding: '12px' }}>
+                        <div style={{ padding: '12px', display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '12px' }}>
                             {groupedJournals[subject].map(journal => (
                                 <div
                                     key={journal._id}
@@ -168,8 +168,11 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
                                         border: '1px solid #e5e7eb',
                                         borderRadius: '10px',
                                         padding: '16px 20px',
-                                        marginBottom: '8px',
-                                        display: 'flex', alignItems: 'center',
+                                        flex: '1 1 280px',
+                                        minWidth: '290px',
+                                        maxWidth: '400px',
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         justifyContent: 'space-between',
                                         transition: 'all 0.2s',
                                         boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
@@ -194,19 +197,12 @@ const JournalTab = ({ databaseName, isMobile, onOpenGradebook }) => {
                                                         backgroundColor: 'rgba(105, 180, 185, 0.1)',
                                                         color: 'rgba(105, 180, 185, 1)',
                                                         padding: '4px 10px', borderRadius: '20px',
-                                                        fontSize: '12px', fontWeight: '600',
+                                                        fontSize: '16px', fontWeight: '600',
                                                         border: '1px solid rgba(105, 180, 185, 0.3)',
                                                     }}>
                                                         Підгрупа {journal.subgroup}
                                                     </span>
                                                 )}
-                                            </div>
-
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4b5563', fontSize: isMobile ? '13px' : '14px' }}>
-                                                <FaUsers style={{ fontSize: '14px', color: '#9ca3af' }} />
-                                                <span style={{ backgroundColor: '#f3f4f6', padding: '2px 8px', borderRadius: '4px', color: '#374151' }}>
-                                                    {journal.groupName}
-                                                </span>
                                             </div>
                                         </div>
                                     </div>

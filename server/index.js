@@ -30,6 +30,9 @@ app.use(async (req, res, next) => {
     }
 });
 
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 const schoolRegistrationRouter = require('./routes/schoolRegistration');
 const signupRouter = require('./routes/signup');
 const statsRoutes = require('./routes/stats');
@@ -48,8 +51,7 @@ const attendanceAggregationRoutes = require('./routes/attendanceAggregation');
 const classAttendanceRoutes = require('./routes/classAttendance');
 const lessonAttendanceRoutes = require('./routes/lessonAttendance');
 const journalColumnsRouter = require('./routes/journalColumns');
-
-// const homeworkRoutes = require('./routes/homeworks');
+const homeworkRouter = require('./routes/homework');
 
 console.log('Перевірка завантаження маршрутів...');
 
@@ -71,8 +73,7 @@ app.use('/api/attendance', attendanceAggregationRoutes);   // для суміс�
 app.use('/api/attendance/class', classAttendanceRoutes);   // для класного керівника
 app.use('/api/attendance/lesson', lessonAttendanceRoutes); // для вчителів
 app.use('/api/journal-columns', journalColumnsRouter);
-
-// app.use('/api/homeworks', homeworkRoutes);
+app.use('/api/homework', homeworkRouter);
 
 console.log('Всі маршрути зареєстровано!');
 

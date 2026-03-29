@@ -5,6 +5,7 @@ import JournalTable from './JournalTable';
 import GradeModal from './GradeModal';
 import AddColumnPopup from './AddColumnPopup';
 import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa';
+import HomeworkTab from './homework_tab/HomeworkTab';
 
 const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [loading, setLoading] = useState(true);
@@ -24,13 +25,12 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
-    // All dayOfWeek orders for this journal (same subject+group+subgroup, possibly different days)
     const [allDayOrders, setAllDayOrders] = useState([]);
+    const [allScheduleIds, setAllScheduleIds] = useState([scheduleId]);
 
-    // --- journal columns state ---
     const [journalColumns, setJournalColumns] = useState([]);
     const [showAddColumn, setShowAddColumn] = useState(false);
-    const [addColumnDate, setAddColumnDate] = useState(null);
+    const [addColumnAfterIdx, setAddColumnAfterIdx] = useState(null);
 
     useEffect(() => {
         let timer;
@@ -90,16 +90,15 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             const newCol = res.data;
 
             setJournalColumns(prev => {
-                const next = [...prev, newCol];
-                next.sort((a, b) => {
-                    if (a.date < b.date) return -1;
-                    if (a.date > b.date) return 1;
-                    return a.order - b.order;
-                });
+                const next = [...prev];
+                if (addColumnAfterIdx === null || addColumnAfterIdx >= prev.length - 1) {
+                    next.push(newCol);
+                } else {
+                    next.splice(addColumnAfterIdx + 1, 0, newCol);
+                }
                 return next;
             });
             setShowAddColumn(false);
-            setAddColumnDate(null);
             setSuccess('Стовпець додано');
         } catch (err) {
             console.error('Помилка додавання колонки:', err);
@@ -107,6 +106,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     };
 
     const handleDeleteColumn = async (columnId) => {
+        if (!window.confirm('Видалити цей стовпець? Оцінки у ньому також будуть видалені.')) return;
         try {
             await axios.delete(`/api/journal-columns/${columnId}`, {
                 data: { databaseName }
@@ -119,8 +119,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         }
     };
 
-    const openAddColumn = (fullDate) => {
-        setAddColumnDate(fullDate);
+    const openAddColumn = (afterIdx) => {
+        setAddColumnAfterIdx(afterIdx);
         setShowAddColumn(true);
     };
 
@@ -138,7 +138,6 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             const primaryLesson = lessonResponse.data;
             setCurrentLesson(primaryLesson);
 
-            // Find ALL schedule entries for the same subject+group+subgroup (different days/times)
             try {
                 const allSchedulesResponse = await axios.get('/api/schedule', {
                     params: {
@@ -155,8 +154,9 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 );
                 const dayOrders = [...new Set(siblings.map(s => s.dayOfWeek?.order).filter(Boolean))];
                 setAllDayOrders(dayOrders.length > 0 ? dayOrders : [primaryLesson.dayOfWeek?.order].filter(Boolean));
+                const siblingIdsList = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
+                setAllScheduleIds(siblingIdsList);
 
-                // Load grades from ALL sibling schedules at once
                 const siblingIds = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
                 const idsParam = siblingIds.join(',');
                 try {
@@ -669,6 +669,21 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 />
             )}
 
+            {students.length > 0 && (
+                <HomeworkTab
+                    scheduleId={scheduleId}
+                    allScheduleIds={allScheduleIds}
+                    databaseName={databaseName}
+                    dates={dates}
+                    availableMonths={availableMonths}
+                    currentMonth={currentMonth}
+                    onPrevMonth={handlePrevMonth}
+                    onNextMonth={handleNextMonth}
+                    onMonthSelect={handleMonthSelect}
+                    isMobile={isMobile}
+                />
+            )}
+
             <GradeModal
                 show={showGradeModal}
                 onHide={() => setShowGradeModal(false)}
@@ -690,9 +705,8 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             {showAddColumn && (
                 <AddColumnPopup
                     dates={dates}
-                    preselectedDate={addColumnDate}
                     onAdd={handleAddColumn}
-                    onClose={() => { setShowAddColumn(false); setAddColumnDate(null); }}
+                    onClose={() => setShowAddColumn(false)}
                 />
             )}
         </div>
@@ -700,3 +714,4 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 };
 
 export default GradebookPage;
+
