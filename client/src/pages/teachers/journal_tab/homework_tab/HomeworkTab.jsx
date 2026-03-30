@@ -176,7 +176,7 @@ const HomeworkTab = ({
             )}
 
             {/* Month navigation — reuses GradebookPage month switcher */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', backgroundColor: 'white', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+            {/* <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', backgroundColor: 'white', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
                 <button
                     onClick={onPrevMonth}
                     disabled={currentMonthIdx === 0}
@@ -222,7 +222,7 @@ const HomeworkTab = ({
                 >
                     <FaChevronRight />
                 </button>
-            </div>
+            </div> */}
 
             {/* Main table */}
             {loading ? (
