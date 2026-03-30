@@ -31,6 +31,7 @@ import GradebookPage from './journal_tab/GradebookPage';
 import AttendanceTab from "./attendance_tab/AttendanceTab";
 import ClassAttendance from "./attendance_tab/ClassAttendance";
 import LanguageSwitcher from "../../i18n/components/LanguageSwitcher";
+import ReportsTab from './reports_tab/ReportsTab';
 
 const TeacherPage = ({ onLogout, userFullName }) => {
     const { t } = useTranslation();
@@ -309,27 +310,18 @@ const TeacherPage = ({ onLogout, userFullName }) => {
             case t("teacher.sections.myStudents"):
                 return <MyStudents databaseName={databaseName} />;
 
-            case t("teacher.sections.reports"):
+            case t("teacher.sections.reports"): {
+                const uInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
                 return (
-                    <div>
-                        <h3 style={{ fontSize: isMobile ? '18px' : '24px' }}>{t("teacher.reports.title")}</h3>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-                            gap: '20px',
-                            marginTop: '20px'
-                        }}>
-                            <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                                <h4>{t("teacher.reports.academicPerformance")}</h4>
-                                <p>{t("teacher.reports.charts")}</p>
-                            </div>
-                            <div style={{ padding: '20px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-                                <h4>{t("teacher.reports.attendance")}</h4>
-                                <p>{t("teacher.reports.attendanceStats")}</p>
-                            </div>
-                        </div>
-                    </div>
+                    <ReportsTab
+                        databaseName={databaseName}
+                        isMobile={isMobile}
+                        teacherId={uInfo.userId}
+                        curatorGroupId={curatorGroupId || userData?.curatorGroup?._id || null}
+                        teacherName={userData?.fullName || uInfo.fullName || ''}
+                    />
                 );
+            }
 
             default:
                 return (
