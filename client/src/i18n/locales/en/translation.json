@@ -568,5 +568,108 @@
             "accessDenied": "Access denied. Please log in as a teacher.",
             "loadData": "An error occurred while loading data"
         }
+    },
+    "student": {
+        "menuTitle": "Student Sections",
+        "welcome": "Welcome!",
+        "selectSection": "Select a section from the menu to start",
+        "sections": {
+            "home": "Home",
+            "profile": "My Profile",
+            "classmates": "Classmates",
+            "schedule": "Schedule",
+            "grades": "Grades",
+            "homework": "Homework",
+            "progress": "My Progress"
+        },
+        "dashboard": {
+            "title": "Student Dashboard",
+            "myProgress": "My Progress",
+            "averageGrade": "Average Grade",
+            "homeworkCompleted": "Homework Completed",
+            "absences": "Absences",
+            "nextLesson": "Next Lesson",
+            "math": "Mathematics",
+            "time": "Time",
+            "room": "Room",
+            "upcomingDeadlines": "Upcoming Deadlines",
+            "mathHomework": "Mathematics Homework",
+            "essay": "Ukrainian Language Essay",
+            "dueDate": "Due Date",
+            "announcements": "Announcements",
+            "schoolEvent": "School Event",
+            "eventDescription": "Drawing competition will take place on March 18",
+            "parentMeeting": "Parent Meeting",
+            "meetingDate": "Meeting Date"
+        },
+        "profile": {
+            "title": "My Profile",
+            "student": "Student",
+            "group": "Class/Group",
+            "email": "Email",
+            "phone": "Phone",
+            "parentPhone": "Parent's Phone",
+            "address": "Address",
+            "birthDate": "Date of Birth",
+            "enrollmentDate": "Enrollment Date"
+        },
+        "classmates": {
+            "title": "Classmates",
+            "search": "Search classmates...",
+            "classmate": "Classmate",
+            "email": "Email",
+            "call": "Call",
+            "noResults": "No classmates found"
+        },
+        "schedule": {
+            "title": "Schedule",
+            "noLessons": "No lessons on this day",
+            "monday": "Monday",
+            "tuesday": "Tuesday",
+            "wednesday": "Wednesday",
+            "thursday": "Thursday",
+            "friday": "Friday",
+            "saturday": "Saturday"
+        },
+        "grades": {
+            "title": "My Grades",
+            "averageGrade": "Average Grade",
+            "totalGrades": "Total Grades",
+            "allSubjects": "All Subjects",
+            "subject": "Subject",
+            "type": "Type",
+            "grade": "Grade",
+            "date": "Date",
+            "noGrades": "No grades yet"
+        },
+        "homework": {
+            "title": "Homework",
+            "dueDate": "Due Date",
+            "submit": "Submit Assignment",
+            "send": "Send",
+            "commentPlaceholder": "Add a comment (optional)...",
+            "pending": "Pending",
+            "submitted": "Awaiting Review",
+            "completed": "Reviewed",
+            "waitingCheck": "Awaiting Review",
+            "checked": "Reviewed",
+            "submitSuccess": "Assignment submitted successfully!",
+            "submitError": "Error submitting assignment",
+            "noHomework": "No active homework assignments"
+        },
+        "progress": {
+            "title": "My Progress",
+            "performanceBySubjects": "Performance by Subjects",
+            "attendance": "Attendance",
+            "present": "Present",
+            "absent": "Absent"
+        },
+        "subjects": {
+            "math": "Mathematics",
+            "ukrainian": "Ukrainian Language",
+            "english": "English Language",
+            "history": "History",
+            "physics": "Physics"
+        }
     }
 }
