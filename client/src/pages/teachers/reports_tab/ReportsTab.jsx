@@ -11,9 +11,9 @@ const BRAND = 'rgba(105,180,185,1)';
 
 const TABS = [
     { key: 'grades', label: 'Успішність', icon: FaChartBar },
-    { key: 'attendance', label: 'Відвідуваність', icon: FaUserCheck },
-    { key: 'compare', label: 'Класи', icon: FaLayerGroup },
-    { key: 'homework', label: 'ДЗ', icon: FaBookOpen },
+    // { key: 'attendance', label: 'Відвідуваність', icon: FaUserCheck },
+    // { key: 'compare', label: 'Класи', icon: FaLayerGroup },
+    // { key: 'homework', label: 'ДЗ', icon: FaBookOpen },
     { key: 'student', label: 'По учню', icon: FaUser },
 ];
 
