@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaSave, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
+// Додаємо регулярний вираз для перевірки логіна
+const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
+
 const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
     const [formData, setFormData] = useState({
         fullName: '',
@@ -10,6 +13,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [loginError, setLoginError] = useState('');
 
     useEffect(() => {
         if (parent) {
@@ -23,10 +27,27 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        // Очищаємо помилку логіна при зміні поля email
+        if (name === 'email') {
+            setLoginError("");
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+    };
+
+    // ФУНКЦІЯ ДЛЯ ВАЛІДАЦІЇ ЛОГІНА
+    const validateLogin = (login) => {
+        if (!login.trim()) {
+            return "Логін обов'язковий";
+        }
+        if (!LOGIN_REGEX.test(login)) {
+            return "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+        }
+        return "";
     };
 
     const handleSubmit = async (e) => {
@@ -37,19 +58,44 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
             return;
         }
 
+        const loginValidationError = validateLogin(formData.email);
+        if (loginValidationError) {
+            setLoginError(loginValidationError);
+            return;
+        }
+
         setLoading(true);
         setError('');
+        setLoginError('');
 
         try {
-            const response = await axios.put(`http://localhost:3001/api/users/${parent._id}`, {
+            // Оновлюємо дані
+            await axios.put(`http://localhost:3001/api/users/${parent._id}`, {
                 ...formData,
                 databaseName
             });
-            onUpdate(response.data.user);
+
+            // Отримуємо повні оновлені дані з дітьми
+            const response = await axios.get(`http://localhost:3001/api/users/${parent._id}`, {
+                params: { databaseName }
+            });
+
+            const updatedParent = response.data;
+
+            // Зберігаємо дітей, якщо вони не прийшли з бекенду
+            if (parent.children && (!updatedParent.children || updatedParent.children.length === 0)) {
+                updatedParent.children = parent.children;
+            }
+
+            onUpdate(updatedParent);
             onClose();
         } catch (err) {
             console.error('Помилка оновлення батька:', err);
-            setError(err.response?.data?.error || 'Помилка оновлення батька');
+            if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
+                setLoginError("Користувач з таким логіном вже існує");
+            } else {
+                setError(err.response?.data?.error || 'Помилка оновлення батька');
+            }
         } finally {
             setLoading(false);
         }
@@ -145,30 +191,42 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             color: '#374151'
                         }}>
                             <FaEnvelope style={{ marginRight: '8px', color: 'rgba(105, 180, 185, 1)' }} />
-                            Email *
+                            Логін *
                         </label>
                         <input
-                            type="email"
+                            type="text"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             required
+                            placeholder="ivanenko_ivan"
                             style={{
                                 width: '100%',
                                 padding: '10px 12px',
-                                border: '1px solid #d1d5db',
+                                border: `1px solid ${loginError ? '#dc2626' : '#d1d5db'}`,
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 outline: 'none',
                                 transition: 'border-color 0.2s'
                             }}
                             onFocus={(e) => {
-                                e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                e.target.style.borderColor = loginError ? '#dc2626' : 'rgba(105, 180, 185, 1)';
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderColor = '#d1d5db';
+                                if (!loginError) {
+                                    e.target.style.borderColor = '#d1d5db';
+                                }
                             }}
                         />
+                        {loginError && (
+                            <div style={{
+                                color: '#dc2626',
+                                fontSize: '12px',
+                                marginTop: '4px'
+                            }}>
+                                {loginError}
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ marginBottom: '25px' }}>

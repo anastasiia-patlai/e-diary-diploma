@@ -271,10 +271,26 @@ const AdminShowParent = () => {
         setShowEditPopup(true);
     };
 
-    const handleUpdateParent = (updatedParent) => {
-        const updatedParents = parents.map(p => p._id === updatedParent._id ? updatedParent : p);
-        setParents(updatedParents);
-        applyFilters(updatedParents, parentSearchQuery);
+    const handleUpdateParent = async (updatedParent) => {
+        try {
+            // Отримуємо повний оновлений список батьків
+            const response = await axios.get(`${API_URL}/parents`, {
+                params: { databaseName }
+            });
+            setParents(response.data);
+            applyFilters(response.data, parentSearchQuery);
+        } catch (err) {
+            console.error("Помилка оновлення списку батьків:", err);
+
+            // Fallback: оновлюємо тільки конкретного батька
+            const updatedParents = parents.map(p =>
+                p._id === updatedParent._id
+                    ? { ...updatedParent, children: p.children || [] }
+                    : p
+            );
+            setParents(updatedParents);
+            applyFilters(updatedParents, parentSearchQuery);
+        }
     };
 
     const handleDelete = (parent) => {
@@ -327,6 +343,7 @@ const AdminShowParent = () => {
         setIsSearching(false);
         setShowAddChildPopup(true);
     };
+
 
     const handleAddChildToParent = async (studentId) => {
         if (!databaseName) {

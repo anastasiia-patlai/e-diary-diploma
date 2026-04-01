@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaUsers } from "react-icons/fa";
 import axios from "axios";
 
+// Додаємо регулярний вираз для перевірки логіна
+const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
+
 const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
     const [formData, setFormData] = useState({
         fullName: "",
@@ -14,6 +17,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
     const [loading, setLoading] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(true);
     const [error, setError] = useState("");
+    const [loginError, setLoginError] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -52,20 +56,47 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
     }, [student._id, databaseName]);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        // Очищаємо помилку логіна при зміні поля email
+        if (name === 'email') {
+            setLoginError("");
+        }
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+    };
+
+    // ФУНКЦІЯ ДЛЯ ВАЛІДАЦІЇ ЛОГІНА
+    const validateLogin = (login) => {
+        if (!login.trim()) {
+            return "Логін обов'язковий";
+        }
+        if (!LOGIN_REGEX.test(login)) {
+            return "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+        }
+        return "";
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
+        setLoginError("");
 
         try {
             if (!databaseName) {
                 setError("Не вдалося отримати інформацію про базу даних");
+                setLoading(false);
+                return;
+            }
+
+            // Валідація логіна
+            const loginValidationError = validateLogin(formData.email);
+            if (loginValidationError) {
+                setLoginError(loginValidationError);
                 setLoading(false);
                 return;
             }
@@ -81,7 +112,12 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
             onUpdate(response.data.user);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || "Помилка при оновленні студента");
+            // Перевіряємо помилку дублювання логіна
+            if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
+                setLoginError("Користувач з таким логіном вже існує");
+            } else {
+                setError(err.response?.data?.error || "Помилка при оновленні студента");
+            }
         } finally {
             setLoading(false);
         }
@@ -198,7 +234,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* ПОШТА */}
+                        {/* ЛОГІН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -212,18 +248,19 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Email *
+                                Логін *
                             </label>
                             <input
-                                type="email"
+                                type="text"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
+                                placeholder="ivanenko_ivan"
                                 style={{
                                     width: '100%',
                                     padding: '10px 12px',
-                                    border: '1px solid #e5e7eb',
+                                    border: `1px solid ${loginError ? '#dc2626' : '#e5e7eb'}`,
                                     borderRadius: '6px',
                                     fontSize: '14px',
                                     boxSizing: 'border-box',
@@ -231,12 +268,23 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     transition: 'border-color 0.2s'
                                 }}
                                 onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
+                                    e.target.style.borderColor = loginError ? '#dc2626' : 'rgba(105, 180, 185, 1)';
                                 }}
                                 onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
+                                    if (!loginError) {
+                                        e.target.style.borderColor = '#e5e7eb';
+                                    }
                                 }}
                             />
+                            {loginError && (
+                                <div style={{
+                                    color: '#dc2626',
+                                    fontSize: '12px',
+                                    marginTop: '4px'
+                                }}>
+                                    {loginError}
+                                </div>
+                            )}
                         </div>
 
                         {/* ТЕЛЕФОН */}

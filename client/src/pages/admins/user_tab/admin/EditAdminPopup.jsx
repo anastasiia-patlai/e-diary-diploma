@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { FaTimes, FaUser, FaPhone, FaEnvelope, FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
 
+// Додаємо регулярний вираз для перевірки логіна
+const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
+
 const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState({
@@ -42,7 +45,12 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                 if (!/^\+380\d{9}$/.test(value)) error = t('admin.editPopup.errors.phoneInvalid');
                 break;
             case 'email':
-                if (!/\S+@\S+\.\S+/.test(value)) error = t('admin.editPopup.errors.emailInvalid');
+                // Змінюємо валідацію для логіна
+                if (!value.trim()) {
+                    error = "Логін обов'язковий";
+                } else if (!LOGIN_REGEX.test(value)) {
+                    error = "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+                }
                 break;
             case 'jobPosition':
                 if (!value.trim()) error = t('admin.editPopup.errors.positionRequired');
@@ -74,6 +82,11 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
 
         const error = validateField(name, value);
         setErrors(prev => ({ ...prev, [name]: error }));
+
+        // Очищаємо помилку логіна при зміні поля email
+        if (name === 'email' && errors.submit) {
+            setErrors(prev => ({ ...prev, submit: '' }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -113,7 +126,12 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
 
         } catch (err) {
             console.error('Помилка оновлення адміністратора:', err);
-            setErrors({ submit: err.response?.data?.error || t('admin.editPopup.errors.updateError') });
+            // Перевіряємо помилку дублювання логіна
+            if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
+                setErrors({ email: "Користувач з таким логіном вже існує" });
+            } else {
+                setErrors({ submit: err.response?.data?.error || t('admin.editPopup.errors.updateError') });
+            }
         } finally {
             setLoading(false);
         }
@@ -234,15 +252,15 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaEnvelope className="me-2" />
-                            {t('admin.editPopup.email')}
+                            Логін *
                         </label>
                         <input
-                            type="email"
+                            type="text"
                             name="email"
                             className={getInputClass('email')}
                             value={formData.email}
                             onChange={handleChange}
-                            placeholder="email@example.com"
+                            placeholder="ivanenko_ivan"
                             required
                         />
                         <div className="invalid-feedback">{errors.email}</div>

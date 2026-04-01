@@ -85,7 +85,7 @@ router.get('/teachers', async (req, res) => {
 
         const User = getSchoolUserModel(databaseName);
         const teachers = await User.find({ role: 'teacher' })
-            .select('fullName email phone positions position category teacherType allowedCategories dateOfBirth') // ✅ Додано teacherType та allowedCategories
+            .select('fullName email phone positions position category teacherType allowedCategories dateOfBirth')
             .sort({ fullName: 1 });
         res.json(teachers);
     } catch (err) {
@@ -97,7 +97,7 @@ router.get('/teachers', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, category, teacherType, allowedCategories, jobPosition } = req.body; // ✅ Додано teacherType та allowedCategories
+        const { databaseName, fullName, email, phone, dateOfBirth, group, positions, position, category, teacherType, allowedCategories, jobPosition } = req.body;
 
         if (!databaseName) {
             return res.status(400).json({ error: 'Не вказано databaseName' });
@@ -109,6 +109,14 @@ router.put('/:id', async (req, res) => {
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ error: 'Користувача не знайдено' });
+        }
+
+        // Перевірка унікальності логіна (email)
+        if (email && email !== user.email) {
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(400).json({ error: 'Користувач з таким логіном вже існує' });
+            }
         }
 
         if (user.role === 'student' && group && user.group?.toString() !== group) {
@@ -143,7 +151,6 @@ router.put('/:id', async (req, res) => {
                 updateData.positions = position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
             }
 
-            // ✅ Додано обробку teacherType та allowedCategories
             if (category !== undefined) {
                 updateData.category = category;
             }
@@ -151,7 +158,6 @@ router.put('/:id', async (req, res) => {
             if (teacherType !== undefined) {
                 updateData.teacherType = teacherType;
 
-                // Автоматично генеруємо allowedCategories на основі teacherType, якщо не вказано явно
                 if (!allowedCategories || allowedCategories.length === 0) {
                     if (teacherType === "young") {
                         updateData.allowedCategories = ["young"];
@@ -318,7 +324,7 @@ router.put('/admin/:id', async (req, res) => {
         if (email && email !== admin.email) {
             const existingUser = await User.findOne({ email });
             if (existingUser) {
-                return res.status(400).json({ error: 'Користувач з таким email вже існує' });
+                return res.status(400).json({ error: 'Користувач з таким логіном вже існує' });
             }
         }
 
@@ -676,7 +682,6 @@ router.put('/teacher/:id/type', async (req, res) => {
             return res.status(404).json({ error: 'Викладача не знайдено' });
         }
 
-        // Валідація teacherType
         const validTeacherTypes = ['young', 'middle', 'senior', 'middle-senior', 'all'];
         if (teacherType && !validTeacherTypes.includes(teacherType)) {
             return res.status(400).json({
@@ -687,7 +692,6 @@ router.put('/teacher/:id/type', async (req, res) => {
 
         let allowedCategories = teacher.allowedCategories || [];
 
-        // Автоматично генеруємо allowedCategories на основі teacherType
         if (teacherType === "young") {
             allowedCategories = ["young"];
         } else if (teacherType === "middle") {

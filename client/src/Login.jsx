@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaEnvelope, FaLock, FaSignInAlt } from "react-icons/fa";
+import { FaUser, FaLock, FaSignInAlt } from "react-icons/fa";
 import LanguageSwitcher from "./i18n/components/LanguageSwitcher";
 
+// REGEX для перевірки формату логіна: прізвище_ім'я (латиниця або кирилиця)
+const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 function Login() {
     const { t } = useTranslation();
@@ -15,7 +17,6 @@ function Login() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [loading, setLoading] = useState(false);
 
-    // Відслідковуємо зміну розміру вікна
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 768);
@@ -28,8 +29,9 @@ function Login() {
     const validateField = (name, value) => {
         let error = "";
         if (name === "email") {
-            if (!value) error = t("login.errors.emailRequired");
-            else if (!/\S+@\S+\.\S+/.test(value)) error = t("login.errors.emailInvalid");
+            // ✅ ЗМІНЕНО: перевірка формату логіна замість email regex
+            if (!value) error = t("login.errors.loginRequired", { defaultValue: "Введіть логін" });
+            else if (!LOGIN_REGEX.test(value)) error = t("login.errors.loginInvalid", { defaultValue: "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)" });
         }
         if (name === "password") {
             if (!value) error = t("login.errors.passwordRequired");
@@ -67,6 +69,7 @@ function Login() {
             const res = await fetch("http://localhost:3001/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                // ✅ Поле email відправляється на бекенд без змін — лише UI змінився
                 body: JSON.stringify(formData)
             });
 
@@ -133,7 +136,6 @@ function Login() {
         position: "relative"
     };
 
-    // Стиль для контейнера перемикача мови - ТІЛЬКИ ПОЗИЦІОНУВАННЯ, БЕЗ ФОНУ!
     const languageSwitcherStyle = {
         position: 'fixed',
         top: '18px',
@@ -202,17 +204,17 @@ function Login() {
                                 fontSize: isMobile ? '16px' : '20px',
                                 fontWeight: '500'
                             }}>
-                                <FaEnvelope className="me-2" />
-                                {t("login.emailLabel")}
+                                <FaUser className="me-2" />
+                                {t("login.loginLabel", { defaultValue: "Логін" })}
                             </label>
                             <input
-                                type="email"
+                                type="text"
                                 name="email"
                                 className={getInputClass("email")}
                                 value={formData.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder={t("login.emailPlaceholder")}
+                                placeholder="ivanenko_ivan"
                                 style={{
                                     fontSize: isMobile ? '16px' : '20px',
                                     padding: isMobile ? '12px 15px' : '14px 18px',

@@ -3,6 +3,9 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { getSchoolUserModel, getSchoolGroupModel } = require('../config/databaseManager');
 
+// ✅ ДОДАНО: REGEX для перевірки формату логіна на бекенді
+const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
+
 router.post('/signup', async (req, res) => {
     console.log("Отримані дані:", JSON.stringify(req.body, null, 2));
 
@@ -22,17 +25,15 @@ router.post('/signup', async (req, res) => {
         allowedCategories
     } = req.body;
 
-    // ДОДАЙТЕ ПЕРЕВІРКУ КОЖНОГО ПОЛЯ
     console.log("Перевірка полів:");
     console.log("- fullName:", fullName, "| Тип:", typeof fullName);
     console.log("- role:", role, "| Тип:", typeof role);
     console.log("- phone:", phone, "| Тип:", typeof phone);
-    console.log("- email:", email, "| Тип:", typeof email);
+    console.log("- email (логін):", email, "| Тип:", typeof email);
     console.log("- password:", password ? "присутній" : "відсутній");
     console.log("- teacherType:", teacherType, "| Для ролі:", role);
 
     try {
-        // ПЕРЕВІРКА НАЯВНОСТІ databaseName
         if (!databaseName) {
             console.log("Відсутнє поле databaseName");
             return res.status(400).json({
@@ -42,11 +43,9 @@ router.post('/signup', async (req, res) => {
 
         console.log("Підключення до бази даних:", databaseName);
 
-        // ОТРИМУЄМО МОЖДЕЛІ ДЛЯ КОНРКЕТНОЇ ШКОЛИ
         const User = getSchoolUserModel(databaseName);
         const Group = getSchoolGroupModel(databaseName);
 
-        // ПЕРЕВІРКА ОБОВ'ЯЗКОВИХ ПОЛІВ
         if (!fullName || !role || !phone || !email || !password) {
             console.log("Відсутні обов'язкові поля");
             return res.status(400).json({
@@ -61,11 +60,20 @@ router.post('/signup', async (req, res) => {
             });
         }
 
+        // ✅ ДОДАНО: Перевірка формату логіна перед збереженням
+        if (!LOGIN_REGEX.test(email)) {
+            console.log("Некоректний формат логіна:", email);
+            return res.status(400).json({
+                error: "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan). Дозволені символи: латиниця та кирилиця."
+            });
+        }
+
         console.log("Перевірка існуючого користувача...");
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             console.log("Користувач вже існує:", email);
-            return res.status(400).json({ error: 'Користувач з таким email вже існує' });
+            // ✅ ЗМІНЕНО: повідомлення "email" → "логін"
+            return res.status(400).json({ error: 'Користувач з таким логіном вже існує' });
         }
 
         console.log("Хешування пароля...");
@@ -73,7 +81,6 @@ router.post('/signup', async (req, res) => {
 
         let groupId = null;
 
-        // ОБРОБКА ГРУПИ ДЛЯ УЧНІВ/СТУДЕНТІВ
         if (role === 'student' && group) {
             console.log("Обробка групи для студента:", group);
             let existingGroup = await Group.findOne({ name: group });
@@ -96,19 +103,16 @@ router.post('/signup', async (req, res) => {
             password: hashedPassword
         };
 
-        // ДОДАТКОВІ ПОЛЯ ЗА РОЛЛЮ
         if (role === 'student') {
             userData.group = groupId;
             console.log("Додано групу для студента:", groupId);
         } else if (role === 'teacher') {
-            // ОБРОБКА ПАРАМЕТРІВ 
             userData.positions = positions && Array.isArray(positions)
                 ? positions.filter(pos => pos && pos.trim() !== "")
                 : [];
             userData.position = userData.positions.join(", ");
             userData.category = category || '';
 
-            // ОБОВ'ЯЗКОВА ПЕРЕВІРКА teacherType ДЛЯ ВЧИТЕЛЯ
             if (!teacherType) {
                 return res.status(400).json({
                     error: 'Для викладача обов\'язково вказати тип викладача'
@@ -117,7 +121,6 @@ router.post('/signup', async (req, res) => {
 
             userData.teacherType = teacherType;
 
-            // АВТОМАТИЧНО ГЕНЕРУЄМО allowedCategories НА ОСНОВІ teacherType
             if (teacherType === "young") {
                 userData.allowedCategories = ["young"];
             } else if (teacherType === "middle") {
@@ -137,10 +140,8 @@ router.post('/signup', async (req, res) => {
 
             if (category && category.trim() !== "") {
                 userData.category = category;
-                console.log("Додано категорію для викладача:", userData.category);
             } else {
                 userData.category = "Без категорії";
-                console.log("Встановлено категорію за замовчуванням:", userData.category);
             }
 
             console.log("Додано позиції для викладача:", userData.positions);
@@ -151,13 +152,11 @@ router.post('/signup', async (req, res) => {
 
         console.log("Дані для створення користувача:", JSON.stringify(userData, null, 2));
 
-        // СТВОРЕННЯ КОРИСТУВАЧА
         console.log("Створення нового користувача...");
         const newUser = new User(userData);
         await newUser.save();
         console.log("Користувач успішно створений:", newUser._id);
 
-        // ОНОВЛЕННЯ ГРУПИ ДЛЯ УЧНІВ/СТУДЕНТІВ
         if (role === 'student' && groupId) {
             console.log("Оновлення групи з студентом...");
             await Group.findByIdAndUpdate(
@@ -185,7 +184,6 @@ router.post('/signup', async (req, res) => {
         console.error("Повідомлення:", err.message);
         console.error("Стек:", err.stack);
 
-        // ДЕТАЛЬНА ОБРОБКА ПОМИЛОК
         if (err.name === 'ValidationError') {
             const errors = Object.values(err.errors).map(error => ({
                 field: error.path,
@@ -199,7 +197,6 @@ router.post('/signup', async (req, res) => {
         }
 
         if (err.name === 'CastError') {
-            console.error("Помилка приведення типу:", err);
             return res.status(400).json({
                 error: 'Некоректний формат даних',
                 details: err.message
@@ -207,22 +204,19 @@ router.post('/signup', async (req, res) => {
         }
 
         if (err.code === 11000) {
-            console.error("Duplicate key error:", err);
+            // ✅ ЗМІНЕНО: повідомлення "email" → "логін"
             return res.status(400).json({
-                error: 'Користувач з таким email вже існує'
+                error: 'Користувач з таким логіном вже існує'
             });
         }
 
         if (err.name === 'MongooseError' && err.message.includes('buffering timed out')) {
-            console.error("Timeout при підключенні до бази даних");
             return res.status(500).json({
                 error: 'Не вдалося підключитися до бази даних школи',
                 details: 'Перевірте, чи MongoDB сервер запущено'
             });
         }
 
-        // ЗАГАЛЬНА ПОМИЛКА СЕРВЕРА
-        console.error("Неочікувана помилка:", err);
         res.status(500).json({
             error: 'Внутрішня помилка сервера',
             details: process.env.NODE_ENV === 'development' ? err.message : 'Зверніться до адміністратора'
