@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaTimes, FaPlus, FaMinus } from "react-icons/fa";
 
-// ✅ ДОДАНО: REGEX для перевірки формату логіна
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 function Signup({ onClose, databaseName }) {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: "",
         role: "",
         phone: "",
         dateOfBirth: "",
-        email: "",       // ← поле залишається "email" для бекенду
+        email: "",
         password: "",
         confirmPassword: "",
         group: "",
@@ -65,45 +66,44 @@ function Signup({ onClose, databaseName }) {
         let error = "";
         switch (name) {
             case "fullName":
-                if (!value.trim()) error = "Введіть ПІБ";
+                if (!value.trim()) error = t("signup.errors.fullNameRequired");
                 break;
             case "role":
-                if (!value) error = "Оберіть роль";
+                if (!value) error = t("signup.errors.roleRequired");
                 break;
             case "phone":
-                if (!/^\+380\d{9}$/.test(value)) error = "Телефон у форматі +380XXXXXXXXX";
+                if (!/^\+380\d{9}$/.test(value)) error = t("signup.errors.phoneInvalid");
                 break;
             case "dateOfBirth":
-                if (!value) error = "Вкажіть дату народження";
+                if (!value) error = t("signup.errors.birthDateRequired");
                 break;
-            // ✅ ЗМІНЕНО: email → логін (поле залишається "email", але перевірка інша)
             case "email":
-                if (!value.trim()) error = "Введіть логін";
-                else if (!LOGIN_REGEX.test(value)) error = "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+                if (!value.trim()) error = t("signup.errors.loginRequired");
+                else if (!LOGIN_REGEX.test(value)) error = t("signup.errors.loginInvalid");
                 break;
             case "password":
-                if (!value) error = "Пароль обов'язковий";
-                else if (value.length < 6) error = "Пароль має містити щонайменше 6 символів";
+                if (!value) error = t("signup.errors.passwordRequired");
+                else if (value.length < 6) error = t("signup.errors.passwordMinLength");
                 break;
             case "confirmPassword":
-                if (!value) error = "Підтвердження пароля обов'язкове";
-                else if (value !== formData.password) error = "Паролі не збігаються";
+                if (!value) error = t("signup.errors.confirmPasswordRequired");
+                else if (value !== formData.password) error = t("signup.errors.passwordMismatch");
                 break;
             case "group":
-                if (formData.role === "student" && !value.trim()) error = "Вкажіть групу / клас";
+                if (formData.role === "student" && !value.trim()) error = t("signup.errors.groupRequired");
                 break;
             case "positions":
                 if (formData.role === "teacher" && formData.positions.every(pos => !pos.trim())) {
-                    error = "Вкажіть хоча б один предмет";
+                    error = t("signup.errors.subjectsRequired");
                 }
                 break;
             case "teacherType":
                 if (formData.role === "teacher" && !value) {
-                    error = "Оберіть тип викладача";
+                    error = t("signup.errors.teacherTypeRequired");
                 }
                 break;
             case "jobPosition":
-                if (formData.role === "admin" && !value.trim()) error = "Вкажіть посаду";
+                if (formData.role === "admin" && !value.trim()) error = t("signup.errors.jobPositionRequired");
                 break;
             default:
                 break;
@@ -127,7 +127,7 @@ function Signup({ onClose, databaseName }) {
         e.preventDefault();
 
         if (!databaseName) {
-            alert("Помилка: не вказано базу даних школи. Будь ласка, спочатку зареєструйте школу.");
+            alert(t("signup.errors.noDatabase"));
             return;
         }
 
@@ -140,14 +140,13 @@ function Signup({ onClose, databaseName }) {
                 ? formData.positions.filter(pos => pos.trim() !== "")
                 : [];
 
-            // ✅ email відправляється на бекенд як є (значення — це логін)
             const submitData = {
                 databaseName: databaseName,
                 fullName: formData.fullName,
                 role: formData.role,
                 phone: formData.phone,
                 dateOfBirth: formData.dateOfBirth,
-                email: formData.email,   // ← значення у форматі "ivanenko_ivan"
+                email: formData.email,
                 password: formData.password
             };
 
@@ -182,7 +181,7 @@ function Signup({ onClose, databaseName }) {
 
             axios.post("http://localhost:3001/api/signup", submitData)
                 .then((res) => {
-                    setSuccessMessage(`Користувач ${formData.fullName} доданий!`);
+                    setSuccessMessage(t("signup.successMessage", { name: formData.fullName }));
                     setFormData({
                         fullName: "",
                         role: "",
@@ -215,18 +214,18 @@ function Signup({ onClose, databaseName }) {
                             const errorMessages = err.response.data.details
                                 .map(detail => `${detail.field}: ${detail.message}`)
                                 .join('\n');
-                            alert(`Помилки валідації:\n${errorMessages}`);
+                            alert(`${t("signup.errors.validationErrors")}\n${errorMessages}`);
                         } else if (err.response.data && err.response.data.error) {
-                            alert("Помилка реєстрації: " + err.response.data.error);
+                            alert(t("signup.errors.registrationError") + " " + err.response.data.error);
                         } else {
-                            alert("Сталася помилка під час реєстрації (код: " + err.response.status + ")");
+                            alert(t("signup.errors.serverError", { code: err.response.status }));
                         }
                     } else if (err.request) {
                         console.error("Не вдалося отримати відповідь від сервера:", err.request);
-                        alert("Не вдалося підключитися до сервера. Перевірте підключення до мережі.");
+                        alert(t("signup.errors.connectionError"));
                     } else {
                         console.error("Помилка налаштування запиту:", err.message);
-                        alert("Помилка при відправці запиту: " + err.message);
+                        alert(t("signup.errors.requestError", { message: err.message }));
                     }
                 });
         }
@@ -286,7 +285,7 @@ function Signup({ onClose, databaseName }) {
                             padding: '4px',
                             zIndex: 10
                         }}
-                        aria-label="Закрити"
+                        aria-label={t("signup.close")}
                     >
                         <FaTimes />
                     </button>
@@ -314,14 +313,13 @@ function Signup({ onClose, databaseName }) {
                         paddingTop: isMobile ? '7px' : '0',
                         wordWrap: 'break-word'
                     }}>
-                        Реєстрація користувача
+                        {t("signup.title")}
                     </h3>
 
                     <form onSubmit={handleSubmit} noValidate>
-                        {/* ПІБ */}
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                ПІБ
+                                {t("signup.fullName")}
                             </label>
                             <input
                                 type="text"
@@ -330,7 +328,7 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.fullName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="Прізвище, Ім'я, По-батькові"
+                                placeholder={t("signup.fullNamePlaceholder")}
                                 style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                             />
                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -338,10 +336,9 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         </div>
 
-                        {/* РОЛЬ */}
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                Роль
+                                {t("signup.role")}
                             </label>
                             <select
                                 name="role"
@@ -351,22 +348,21 @@ function Signup({ onClose, databaseName }) {
                                 onBlur={handleBlur}
                                 style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                             >
-                                <option value="">-- Оберіть роль --</option>
-                                <option value="student">Студент / Учень</option>
-                                <option value="parent">Батько / Мати</option>
-                                <option value="teacher">Викладач</option>
-                                <option value="admin">Адміністратор</option>
+                                <option value="">{t("signup.selectRole")}</option>
+                                <option value="student">{t("signup.student")}</option>
+                                <option value="parent">{t("signup.parent")}</option>
+                                <option value="teacher">{t("signup.teacher")}</option>
+                                <option value="admin">{t("signup.admin")}</option>
                             </select>
                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
                                 {errors.role}
                             </div>
                         </div>
 
-                        {/* СТУДЕНТ */}
                         {formData.role === "student" && (
                             <div className="mb-3 fade-in">
                                 <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                    Група / Клас
+                                    {t("signup.group")}
                                 </label>
                                 <input
                                     type="text"
@@ -375,7 +371,7 @@ function Signup({ onClose, databaseName }) {
                                     value={formData.group}
                                     onChange={handleChange}
                                     onBlur={handleBlur}
-                                    placeholder="Напр. ПП-42"
+                                    placeholder={t("signup.groupPlaceholder")}
                                     style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                                 />
                                 <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -384,11 +380,10 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         )}
 
-                        {/* ВИКЛАДАЧ */}
                         {formData.role === "teacher" && (
                             <div className="mb-3 fade-in">
                                 <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                    Тип викладача *
+                                    {t("signup.teacherType")} *
                                 </label>
                                 <select
                                     name="teacherType"
@@ -398,19 +393,19 @@ function Signup({ onClose, databaseName }) {
                                     onBlur={handleBlur}
                                     style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                                 >
-                                    <option value="">-- Оберіть тип --</option>
-                                    <option value="young">Викладач молодших класів (1-4)</option>
-                                    <option value="middle">Викладач середніх класів (5-9)</option>
-                                    <option value="senior">Викладач старших класів (10-11)</option>
-                                    <option value="middle-senior">Викладач середніх та старших класів</option>
-                                    <option value="all">Викладач усіх класів</option>
+                                    <option value="">{t("signup.selectTeacherType")}</option>
+                                    <option value="young">{t("signup.teacherTypeYoung")}</option>
+                                    <option value="middle">{t("signup.teacherTypeMiddle")}</option>
+                                    <option value="senior">{t("signup.teacherTypeSenior")}</option>
+                                    <option value="middle-senior">{t("signup.teacherTypeMiddleSenior")}</option>
+                                    <option value="all">{t("signup.teacherTypeAll")}</option>
                                 </select>
                                 <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
                                     {errors.teacherType}
                                 </div>
 
                                 <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500', marginTop: '15px' }}>
-                                    Категорія кваліфікації
+                                    {t("signup.qualificationCategory")}
                                 </label>
                                 <select
                                     name="category"
@@ -420,17 +415,17 @@ function Signup({ onClose, databaseName }) {
                                     onBlur={handleBlur}
                                     style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                                 >
-                                    <option value="">-- Оберіть категорію --</option>
-                                    <option value="Вища категорія">Вища категорія</option>
-                                    <option value="Перша категорія">Перша категорія</option>
-                                    <option value="Друга категорія">Друга категорія</option>
-                                    <option value="Спеціаліст">Спеціаліст</option>
-                                    <option value="Молодший спеціаліст">Молодший спеціаліст</option>
-                                    <option value="Без категорії">Без категорії</option>
+                                    <option value="">{t("signup.selectCategory")}</option>
+                                    <option value="Вища категорія">{t("signup.categoryHighest")}</option>
+                                    <option value="Перша категорія">{t("signup.categoryFirst")}</option>
+                                    <option value="Друга категорія">{t("signup.categorySecond")}</option>
+                                    <option value="Спеціаліст">{t("signup.categorySpecialist")}</option>
+                                    <option value="Молодший спеціаліст">{t("signup.categoryJuniorSpecialist")}</option>
+                                    <option value="Без категорії">{t("signup.categoryNoCategory")}</option>
                                 </select>
 
                                 <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500', marginTop: '15px' }}>
-                                    Предмети *
+                                    {t("signup.subjects")} *
                                 </label>
                                 {formData.positions.map((position, index) => (
                                     <div key={index} className="d-flex align-items-center mb-2">
@@ -440,7 +435,7 @@ function Signup({ onClose, databaseName }) {
                                             value={position}
                                             onChange={(e) => updatePosition(index, e.target.value)}
                                             onBlur={() => validateField("positions", formData.positions)}
-                                            placeholder={`Предмет ${index + 1}`}
+                                            placeholder={t("signup.subjectPlaceholder", { number: index + 1 })}
                                             style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                                         />
                                         {formData.positions.length > 1 && (
@@ -449,7 +444,7 @@ function Signup({ onClose, databaseName }) {
                                                 className="btn btn-outline-danger"
                                                 onClick={() => removePositionField(index)}
                                                 style={{ padding: isMobile ? '8px' : '10px', minWidth: '40px' }}
-                                                aria-label="Видалити предмет"
+                                                aria-label={t("signup.removeSubject")}
                                             >
                                                 <FaMinus size={isMobile ? 14 : 16} />
                                             </button>
@@ -472,7 +467,7 @@ function Signup({ onClose, databaseName }) {
                                     onClick={addPositionField}
                                 >
                                     <FaPlus className="me-1" />
-                                    Додати ще предмет
+                                    {t("signup.addSubject")}
                                 </button>
                                 {errors.positions && (
                                     <div className="invalid-feedback d-block" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -482,11 +477,10 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         )}
 
-                        {/* АДМІНІСТРАТОР - ПОСАДА */}
                         {formData.role === "admin" && (
                             <div className="mb-3 fade-in">
                                 <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                    Посада
+                                    {t("signup.jobPosition")}
                                 </label>
                                 <input
                                     type="text"
@@ -495,7 +489,7 @@ function Signup({ onClose, databaseName }) {
                                     value={formData.jobPosition}
                                     onChange={handleChange}
                                     onBlur={handleBlur}
-                                    placeholder="Напр. Заступник директора"
+                                    placeholder={t("signup.jobPositionPlaceholder")}
                                     style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                                 />
                                 <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -504,10 +498,9 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         )}
 
-                        {/* ТЕЛЕФОН */}
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                Телефон
+                                {t("signup.phone")}
                             </label>
                             <input
                                 type="tel"
@@ -516,7 +509,7 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="+380..."
+                                placeholder={t("signup.phonePlaceholder")}
                                 style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                             />
                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -524,10 +517,9 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         </div>
 
-                        {/* ДАТА НАРОДЖЕННЯ */}
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                Дата народження
+                                {t("signup.birthDate")}
                             </label>
                             <input
                                 type="date"
@@ -545,7 +537,7 @@ function Signup({ onClose, databaseName }) {
 
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                Логін
+                                {t("signup.login")}
                             </label>
                             <input
                                 type="text"
@@ -554,7 +546,7 @@ function Signup({ onClose, databaseName }) {
                                 value={formData.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="ivanenko_ivan"
+                                placeholder={t("signup.loginPlaceholder")}
                                 style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
                             />
                             <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
@@ -562,10 +554,9 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         </div>
 
-                        {/* ПАРОЛЬ */}
                         <div className="mb-3">
                             <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
-                                Пароль
+                                {t("signup.password")}
                             </label>
                             <input
                                 type="password"
@@ -581,7 +572,24 @@ function Signup({ onClose, databaseName }) {
                             </div>
                         </div>
 
-                        {/* КНОПКА РЕЄСТРАЦІЇ */}
+                        <div className="mb-3">
+                            <label className="form-label" style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: '500' }}>
+                                {t("signup.confirmPassword")}
+                            </label>
+                            <input
+                                type="password"
+                                name="confirmPassword"
+                                className={getInputClass("confirmPassword")}
+                                value={formData.confirmPassword}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                style={{ fontSize: isMobile ? '14px' : '16px', padding: isMobile ? '10px' : '12px' }}
+                            />
+                            <div className="invalid-feedback" style={{ fontSize: isMobile ? '12px' : '14px' }}>
+                                {errors.confirmPassword}
+                            </div>
+                        </div>
+
                         <button
                             type="submit"
                             className="btn w-100"
@@ -597,7 +605,7 @@ function Signup({ onClose, databaseName }) {
                                 transition: 'all 0.3s ease'
                             }}
                         >
-                            Зареєструвати
+                            {t("signup.register")}
                         </button>
                     </form>
                 </div>
