@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { FaTimes, FaUser, FaPhone, FaEnvelope, FaBriefcase, FaCalendarAlt } from 'react-icons/fa';
 import axios from 'axios';
 
-// Додаємо регулярний вираз для перевірки логіна
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
@@ -45,11 +44,10 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                 if (!/^\+380\d{9}$/.test(value)) error = t('admin.editPopup.errors.phoneInvalid');
                 break;
             case 'email':
-                // Змінюємо валідацію для логіна
                 if (!value.trim()) {
-                    error = "Логін обов'язковий";
+                    error = t('admin.editPopup.errors.loginRequired');
                 } else if (!LOGIN_REGEX.test(value)) {
-                    error = "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+                    error = t('admin.editPopup.errors.loginInvalid');
                 }
                 break;
             case 'jobPosition':
@@ -117,7 +115,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                 }
             );
 
-            setSuccessMessage(t('admin.editPopup.success'));
+            setSuccessMessage(t('admin.admineditPopup.success'));
 
             setTimeout(() => {
                 onUpdate(response.data.admin);
@@ -200,7 +198,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <FaTimes />
                 </button>
 
-                <h4 className="text-center mb-4">{t('admin.editPopup.title')}</h4>
+                <h4 className="text-center mb-4">{t('admin.users.admin.editTitle')}</h4>
 
                 {successMessage && (
                     <div className="alert alert-success" role="alert">
@@ -218,7 +216,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaUser className="me-2" />
-                            {t('admin.editPopup.fullName')}
+                            {t('admin.users.admin.editPopup.fullName')}
                         </label>
                         <input
                             type="text"
@@ -226,7 +224,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className={getInputClass('fullName')}
                             value={formData.fullName}
                             onChange={handleChange}
-                            placeholder={t('admin.editPopup.fullNamePlaceholder')}
+                            placeholder={t('admin.users.admin.editPopup.fullNamePlaceholder')}
                             required
                         />
                         <div className="invalid-feedback">{errors.fullName}</div>
@@ -235,7 +233,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaPhone className="me-2" />
-                            {t('admin.editPopup.phone')}
+                            {t('admin.users.admin.editPopup.phone')}
                         </label>
                         <input
                             type="tel"
@@ -252,7 +250,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaEnvelope className="me-2" />
-                            Логін *
+                            {t('admin.users.admin.editPopup.login')}
                         </label>
                         <input
                             type="text"
@@ -269,7 +267,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-3">
                         <label className="form-label">
                             <FaBriefcase className="me-2" />
-                            {t('admin.editPopup.position')}
+                            {t('admin.users.admin.editPopup.position')}
                         </label>
                         <input
                             type="text"
@@ -277,7 +275,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className={getInputClass('jobPosition')}
                             value={formData.jobPosition}
                             onChange={handleChange}
-                            placeholder={t('admin.editPopup.positionPlaceholder')}
+                            placeholder={t('admin.users.admin.editPopup.positionPlaceholder')}
                             required
                         />
                         <div className="invalid-feedback">{errors.jobPosition}</div>
@@ -286,7 +284,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                     <div className="mb-4">
                         <label className="form-label">
                             <FaCalendarAlt className="me-2" />
-                            {t('admin.editPopup.birthDate')}
+                            {t('admin.users.admin.editPopup.birthDate')}
                         </label>
                         <input
                             type="date"
@@ -308,7 +306,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                             className="btn btn-secondary flex-fill"
                             disabled={loading}
                         >
-                            {t('admin.editPopup.cancel')}
+                            {t('admin.users.admin.editPopup.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -319,7 +317,7 @@ const EditAdminPopup = ({ admin, databaseName, onClose, onUpdate }) => {
                                 borderColor: 'rgba(105, 180, 185, 1)'
                             }}
                         >
-                            {loading ? t('admin.editPopup.saving') : t('admin.editPopup.save')}
+                            {loading ? t('admin.users.admin.editPopup.saving') : t('admin.users.admin.editPopup.save')}
                         </button>
                     </div>
                 </form>

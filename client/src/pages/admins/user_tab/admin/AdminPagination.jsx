@@ -55,7 +55,7 @@ const AdminPagination = ({
                     fontSize: isMobile ? '13px' : '14px',
                     color: '#6b7280'
                 }}>
-                    {t('admin.pagination.showing', {
+                    {t('admin.admin.pagination.showing', {
                         start: startIndex + 1,
                         end: Math.min(endIndex, totalItems),
                         total: totalItems
@@ -65,7 +65,7 @@ const AdminPagination = ({
                     fontSize: isMobile ? '13px' : '14px',
                     color: '#6b7280'
                 }}>
-                    {t('admin.pagination.page', { current: currentPage, total: totalPages })}
+                    {t('admin.admin.pagination.page', { current: currentPage, total: totalPages })}
                 </div>
             </div>
 
@@ -118,7 +118,7 @@ const AdminPagination = ({
                         }}
                     >
                         <FaChevronLeft size={isMobile ? 10 : 12} />
-                        {!isMobile && t('admin.pagination.previous')}
+                        {!isMobile && t('admin.admin.pagination.previous')}
                     </button>
 
                     {getPageNumbers().map(page => (
@@ -157,7 +157,7 @@ const AdminPagination = ({
                             fontSize: isMobile ? '12px' : '14px'
                         }}
                     >
-                        {!isMobile && t('admin.pagination.next')}
+                        {!isMobile && t('admin.admin.pagination.next')}
                         <FaChevronRight size={isMobile ? 10 : 12} />
                     </button>
 

@@ -20,8 +20,8 @@ const AdminList = ({ admins, searchQuery, onEdit, onDelete, isMobile }) => {
                     fontSize: isMobile ? '14px' : '16px'
                 }}>
                     {searchQuery
-                        ? t('admin.list.noResults', { query: searchQuery })
-                        : t('admin.list.noAdmins')
+                        ? t('admin.users.admin.list.noResults', { query: searchQuery })
+                        : t('admin.users.admin.list.noAdmins')
                     }
                 </p>
             </div>

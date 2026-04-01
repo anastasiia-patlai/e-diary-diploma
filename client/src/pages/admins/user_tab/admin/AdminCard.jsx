@@ -25,18 +25,18 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
         const lastTwoDigits = age % 100;
 
         if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-            return t('admin.card.ageYears');
+            return t('admin.users.admin.card.ageYears');
         }
 
         if (lastDigit === 1) {
-            return t('admin.card.ageYear');
+            return t('admin.users.admin.card.ageYear');
         }
 
         if (lastDigit >= 2 && lastDigit <= 4) {
-            return t('admin.card.ageYears');
+            return t('admin.users.admin.card.ageYears');
         }
 
-        return t('admin.card.ageYears');
+        return t('admin.users.admin.card.ageYears');
     };
 
     const age = admin.dateOfBirth ? calculateAge(admin.dateOfBirth) : null;
@@ -181,7 +181,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                                     }}
                                 >
                                     <FaEdit size={10} />
-                                    {t('admin.card.edit')}
+                                    {t('admin.users.admin.card.edit')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -203,7 +203,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                                     }}
                                 >
                                     <FaTrash size={10} />
-                                    {t('admin.card.delete')}
+                                    {t('admin.users.admin.card.delete')}
                                 </button>
                             </div>
                         )}
@@ -226,7 +226,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                             }}
                         >
                             <FaEdit size={12} />
-                            {t('admin.card.edit')}
+                            {t('admin.users.admin.card.edit')}
                         </button>
                         <button
                             onClick={() => onDelete(admin)}
@@ -244,7 +244,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                             }}
                         >
                             <FaTrash size={12} />
-                            {t('admin.card.delete')}
+                            {t('admin.users.admin.card.delete')}
                         </button>
                     </div>
                 )}
@@ -262,7 +262,7 @@ const AdminCard = ({ admin, onEdit, onDelete, isMobile }) => {
                 }}>
                     <FaCalendarAlt size={isMobile ? 12 : 14} />
                     <span>
-                        {t('admin.card.birthDate')}: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
+                        {t('admin.users.admin.card.birthDate')}: {new Date(admin.dateOfBirth).toLocaleDateString('uk-UA')}
                         {age && (
                             <span style={{ fontWeight: '500', marginLeft: '6px' }}>
                                 ({age} {getAgeSuffix(age)})

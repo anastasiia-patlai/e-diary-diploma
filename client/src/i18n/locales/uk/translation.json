@@ -299,6 +299,8 @@
                 "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
                 "emailInvalid": "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
                 "positionRequired": "Посада обов'язкова",
+                "loginRequired": "Логін обов'язковий",
+                "loginInvalid": "Логін повинен бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
                 "birthDateRequired": "Дата народження обов'язкова",
                 "birthDateFuture": "Дата народження не може бути у майбутньому",
                 "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
@@ -413,7 +415,7 @@
                 "searchResults": "Знайдено {{count}} батьків за запитом \"{{query}}\"",
                 "noResults": "Батьки за запитом \"{{query}}\" не знайдені",
                 "noParents": "Батьки не знайдені",
-                "parentsCount": "Батьків: {{count}}",
+                "parents": "Батьків",
                 "children": "Діти",
                 "noChildren": "Дітей не додано",
                 "noSharedChildren": "Спільних дітей не знайдено",
@@ -489,7 +491,7 @@
         },
         "admin": {
             "title": "Управління адміністраторами",
-            "headerTitle": "Адміністратори ({{count}})",
+            "headerTitle": "Адміністратори",
             "editTitle": "Редагувати адміністратора",
             "deleteTitle": "Видалити адміністратора",
             "fullName": "ПІБ",
@@ -507,6 +509,78 @@
                 "birthDateRequired": "Дата народження обов'язкова",
                 "birthDateFuture": "Дата народження не може бути у майбутньому",
                 "birthDateTooOld": "Дата народження не може бути більше 100 років тому"
+            },
+            "card": {
+                "edit": "Редагувати",
+                "delete": "Видалити",
+                "birthDate": "Дата народження",
+                "ageYear": "рік",
+                "ageYears": "років"
+            },
+            "header": {
+                "sortAZ": "А-Я",
+                "sortZA": "Я-А",
+                "searchPlaceholder": "Пошук адміністраторів..."
+            },
+            "list": {
+                "noResults": "Адміністратори за запитом \"{{query}}\" не знайдені",
+                "noAdmins": "Адміністратори не знайдені"
+            },
+            "pagination": {
+                "showing": "Показано {{start}}-{{end}} з {{total}}",
+                "page": "Сторінка {{current}} з {{total}}",
+                "previous": "Попередня",
+                "next": "Наступна"
+            },
+            "showAdmin": {
+                "loading": "Завантаження адміністраторів...",
+                "noAdmins": "Інших адміністраторів не знайдено",
+                "noResults": "Інших адміністраторів за запитом \"{{query}}\" не знайдено",
+                "noOtherAdmins": "У системі немає інших адміністраторів",
+                "errors": {
+                    "noDatabase": "Не вдалося визначити базу даних школи",
+                    "noDatabaseSpecified": "Не вказано базу даних",
+                    "loadError": "Помилка завантаження адміністраторів"
+                }
+            },
+            "editPopup": {
+                "title": "Редагувати адміністратора",
+                "fullName": "ПІБ",
+                "fullNamePlaceholder": "Введіть ПІБ",
+                "phone": "Телефон",
+                "login": "Логін",
+                "position": "Посада",
+                "positionPlaceholder": "Введіть посаду",
+                "birthDate": "Дата народження",
+                "cancel": "Скасувати",
+                "save": "Зберегти",
+                "saving": "Збереження...",
+                "success": "Адміністратора успішно оновлено",
+                "errors": {
+                    "fullNameRequired": "ПІБ обов'язкове поле",
+                    "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
+                    "positionRequired": "Посада обов'язкова",
+                    "birthDateRequired": "Дата народження обов'язкова",
+                    "birthDateFuture": "Дата народження не може бути у майбутньому",
+                    "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
+                    "noDatabase": "Не вказано базу даних",
+                    "updateError": "Помилка оновлення адміністратора"
+                }
+            },
+            "deletePopup": {
+                "title": "Видалення адміністратора",
+                "confirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
+                "warning": "Цю дію неможливо буде скасувати!",
+                "confirm": "Так, видалити",
+                "cancel": "Скасувати",
+                "deleting": "Видалення...",
+                "errors": {
+                    "noDatabase": "Не вказано базу даних",
+                    "deleteError": "Помилка при видаленні адміністратора"
+                }
+            },
+            "errorState": {
+                "retry": "Спробувати знову"
             }
         },
         "group": {

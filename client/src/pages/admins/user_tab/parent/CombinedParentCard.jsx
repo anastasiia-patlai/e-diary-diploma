@@ -132,7 +132,7 @@ const CombinedParentCard = ({
                         color: '#374151',
                         marginBottom: isMobile ? '8px' : '10px'
                     }}>
-                        {t('admin.users.parent.children')} ({parents.length})
+                        {t('admin.users.parent.parents')}
                     </div>
                     {parents.map(parent => (
                         <div key={parent._id} style={{

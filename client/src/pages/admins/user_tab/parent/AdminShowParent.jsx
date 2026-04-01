@@ -538,7 +538,7 @@ const AdminShowParent = () => {
                         fontSize: isMobile ? '18px' : '20px',
                         whiteSpace: 'nowrap'
                     }}>
-                        {t('admin.users.parent.title')} ({filteredParents.length})
+                        {t('admin.users.parent.title')}
                     </h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
@@ -570,9 +570,9 @@ const AdminShowParent = () => {
             ) : (
                 <>
                     <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: isMobile ? '12px' : '15px',
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(380px, 1fr))',
+                        gap: isMobile ? '12px' : '20px',
                         marginBottom: isMobile ? '15px' : '20px',
                         width: '100%'
                     }}>

@@ -340,7 +340,7 @@
                 "searchResults": "Found {{count}} parents for query \"{{query}}\"",
                 "noResults": "No parents found for query \"{{query}}\"",
                 "noParents": "No parents found",
-                "parentsCount": "Parents: {{count}}",
+                "parents": "Parents",
                 "children": "Children",
                 "noChildren": "No children added",
                 "noSharedChildren": "No shared children found",
@@ -415,7 +415,7 @@
             },
             "admin": {
                 "title": "Administrator Management",
-                "headerTitle": "Administrators ({{count}})",
+                "headerTitle": "Administrators",
                 "editTitle": "Edit Administrator",
                 "deleteTitle": "Delete Administrator",
                 "fullName": "Full Name",
@@ -433,6 +433,80 @@
                     "birthDateRequired": "Date of birth is required",
                     "birthDateFuture": "Date of birth cannot be in the future",
                     "birthDateTooOld": "Date of birth cannot be more than 100 years ago"
+                },
+                "card": {
+                    "edit": "Edit",
+                    "delete": "Delete",
+                    "birthDate": "Date of birth",
+                    "ageYear": "year",
+                    "ageYears": "years"
+                },
+                "header": {
+                    "sortAZ": "A-Z",
+                    "sortZA": "Z-A",
+                    "searchPlaceholder": "Search administrators..."
+                },
+                "list": {
+                    "noResults": "No administrators found for query \"{{query}}\"",
+                    "noAdmins": "No administrators found"
+                },
+                "pagination": {
+                    "showing": "Showing {{start}}-{{end}} of {{total}}",
+                    "page": "Page {{current}} of {{total}}",
+                    "previous": "Previous",
+                    "next": "Next"
+                },
+                "showAdmin": {
+                    "loading": "Loading administrators...",
+                    "noAdmins": "No other administrators found",
+                    "noResults": "No other administrators found for query \"{{query}}\"",
+                    "noOtherAdmins": "There are no other administrators in the system",
+                    "errors": {
+                        "noDatabase": "Failed to determine the school database",
+                        "noDatabaseSpecified": "Database not specified",
+                        "loadError": "Error loading administrators"
+                    }
+                },
+                "editPopup": {
+                    "title": "Edit Administrator",
+                    "fullName": "Full Name",
+                    "fullNamePlaceholder": "Enter full name",
+                    "phone": "Phone",
+                    "login": "Login",
+                    "position": "Position",
+                    "positionPlaceholder": "Enter position",
+                    "birthDate": "Date of Birth",
+                    "cancel": "Cancel",
+                    "save": "Save",
+                    "saving": "Saving...",
+                    "success": "Administrator successfully updated",
+                    "errors": {
+                        "fullNameRequired": "Full name is required",
+                        "phoneInvalid": "Phone number must be in format +380XXXXXXXXX",
+                        "positionRequired": "Position is required",
+                        "loginRequired": "Login is required",
+                        "loginInvalid": "Login must be in format lastname_firstname (e.g. ivanenko_ivan)",
+                        "birthDateRequired": "Date of birth is required",
+                        "birthDateFuture": "Date of birth cannot be in the future",
+                        "birthDateTooOld": "Date of birth cannot be more than 100 years ago",
+                        "noDatabase": "Database not specified",
+                        "updateError": "Error updating administrator"
+                    }
+                },
+                "deletePopup": {
+                    "title": "Delete Administrator",
+                    "confirmQuestion": "Are you sure you want to delete this administrator?",
+                    "warning": "This action cannot be undone!",
+                    "confirm": "Yes, delete",
+                    "cancel": "Cancel",
+                    "deleting": "Deleting...",
+                    "errors": {
+                        "noDatabase": "Database not specified",
+                        "deleteError": "Error deleting administrator"
+                    }
+                },
+                "errorState": {
+                    "retry": "Try Again"
                 }
             }
         },

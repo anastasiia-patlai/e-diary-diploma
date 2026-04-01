@@ -13,7 +13,8 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
             alignItems: isMobile ? 'flex-start' : 'center',
             marginBottom: isMobile ? '15px' : '20px',
             gap: isMobile ? '12px' : '15px',
-            width: '100%'
+            width: '100%',
+            marginTop: isMobile ? '-10px' : '-20px'
         }}>
             <div style={{
                 display: 'flex',
@@ -26,7 +27,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                     fontSize: isMobile ? '18px' : '20px',
                     whiteSpace: 'nowrap'
                 }}>
-                    {t('admin.header.title', { count: adminCount })}
+                    {t('admin.users.admin.title')}
                 </h3>
                 <button
                     onClick={onSortToggle}
@@ -45,7 +46,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                     }}
                 >
                     <FaSort size={isMobile ? 12 : 14} />
-                    {sortOrder === 'asc' ? t('admin.header.sortAZ') : t('admin.header.sortZA')}
+                    {sortOrder === 'asc' ? t('admin.users.admin.header.sortAZ') : t('admin.users.admin.header.sortZA')}
                 </button>
             </div>
 
@@ -63,7 +64,7 @@ const AdminHeader = ({ adminCount, searchQuery, onSearchChange, sortOrder, onSor
                 }} />
                 <input
                     type="text"
-                    placeholder={t('admin.header.searchPlaceholder')}
+                    placeholder={t('admin.users.admin.header.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     style={{

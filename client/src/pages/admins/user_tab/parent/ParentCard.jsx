@@ -96,9 +96,11 @@ const ParentCard = ({
             backgroundColor: '#f9fafb',
             transition: 'box-shadow 0.2s',
             width: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
         }}>
-            {/* Заголовок з інформацією про батька */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -356,6 +358,7 @@ const ParentCard = ({
             <div>
                 <div style={{
                     display: 'flex',
+                    flex: 1,
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     marginBottom: isMobile ? '8px' : '10px'
