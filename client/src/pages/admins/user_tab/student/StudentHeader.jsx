@@ -1,55 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
-    // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ ТИПУ ЗАКЛАДУ
-    const getInstitutionType = () => {
-        // ОТРИМУЄМО ІНФОРМАЦІЮ ПРО ШКОЛУ З ЛОКАЛЬНОГО СХОВИЩА
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const schoolName = userInfo.schoolName || '';
-        const institutionType = userInfo.institutionType || '';
-
-        if (institutionType) {
-            const lowerType = institutionType.toLowerCase();
-            if (lowerType.includes('гімназія') || lowerType.includes('гимназия') ||
-                lowerType.includes('школа') || lowerType.includes('школа')) {
-                return 'school';
-            } else if (lowerType.includes('університет') || lowerType.includes('университет') ||
-                lowerType.includes('коледж') || lowerType.includes('колледж') ||
-                lowerType.includes('ліцей') || lowerType.includes('лицей')) {
-                return 'university';
-            }
-        }
-
-        // АВТОМАТИЧНЕ ВИЗНАЧЕННЯ ЗА НАЗВОЮ НАВЧАЛЬНОГО ЗАКЛАДУ
-        const lowerSchoolName = schoolName.toLowerCase();
-        if (lowerSchoolName.includes('гімназія') || lowerSchoolName.includes('гимназия') ||
-            lowerSchoolName.includes('школа') || lowerSchoolName.includes('школа') ||
-            lowerSchoolName.includes('gymnasium') || lowerSchoolName.includes('school')) {
-            return 'school';
-        } else if (lowerSchoolName.includes('університет') || lowerSchoolName.includes('университет') ||
-            lowerSchoolName.includes('коледж') || lowerSchoolName.includes('колледж') ||
-            lowerSchoolName.includes('ліцей') || lowerSchoolName.includes('лицей') ||
-            lowerSchoolName.includes('university') || lowerSchoolName.includes('college') ||
-            lowerSchoolName.includes('lyceum')) {
-            return 'university';
-        }
-
-        // ЗА ЗАМОВЧУВАННЯМ - ШКОЛУ
-        return 'school';
-    };
-
-    // ВИЗНАЧАЄМО ЗАГОЛОВОК В ЗАЛЕЖНОСТІ ВІД ТИПУ ЗАКЛАДУ
-    const getHeaderTitle = () => {
-        const institutionType = getInstitutionType();
-
-        if (institutionType === 'school') {
-            return 'Список учнів за класами';
-        } else {
-            return 'Список студентів за групами';
-        }
-    };
-
-    const headerTitle = getHeaderTitle();
+    const { t } = useTranslation();
 
     return (
         <div style={{
@@ -65,7 +18,7 @@ const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                 fontSize: '24px',
                 textAlign: isMobile ? 'center' : 'left'
             }}>
-                {headerTitle}
+                {t('admin.studentManagement.title')}
             </h3>
             <button
                 onClick={onToggleAll}
@@ -81,7 +34,7 @@ const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                     minHeight: isMobile ? '44px' : 'auto'
                 }}
             >
-                {allExpanded ? 'Згорнути всі' : 'Розгорнути всі'}
+                {allExpanded ? t('admin.studentManagement.collapseAll') : t('admin.studentManagement.expandAll')}
             </button>
         </div>
     );

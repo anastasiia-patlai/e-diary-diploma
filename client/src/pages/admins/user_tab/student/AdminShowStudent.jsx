@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import axios from "axios";
 import StudentHeader from "./StudentHeader";
 import GroupsList from "./group/GroupsList";
@@ -6,6 +7,7 @@ import EditStudentPopup from "./EditStudentPopup";
 import DeleteStudentPopup from "./DeleteStudentPopup";
 
 const AdminShowStudent = ({ isMobile }) => {
+    const { t } = useTranslation();
     const [groups, setGroups] = useState([]);
     const [expandedGroups, setExpandedGroups] = useState({});
     const [loading, setLoading] = useState(true);
@@ -16,7 +18,6 @@ const AdminShowStudent = ({ isMobile }) => {
     const [databaseName, setDatabaseName] = useState("");
 
     useEffect(() => {
-        // ОТРИМУЄМО databaseName З localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         setDatabaseName(userInfo.databaseName || '');
     }, []);
@@ -42,7 +43,7 @@ const AdminShowStudent = ({ isMobile }) => {
     const fetchGroups = async () => {
         try {
             if (!databaseName) {
-                setError("Не вдалося отримати інформацію про базу даних");
+                setError(t('admin.userSystem.errors.noDatabase'));
                 setLoading(false);
                 return;
             }
@@ -54,7 +55,7 @@ const AdminShowStudent = ({ isMobile }) => {
             setError("");
         } catch (err) {
             console.error("Деталі помилки завантаження груп:", err);
-            setError(`Помилка завантаження груп: ${err.response?.data?.error || err.message}`);
+            setError(`${t('admin.userSystem.errors.noDatabase')}: ${err.response?.data?.error || err.message}`);
             setLoading(false);
         }
     };
@@ -106,7 +107,7 @@ const AdminShowStudent = ({ isMobile }) => {
     if (loading) {
         return (
             <div style={{ textAlign: 'center', padding: isMobile ? '40px 20px' : '20px' }}>
-                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>Завантаження груп...</p>
+                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>{t('common.loading')}</p>
             </div>
         );
     }
@@ -134,7 +135,7 @@ const AdminShowStudent = ({ isMobile }) => {
                     backgroundColor: '#f9fafb',
                     borderRadius: '6px'
                 }}>
-                    DatabaseName: {databaseName || 'Не встановлено'}
+                    {t('admin.mainPage.databaseName')}: {databaseName || t('admin.mainPage.notSet')}
                 </div>
                 <button
                     onClick={fetchGroups}
@@ -150,7 +151,7 @@ const AdminShowStudent = ({ isMobile }) => {
                         minHeight: isMobile ? '44px' : 'auto'
                     }}
                 >
-                    Спробувати знову
+                    {t('admin.errorState.retry')}
                 </button>
             </div>
         );
@@ -164,7 +165,6 @@ const AdminShowStudent = ({ isMobile }) => {
                 isMobile={isMobile}
             />
 
-            {/* ПЕРЕДАЄМО databaseName ДО GroupsList */}
             <GroupsList
                 groups={groups}
                 expandedGroups={expandedGroups}
@@ -176,7 +176,6 @@ const AdminShowStudent = ({ isMobile }) => {
                 onUpdateGroups={fetchGroups}
             />
 
-            {/* ПОПАП РЕДАГУВАННЯ */}
             {showEditPopup && selectedStudent && (
                 <EditStudentPopup
                     student={selectedStudent}
@@ -190,7 +189,6 @@ const AdminShowStudent = ({ isMobile }) => {
                 />
             )}
 
-            {/* ПОПАП ВИДАЛЕННЯ */}
             {showDeletePopup && selectedStudent && (
                 <DeleteStudentPopup
                     student={selectedStudent}

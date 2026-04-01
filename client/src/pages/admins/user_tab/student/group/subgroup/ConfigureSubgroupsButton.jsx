@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaCog, FaUsers } from 'react-icons/fa';
 
 const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsConfigured }) => {
+    const { t } = useTranslation();
     const [showPopup, setShowPopup] = useState(false);
     const [numberOfSubgroups, setNumberOfSubgroups] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
 
         try {
             if (!databaseName) {
-                throw new Error('Не вказано базу даних');
+                throw new Error(t('admin.subgroup.errors.noDatabase'));
             }
 
             const response = await fetch('http://localhost:3001/api/groups/subgroups/create-subgroups', {
@@ -40,13 +42,11 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Помилка при створенні підгруп');
+                throw new Error(data.error || t('admin.subgroup.errors.createError'));
             }
 
-            // Відображаємо системне повідомлення замість alert
-            setSuccessMessage(data.message || 'Підгрупи успішно створені');
+            setSuccessMessage(data.message || t('admin.subgroup.success.createSuccess'));
 
-            // Автоматично закриваємо поп-ап через 2 секунди після успіху
             setTimeout(() => {
                 setShowPopup(false);
                 if (onSubgroupsConfigured) {
@@ -97,7 +97,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
             >
                 <FaCog size={isMobile ? 14 : 16} />
                 <span style={{ fontSize: isMobile ? '12px' : '14px' }}>
-                    {isMobile ? 'Підгрупи' : 'Налаштувати підгрупи'}
+                    {isMobile ? t('admin.subgroup.buttonShort') : t('admin.subgroup.button')}
                 </span>
             </button>
 
@@ -128,7 +128,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                             marginBottom: '20px'
                         }}>
                             <h3 style={{ margin: 0, fontSize: '20px', color: '#374151' }}>
-                                Налаштування підгруп
+                                {t('admin.subgroup.title')}
                             </h3>
                             <button
                                 onClick={handleClose}
@@ -208,7 +208,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                     fontWeight: '600',
                                     color: '#374151'
                                 }}>
-                                    Група
+                                    {t('admin.subgroup.groupLabel')}
                                 </label>
                                 <div style={{
                                     padding: '10px',
@@ -218,7 +218,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                 }}>
                                     <strong>{group.name}</strong>
                                     <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                                        Студентів: {group.students?.length || 0}
+                                        {t('admin.subgroup.studentsCount')}: {group.students?.length || 0}
                                     </div>
                                 </div>
                             </div>
@@ -230,7 +230,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                     fontWeight: '600',
                                     color: '#374151'
                                 }}>
-                                    Кількість підгруп
+                                    {t('admin.subgroup.numberOfSubgroups')}
                                 </label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                     {[1, 2, 3].map(num => (
@@ -264,7 +264,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                                 color: '#6b7280',
                                                 marginTop: '4px'
                                             }}>
-                                                підгруп{num === 1 ? 'а' : 'и'}
+                                                {num === 1 ? t('admin.subgroup.subgroupSingle') : t('admin.subgroup.subgroupPlural')}
                                             </div>
                                         </label>
                                     ))}
@@ -274,7 +274,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                     color: '#6b7280',
                                     marginTop: '8px'
                                 }}>
-                                    Максимум 3 підгрупи
+                                    {t('admin.subgroup.maxSubgroups')}
                                 </div>
                             </div>
 
@@ -294,7 +294,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                     gap: '8px'
                                 }}>
                                     <FaUsers />
-                                    План розподілу
+                                    {t('admin.subgroup.distributionPlan')}
                                 </h4>
                                 <div style={{ fontSize: '14px', color: '#374151' }}>
                                     {(() => {
@@ -305,14 +305,14 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
 
                                         return (
                                             <div>
-                                                <p>Загальна кількість студентів: {totalStudents}</p>
-                                                <p>Розподіл по {subgroups} підгрупах:</p>
+                                                <p>{t('admin.subgroup.totalStudents')}: {totalStudents}</p>
+                                                <p>{t('admin.subgroup.distribution', { count: subgroups })}</p>
                                                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                                                     {Array.from({ length: subgroups }).map((_, index) => {
                                                         const size = index < remainder ? baseSize + 1 : baseSize;
                                                         return (
                                                             <li key={index}>
-                                                                Підгрупа {index + 1}: {size} студентів
+                                                                {t('admin.subgroup.subgroupNumber', { number: index + 1 })}: {size} {t('admin.subgroup.students')}
                                                             </li>
                                                         );
                                                     })}
@@ -345,7 +345,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                         opacity: loading ? 0.6 : 1
                                     }}
                                 >
-                                    Скасувати
+                                    {t('admin.subgroup.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -363,7 +363,7 @@ const ConfigureSubgroupsButton = ({ group, databaseName, isMobile, onSubgroupsCo
                                         opacity: loading ? 0.6 : 1
                                     }}
                                 >
-                                    {loading ? 'Створення...' : successMessage ? 'Створено!' : 'Створити підгрупи'}
+                                    {loading ? t('admin.subgroup.creating') : successMessage ? t('admin.subgroup.created') : t('admin.subgroup.create')}
                                 </button>
                             </div>
                         </form>

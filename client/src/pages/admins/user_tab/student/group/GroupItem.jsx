@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronUp, FaCog } from 'react-icons/fa';
 import StudentsList from '../StudentsList';
 import SubgroupItem from './subgroup/SubgroupItem';
@@ -14,6 +15,7 @@ const GroupItem = ({
     databaseName,
     onUpdateGroups
 }) => {
+    const { t } = useTranslation();
     const [expandedSubgroups, setExpandedSubgroups] = useState({});
 
     const toggleSubgroup = (subgroupId) => {
@@ -23,9 +25,7 @@ const GroupItem = ({
         }));
     };
 
-    // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ ТИПУ ЗАКЛАДУ
     const getInstitutionType = () => {
-        // ОТРИМУЄМО ІНФОРМАЦІЮ ПРО ШКОЛУ З ЛОКАЛЬНОГО СХОВИЩА
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         const schoolName = userInfo.schoolName || '';
         const databaseName = userInfo.databaseName || '';
@@ -48,7 +48,6 @@ const GroupItem = ({
             }
         }
 
-        // АВТОМАТИЧНЕ ВИЗНАЧЕННЯ ЗА НАЗВОЮ НАВЧАЛЬНОГО ЗАКЛАДУ
         const lowerSchoolName = schoolName.toLowerCase();
         if (lowerSchoolName.includes('гімназія') || lowerSchoolName.includes('гимназия') ||
             lowerSchoolName.includes('gymnasium')) {
@@ -67,48 +66,46 @@ const GroupItem = ({
             return 'university';
         }
 
-        // ЗА ЗАМОВЧУВАННЯМ - ШКОЛУ
         return 'school';
     };
 
-    // ФУНКЦІЯ ДЛЯ ОТРИМАННЯ ІНФОРМАЦІЇ ПРО ЗАКЛАД
     const getInstitutionInfo = (type) => {
         const institutions = {
             'school': {
-                label: 'Школа',
-                groupLabel: 'Клас',  // Для школи - "клас"
+                label: t('admin.institutionTypes.school'),
+                groupLabel: t('admin.group.class'),
                 color: '#fef2f2',
                 borderColor: '#fecaca',
                 textColor: '#dc2626',
                 icon: '🏫'
             },
             'gymnasium': {
-                label: 'Гімназія',
-                groupLabel: 'Клас',  // Для гімназії - "клас"
+                label: t('admin.institutionTypes.gymnasium'),
+                groupLabel: t('admin.group.class'),
                 color: '#fef2f2',
                 borderColor: '#fecaca',
                 textColor: '#dc2626',
                 icon: '🎓'
             },
             'lyceum': {
-                label: 'Ліцей',
-                groupLabel: 'Клас',  // Для ліцею - "клас"
+                label: t('admin.institutionTypes.lyceum'),
+                groupLabel: t('admin.group.class'),
                 color: '#fef2f2',
                 borderColor: '#fecaca',
                 textColor: '#dc2626',
                 icon: '📚'
             },
             'college': {
-                label: 'Коледж',
-                groupLabel: 'Група',  // Для коледжу - "група"
+                label: t('admin.institutionTypes.college'),
+                groupLabel: t('admin.group.group'),
                 color: '#f0fdf4',
                 borderColor: '#bbf7d0',
                 textColor: '#16a34a',
                 icon: '🎓'
             },
             'university': {
-                label: 'Університет',
-                groupLabel: 'Група',  // Для університету - "група"
+                label: t('admin.institutionTypes.university'),
+                groupLabel: t('admin.group.group'),
                 color: '#f0fdf4',
                 borderColor: '#bbf7d0',
                 textColor: '#16a34a',
@@ -119,7 +116,6 @@ const GroupItem = ({
         return institutions[type] || institutions['school'];
     };
 
-    // ФУНКЦІЯ ДЛЯ ВИЗНАЧЕННЯ, ЧИ Є ЗАКЛАД ШКОЛОЮ/ГІМНАЗІЄЮ/ЛІЦЕЄМ
     const isClass = (institutionType) => {
         return institutionType === 'school' || institutionType === 'gymnasium' || institutionType === 'lyceum';
     };
@@ -128,10 +124,9 @@ const GroupItem = ({
     const institutionInfo = getInstitutionInfo(institutionType);
     const isClassType = isClass(institutionType);
 
-    // ВИЗНАЧАЄМО ТЕКСТ ДЛЯ КІЛЬКОСТІ СТУДЕНТІВ/УЧНІВ
     const studentsCountText = isClassType ?
-        `Учнів: ${group.students?.length || 0}` :
-        `Студентів: ${group.students?.length || 0}`;
+        `${t('admin.group.studentsCount')}: ${group.students?.length || 0}` :
+        `${t('admin.group.studentsCount')}: ${group.students?.length || 0}`;
 
     const handleSubgroupsConfigured = () => {
         if (onUpdateGroups) {
@@ -201,7 +196,7 @@ const GroupItem = ({
                                 borderRadius: '10px',
                                 fontWeight: '600'
                             }}>
-                                {group.subgroupSettings?.numberOfSubgroups || 1} підгруп
+                                {t('admin.subgroup.subgroupCount', { count: group.subgroupSettings?.numberOfSubgroups || 1 })}
                             </span>
                         )}
                     </div>
@@ -224,7 +219,7 @@ const GroupItem = ({
                                 textOverflow: 'ellipsis',
                                 maxWidth: isMobile ? '120px' : '200px'
                             }}>
-                                {isClassType ? 'Класний керівник' : 'Куратор'}: {group.curator.fullName}
+                                {isClassType ? t('admin.group.classTeacher') : t('admin.group.curator')}: {group.curator.fullName}
                             </span>
                         )}
 
@@ -238,19 +233,6 @@ const GroupItem = ({
                         }}>
                             {studentsCountText}
                         </span>
-
-                        {/* <span style={{
-                            fontSize: isMobile ? '12px' : '13px',
-                            color: institutionInfo.textColor,
-                            backgroundColor: institutionInfo.color,
-                            padding: isMobile ? '2px 4px' : '2px 6px',
-                            borderRadius: '8px',
-                            border: `1px solid ${institutionInfo.borderColor}`,
-                            whiteSpace: 'nowrap',
-                            fontWeight: '500'
-                        }}>
-                            {institutionInfo.label} - {institutionInfo.groupLabel}
-                        </span> */}
                     </div>
                 </div>
 
@@ -295,7 +277,7 @@ const GroupItem = ({
                                     gap: '8px'
                                 }}>
                                     <FaCog />
-                                    Підгрупи ({group.subgroups.length})
+                                    {t('admin.subgroup.subgroupsTitle', { count: group.subgroups.length })}
                                 </h4>
                             </div>
 

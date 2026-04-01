@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import GroupItem from './GroupItem';
 
 const GroupsList = ({
@@ -11,6 +12,8 @@ const GroupsList = ({
     databaseName,
     onUpdateGroups
 }) => {
+    const { t } = useTranslation();
+
     if (groups.length === 0) {
         return (
             <div style={{
@@ -25,7 +28,7 @@ const GroupsList = ({
                     color: '#6b7280',
                     margin: 0
                 }}>
-                    Групи не знайдені
+                    {t('admin.group.noGroups')}
                 </p>
             </div>
         );

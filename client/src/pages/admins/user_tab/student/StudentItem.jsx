@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaUser, FaEnvelope, FaEdit, FaTrash } from 'react-icons/fa';
 
 const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             display: 'flex',
@@ -101,7 +104,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                     }}
                 >
                     <FaEdit size={isMobile ? 14 : 12} />
-                    Редагувати
+                    {t('admin.card.edit')}
                 </button>
                 <button
                     onClick={(e) => {
@@ -137,7 +140,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                     }}
                 >
                     <FaTrash size={isMobile ? 14 : 12} />
-                    Видалити
+                    {t('admin.card.delete')}
                 </button>
             </div>
         </div>

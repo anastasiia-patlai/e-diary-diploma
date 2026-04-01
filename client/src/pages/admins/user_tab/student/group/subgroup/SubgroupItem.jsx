@@ -1,8 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronUp, FaUsers } from 'react-icons/fa';
 import StudentsList from '../../StudentsList';
 
 const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStudent, onDeleteStudent, isMobile, isClass }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             border: '1px solid #e5e7eb',
@@ -58,7 +61,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
                         }}>
                             <FaUsers size={isMobile ? 10 : 12} />
                             <span>
-                                {isClass ? 'Учнів' : 'Студентів'}: {subgroup.students?.length || 0}
+                                {isClass ? t('admin.studentManagement.studentsCount') : t('admin.studentManagement.studentsCount')}: {subgroup.students?.length || 0}
                             </span>
                         </div>
                     </div>
@@ -91,7 +94,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
                     backgroundColor: '#f9fafb'
                 }}>
                     <p style={{ margin: 0, fontSize: isMobile ? '14px' : '15px' }}>
-                        Немає студентів у цій підгрупі
+                        {t('admin.subgroup.noStudents')}
                     </p>
                 </div>
             )}

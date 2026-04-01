@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 
 const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -12,7 +14,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
 
         try {
             if (!databaseName) {
-                setError("Не вдалося отримати інформацію про базу даних");
+                setError(t('admin.studentManagement.errors.noDatabase'));
                 setLoading(false);
                 return;
             }
@@ -23,7 +25,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
             onDelete(student._id);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || "Помилка при видаленні студента");
+            setError(err.response?.data?.error || t('admin.studentManagement.errors.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -56,7 +58,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#dc2626' }}>
-                        Видалення студента
+                        {t('admin.studentManagement.deleteStudent')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -84,7 +86,6 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                     </div>
                 )}
 
-                {/* ПОПЕРЕДЖЕННЯ */}
                 <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -97,7 +98,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px', flexShrink: 0 }} />
                     <div>
                         <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
-                            Ви впевнені, що хочете видалити студента?
+                            {t('admin.studentManagement.confirmDelete')}
                         </p>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             <strong>{student.fullName}</strong>
@@ -105,7 +106,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             {student.email}
                         </p>
                         <p style={{ margin: '12px 0 0 0', fontSize: '14px', color: '#dc2626' }}>
-                            Цю дію неможливо буде скасувати!
+                            {t('admin.studentManagement.deleteWarning')}
                         </p>
                     </div>
                 </div>
@@ -126,7 +127,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {loading ? 'Видалення...' : 'Так, видалити'}
+                        {loading ? t('admin.studentManagement.saving') : t('admin.studentManagement.deleteStudent')}
                     </button>
                     <button
                         onClick={onClose}
@@ -143,7 +144,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        Скасувати
+                        {t('admin.studentManagement.cancel')}
                     </button>
                 </div>
             </div>

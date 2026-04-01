@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaSortAlphaDown, FaSortAlphaUp } from 'react-icons/fa';
 import StudentItem from './StudentItem';
 
 const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass, showHeader = true }) => {
+    const { t } = useTranslation();
     const [sortOrder, setSortOrder] = useState('asc');
 
     const getSortedStudents = (students) => {
@@ -33,7 +35,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
                     fontSize: isMobile ? '15px' : '14px',
                     margin: 0
                 }}>
-                    {isClass ? 'У цьому класі ще немає учнів' : 'У цій групі ще немає студентів'}
+                    {t('admin.studentManagement.noStudents')}
                 </p>
             </div>
         );
@@ -47,7 +49,6 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
         }}>
             {showHeader && (
                 <>
-                    {/* КНОПКА СОРТУВАННЯ */}
                     <div style={{
                         display: 'flex',
                         flexDirection: isMobile ? 'column' : 'row',
@@ -63,7 +64,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
                             color: '#6b7280',
                             textAlign: isMobile ? 'center' : 'left'
                         }}>
-                            {isClass ? 'Учнів' : 'Студентів'}: {sortedStudents.length}
+                            {t('admin.studentManagement.studentsCount')}: {sortedStudents.length}
                         </div>
                         <button
                             onClick={toggleSortOrder}
@@ -98,7 +99,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
                                 <FaSortAlphaDown size={isMobile ? 16 : 14} /> :
                                 <FaSortAlphaUp size={isMobile ? 16 : 14} />
                             }
-                            {sortOrder === 'asc' ? 'Сортувати А-Я' : 'Сортувати Я-А'}
+                            {sortOrder === 'asc' ? t('admin.studentManagement.sortAZ') : t('admin.studentManagement.sortZA')}
                         </button>
                     </div>
                 </>

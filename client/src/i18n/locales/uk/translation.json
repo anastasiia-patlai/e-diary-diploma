@@ -311,6 +311,90 @@
                 "deleteError": "Помилка при видаленні адміністратора"
             }
         },
+        "studentManagement": {
+            "title": "Управління студентами",
+            "editStudent": "Редагувати студента",
+            "deleteStudent": "Видалити студента",
+            "studentDetails": "Дані студента",
+            "fullName": "ПІБ",
+            "login": "Логін",
+            "phone": "Телефон",
+            "birthDate": "Дата народження",
+            "group": "Група",
+            "selectGroup": "Оберіть групу",
+            "noGroup": "Група не вибрана",
+            "noStudents": "У цій групі ще немає студентів",
+            "studentsCount": "Студентів",
+            "sortAZ": "Сортувати А-Я",
+            "sortZA": "Сортувати Я-А",
+            "expandAll": "Розгорнути всі",
+            "collapseAll": "Згорнути всі",
+            "loginFormatHint": "Формат: прізвище_ім'я (напр. ivanenko_ivan)",
+            "loginExists": "Користувач з таким логіном вже існує",
+            "saveChanges": "Зберегти зміни",
+            "saving": "Збереження...",
+            "cancel": "Скасувати",
+            "confirmDelete": "Ви впевнені, що хочете видалити студента?",
+            "deleteWarning": "Цю дію неможливо буде скасувати!",
+            "deleteSuccess": "Студента успішно видалено",
+            "updateSuccess": "Дані студента успішно оновлено",
+            "errors": {
+                "loadError": "Помилка завантаження даних",
+                "updateError": "Помилка при оновленні студента",
+                "deleteError": "Помилка при видаленні студента",
+                "loginRequired": "Логін обов'язковий",
+                "loginInvalid": "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
+                "fullNameRequired": "ПІБ обов'язкове",
+                "phoneRequired": "Телефон обов'язковий",
+                "groupRequired": "Група обов'язкова",
+                "noDatabase": "Не вдалося отримати інформацію про базу даних"
+            }
+        },
+        "group": {
+            "class": "Клас",
+            "group": "Група",
+            "classTeacher": "Класний керівник",
+            "curator": "Куратор",
+            "studentsCount": "Учнів",
+            "noGroups": "Групи не знайдені"
+        },
+        "institutionTypes": {
+            "school": "Школа",
+            "gymnasium": "Гімназія",
+            "lyceum": "Ліцей",
+            "college": "Коледж",
+            "university": "Університет"
+        },
+        "subgroup": {
+            "button": "Налаштувати підгрупи",
+            "buttonShort": "Підгрупи",
+            "title": "Налаштування підгруп",
+            "groupLabel": "Група",
+            "studentsCount": "Студентів",
+            "numberOfSubgroups": "Кількість підгруп",
+            "subgroupSingle": "підгрупа",
+            "subgroupPlural": "підгрупи",
+            "maxSubgroups": "Максимум 3 підгрупи",
+            "distributionPlan": "План розподілу",
+            "totalStudents": "Загальна кількість студентів",
+            "distribution": "Розподіл по {{count}} підгрупах",
+            "subgroupNumber": "Підгрупа {{number}}",
+            "students": "студентів",
+            "cancel": "Скасувати",
+            "create": "Створити підгрупи",
+            "creating": "Створення...",
+            "created": "Створено!",
+            "subgroupsTitle": "Підгрупи ({{count}})",
+            "subgroupCount": "{{count}} підгруп",
+            "noStudents": "Немає студентів у цій підгрупі",
+            "errors": {
+                "noDatabase": "Не вказано базу даних",
+                "createError": "Помилка при створенні підгруп"
+            },
+            "success": {
+                "createSuccess": "Підгрупи успішно створені"
+            }
+        },
         "errorState": {
             "retry": "Спробувати знову"
         },

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaUsers } from "react-icons/fa";
 import axios from "axios";
 
-// Додаємо регулярний вираз для перевірки логіна
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -23,16 +24,14 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
         const fetchData = async () => {
             try {
                 if (!databaseName) {
-                    setError("Не вдалося отримати інформацію про базу даних");
+                    setError(t('admin.studentManagement.errors.noDatabase'));
                     setFetchingUser(false);
                     return;
                 }
 
-                // Запит груп з databaseName
                 const groupsResponse = await axios.get(`http://localhost:3001/api/groups?databaseName=${encodeURIComponent(databaseName)}`);
                 setGroups(groupsResponse.data);
 
-                // Запит даних користувача з databaseName
                 const userResponse = await axios.get(`http://localhost:3001/api/users/${student._id}?databaseName=${encodeURIComponent(databaseName)}`);
                 const userData = userResponse.data;
 
@@ -47,18 +46,17 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                 setFetchingUser(false);
             } catch (err) {
                 console.error("Помилка завантаження даних:", err);
-                setError(`Помилка завантаження даних користувача: ${err.response?.data?.error || err.message}`);
+                setError(`${t('admin.studentManagement.errors.loadError')}: ${err.response?.data?.error || err.message}`);
                 setFetchingUser(false);
             }
         };
 
         fetchData();
-    }, [student._id, databaseName]);
+    }, [student._id, databaseName, t]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // Очищаємо помилку логіна при зміні поля email
         if (name === 'email') {
             setLoginError("");
         }
@@ -69,13 +67,12 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
         });
     };
 
-    // ФУНКЦІЯ ДЛЯ ВАЛІДАЦІЇ ЛОГІНА
     const validateLogin = (login) => {
         if (!login.trim()) {
-            return "Логін обов'язковий";
+            return t('admin.studentManagement.errors.loginRequired');
         }
         if (!LOGIN_REGEX.test(login)) {
-            return "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+            return t('admin.studentManagement.errors.loginInvalid');
         }
         return "";
     };
@@ -88,12 +85,11 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
 
         try {
             if (!databaseName) {
-                setError("Не вдалося отримати інформацію про базу даних");
+                setError(t('admin.studentManagement.errors.noDatabase'));
                 setLoading(false);
                 return;
             }
 
-            // Валідація логіна
             const loginValidationError = validateLogin(formData.email);
             if (loginValidationError) {
                 setLoginError(loginValidationError);
@@ -112,11 +108,10 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
             onUpdate(response.data.user);
             onClose();
         } catch (err) {
-            // Перевіряємо помилку дублювання логіна
             if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
-                setLoginError("Користувач з таким логіном вже існує");
+                setLoginError(t('admin.studentManagement.loginExists'));
             } else {
-                setError(err.response?.data?.error || "Помилка при оновленні студента");
+                setError(err.response?.data?.error || t('admin.studentManagement.errors.updateError'));
             }
         } finally {
             setLoading(false);
@@ -152,7 +147,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#374151' }}>
-                        Редагувати студента
+                        {t('admin.studentManagement.editStudent')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -186,14 +181,13 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
 
                 {fetchingUser ? (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
-                        <p>Завантаження даних...</p>
+                        <p>{t('common.loading')}</p>
                         <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
-                            База даних: {databaseName || 'Не встановлено'}
+                            {t('admin.mainPage.databaseName')}: {databaseName || t('admin.mainPage.notSet')}
                         </div>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>
-                        {/* ПІБ */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -207,7 +201,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                ПІБ *
+                                {t('admin.studentManagement.fullName')} *
                             </label>
                             <input
                                 type="text"
@@ -234,7 +228,6 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* ЛОГІН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -248,7 +241,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Логін *
+                                {t('admin.studentManagement.login')} *
                             </label>
                             <input
                                 type="text"
@@ -285,9 +278,15 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     {loginError}
                                 </div>
                             )}
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                marginTop: '4px'
+                            }}>
+                                {t('admin.studentManagement.loginFormatHint')}
+                            </div>
                         </div>
 
-                        {/* ТЕЛЕФОН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -301,7 +300,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Телефон *
+                                {t('admin.studentManagement.phone')} *
                             </label>
                             <input
                                 type="tel"
@@ -328,7 +327,6 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* ДН */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -342,7 +340,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Дата народження
+                                {t('admin.studentManagement.birthDate')}
                             </label>
                             <input
                                 type="date"
@@ -368,7 +366,6 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                             />
                         </div>
 
-                        {/* ГРУПА */}
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -382,7 +379,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                Група *
+                                {t('admin.studentManagement.group')} *
                             </label>
                             <select
                                 name="group"
@@ -407,7 +404,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     e.target.style.borderColor = '#e5e7eb';
                                 }}
                             >
-                                <option value="">Оберіть групу</option>
+                                <option value="">{t('admin.studentManagement.selectGroup')}</option>
                                 {groups.map(group => (
                                     <option key={group._id} value={group._id}>
                                         {group.name}
@@ -450,7 +447,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                 }}
                             >
                                 <FaTimes />
-                                Скасувати
+                                {t('admin.studentManagement.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -483,7 +480,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     }
                                 }}
                             >
-                                {loading ? 'Збереження...' : 'Зберегти зміни'}
+                                {loading ? t('admin.studentManagement.saving') : t('admin.studentManagement.saveChanges')}
                             </button>
                         </div>
                     </form>
