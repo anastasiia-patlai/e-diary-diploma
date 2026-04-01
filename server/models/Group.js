@@ -12,8 +12,7 @@ const groupSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     category: {
         type: String,
-        enum: ['young', 'middle', 'senior'],
-        required: true
+        enum: ['young', 'middle', 'senior']
     },
     curator: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -38,7 +37,13 @@ groupSchema.pre('save', function (next) {
                 this.category = 'middle';
             } else if (this.gradeLevel >= 10 && this.gradeLevel <= 11) {
                 this.category = 'senior';
+            } else {
+                // число є, але не вписується в діапазон (напр. 12, 13...)
+                this.category = this.category || 'senior';
             }
+        } else {
+            // в назві немає цифри, адмін сам обере
+            this.category = this.category || undefined;
         }
     }
     next();
