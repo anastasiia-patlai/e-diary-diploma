@@ -355,7 +355,7 @@
                 "removeBothParents": "Remove Both Parents",
                 "removeChild": "Remove",
                 "removeChildTitle": "Remove Child",
-                "removeChildConfirm": "Are you sure you want to remove this child?",
+                "removeChildConfirm": "Confirm removal",
                 "removeChildWarning": "The child will be unlinked from the parent. The parent will no longer receive information about this child's progress.",
                 "childInfo": "Child",
                 "parentInfo": "Parent",

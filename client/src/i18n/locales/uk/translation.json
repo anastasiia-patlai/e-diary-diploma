@@ -428,7 +428,7 @@
                 "removeBothParents": "Видалити обох батьків",
                 "removeChild": "Видалити",
                 "removeChildTitle": "Видалення дитини",
-                "removeChildConfirm": "Ви впевнені, що хочете видалити дитину?",
+                "removeChildConfirm": "Підтвердіть видалення",
                 "removeChildWarning": "Дитина буде відв'язана від батька. Батько більше не зможе отримувати інформацію про успішність цієї дитини.",
                 "childInfo": "Дитина",
                 "parentInfo": "Батько",

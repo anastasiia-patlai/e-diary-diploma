@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaUser, FaEnvelope, FaPhone, FaSave, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
-// Додаємо регулярний вираз для перевірки логіна
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -28,7 +29,6 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // Очищаємо помилку логіна при зміні поля email
         if (name === 'email') {
             setLoginError("");
         }
@@ -39,13 +39,12 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
         }));
     };
 
-    // ФУНКЦІЯ ДЛЯ ВАЛІДАЦІЇ ЛОГІНА
     const validateLogin = (login) => {
         if (!login.trim()) {
-            return "Логін обов'язковий";
+            return t('admin.users.parent.loginRequired');
         }
         if (!LOGIN_REGEX.test(login)) {
-            return "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+            return t('admin.users.parent.loginInvalid');
         }
         return "";
     };
@@ -54,7 +53,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
         e.preventDefault();
 
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t('admin.users.parent.noDatabaseError'));
             return;
         }
 
@@ -69,20 +68,17 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
         setLoginError('');
 
         try {
-            // Оновлюємо дані
             await axios.put(`http://localhost:3001/api/users/${parent._id}`, {
                 ...formData,
                 databaseName
             });
 
-            // Отримуємо повні оновлені дані з дітьми
             const response = await axios.get(`http://localhost:3001/api/users/${parent._id}`, {
                 params: { databaseName }
             });
 
             const updatedParent = response.data;
 
-            // Зберігаємо дітей, якщо вони не прийшли з бекенду
             if (parent.children && (!updatedParent.children || updatedParent.children.length === 0)) {
                 updatedParent.children = parent.children;
             }
@@ -92,9 +88,9 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
         } catch (err) {
             console.error('Помилка оновлення батька:', err);
             if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
-                setLoginError("Користувач з таким логіном вже існує");
+                setLoginError(t('admin.users.parent.loginExists'));
             } else {
-                setError(err.response?.data?.error || 'Помилка оновлення батька');
+                setError(err.response?.data?.error || t('admin.users.parent.updateError'));
             }
         } finally {
             setLoading(false);
@@ -132,7 +128,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0, color: '#374151' }}>
-                        Редагувати дані батьків
+                        {t('admin.users.parent.editParent')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -157,7 +153,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             color: '#374151'
                         }}>
                             <FaUser style={{ marginRight: '8px', color: 'rgba(105, 180, 185, 1)' }} />
-                            ПІБ батька *
+                            {t('admin.users.parent.fullName')} *
                         </label>
                         <input
                             type="text"
@@ -191,7 +187,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             color: '#374151'
                         }}>
                             <FaEnvelope style={{ marginRight: '8px', color: 'rgba(105, 180, 185, 1)' }} />
-                            Логін *
+                            {t('admin.users.parent.login')} *
                         </label>
                         <input
                             type="text"
@@ -237,7 +233,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             color: '#374151'
                         }}>
                             <FaPhone style={{ marginRight: '8px', color: 'rgba(105, 180, 185, 1)' }} />
-                            Телефон
+                            {t('admin.users.parent.phone')}
                         </label>
                         <input
                             type="tel"
@@ -298,7 +294,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             }}
                         >
                             <FaTimes />
-                            Скасувати
+                            {t('admin.users.parent.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -318,7 +314,7 @@ const AdminParentEdit = ({ parent, onClose, onUpdate, databaseName }) => {
                             }}
                         >
                             <FaSave />
-                            {loading ? 'Збереження...' : 'Зберегти'}
+                            {loading ? t('admin.users.parent.saving') : t('admin.users.parent.saveChanges')}
                         </button>
                     </div>
                 </form>

@@ -530,6 +530,7 @@ const AdminShowParent = () => {
                     alignItems: 'center',
                     gap: '15px',
                     marginBottom: isMobile ? '10px' : '0',
+                    marginTop: '-20px',
                     flexWrap: 'wrap'
                 }}>
                     <h3 style={{
@@ -537,7 +538,7 @@ const AdminShowParent = () => {
                         fontSize: isMobile ? '18px' : '20px',
                         whiteSpace: 'nowrap'
                     }}>
-                        {t('admin.users.parent.headerTitle')} ({filteredParents.length})
+                        {t('admin.users.parent.title')} ({filteredParents.length})
                     </h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>

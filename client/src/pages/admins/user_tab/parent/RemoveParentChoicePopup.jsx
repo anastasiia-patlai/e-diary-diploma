@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaUserMinus, FaTimes } from 'react-icons/fa';
 
 const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothParents, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             position: 'fixed',
@@ -26,7 +29,6 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                 maxHeight: isMobile ? '80vh' : 'auto',
                 overflowY: 'auto'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -40,7 +42,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                             fontSize: isMobile ? '20px' : '24px',
                             lineHeight: '1.3'
                         }}>
-                            Відв'язати батька від дитини
+                            {t('admin.users.parent.removeParentTitle')}
                         </h3>
                         {child && (
                             <p style={{
@@ -50,7 +52,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                                 fontSize: isMobile ? '16px' : '18px',
                                 lineHeight: '1.3'
                             }}>
-                                Дитина: <strong style={{ color: '#374151' }}>{child.fullName}</strong>
+                                {t('admin.users.parent.childInfo')}: <strong style={{ color: '#374151' }}>{child.fullName}</strong>
                             </p>
                         )}
                     </div>
@@ -65,7 +67,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                             marginLeft: '10px',
                             flexShrink: 0
                         }}
-                        aria-label="Закрити"
+                        aria-label={t('admin.users.parent.cancel')}
                     >
                         <FaTimes />
                     </button>
@@ -78,7 +80,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                     fontSize: isMobile ? '12px' : '14px',
                     lineHeight: '1.4'
                 }}>
-                    Оберіть, кого видалити з інформації дитини:
+                    {t('admin.users.parent.removeParentChoice')}
                 </p>
 
                 <div style={{
@@ -155,7 +157,6 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                     ))}
                 </div>
 
-                {/* Кнопки дій */}
                 <div style={{
                     borderTop: '1px solid #e5e7eb',
                     paddingTop: isMobile ? '12px' : '16px',
@@ -188,7 +189,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        Видалити обох батьків
+                        {t('admin.users.parent.removeBothParents')}
                     </button>
                     <button
                         onClick={onClose}
@@ -214,7 +215,7 @@ const RemoveParentChoicePopup = ({ child, onClose, onRemoveParent, onRemoveBothP
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
                     >
-                        Скасувати
+                        {t('admin.users.parent.cancel')}
                     </button>
                 </div>
             </div>

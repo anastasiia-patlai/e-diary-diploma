@@ -15,7 +15,7 @@ const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
         }}>
             <h3 style={{
                 margin: 0,
-                fontSize: '24px',
+                fontSize: isMobile ? '18px' : '20px',
                 textAlign: isMobile ? 'center' : 'left'
             }}>
                 {t('admin.users.student.title')}

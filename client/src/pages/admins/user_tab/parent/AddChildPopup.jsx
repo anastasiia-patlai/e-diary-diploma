@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaSearch, FaChild } from "react-icons/fa";
 
 const AddChildPopup = ({
@@ -9,8 +10,10 @@ const AddChildPopup = ({
     databaseName,
     onClose,
     onSearchChange,
-    onAddChild
+    onAddChild,
+    isMobile
 }) => {
+    const { t } = useTranslation();
     if (!selectedParent) return null;
 
     return (
@@ -41,7 +44,9 @@ const AddChildPopup = ({
                     alignItems: 'center',
                     marginBottom: '20px'
                 }}>
-                    <h3 style={{ margin: 0 }}>Знайти дитину для {selectedParent.fullName}</h3>
+                    <h3 style={{ margin: 0 }}>
+                        {t('admin.users.parent.findChildTitle', { name: selectedParent.fullName })}
+                    </h3>
                     <button
                         onClick={onClose}
                         style={{
@@ -60,9 +65,9 @@ const AddChildPopup = ({
                     <div style={{ position: 'relative' }}>
                         <input
                             type="text"
-                            placeholder="Введіть ім'я, email або назву групи (мінімум 3 символи)..."
+                            placeholder={t('admin.users.parent.searchStudents')}
                             value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)} // Повертаємо оригінальну функцію
+                            onChange={(e) => onSearchChange(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 45px 12px 15px',
@@ -90,7 +95,7 @@ const AddChildPopup = ({
                             color: '#ef4444',
                             marginTop: '5px'
                         }}>
-                            Введіть щонайменше 3 символи для пошуку
+                            {t('admin.users.parent.searchMinLength')}
                         </div>
                     )}
                 </div>
@@ -98,7 +103,7 @@ const AddChildPopup = ({
                 <div>
                     {isSearching && searchQuery.length >= 3 && (
                         <div style={{ marginBottom: '10px', fontSize: '14px', color: '#6b7280' }}>
-                            Знайдено: {searchResults.length} студентів
+                            {t('admin.users.parent.studentsFound', { count: searchResults.length })}
                         </div>
                     )}
 
@@ -155,7 +160,7 @@ const AddChildPopup = ({
                                                     fontSize: '13px',
                                                     color: '#6b7280'
                                                 }}>
-                                                    Група: {student.group.name}
+                                                    {t('admin.users.parent.childGroup')}: {student.group.name}
                                                 </div>
                                             )}
                                             {student.parents && student.parents.length > 0 && (
@@ -163,8 +168,8 @@ const AddChildPopup = ({
                                                     fontSize: '12px',
                                                     color: student.parents.length >= 2 ? '#ef4444' : '#f59e0b'
                                                 }}>
-                                                    Батьків: {student.parents.length}/2
-                                                    {student.parents.length >= 2 && ' (максимум)'}
+                                                    {t('admin.users.parent.parentsCount', { count: student.parents.length })}
+                                                    {student.parents.length >= 2 && t('admin.users.parent.maxParents')}
                                                 </div>
                                             )}
                                         </div>
@@ -173,12 +178,12 @@ const AddChildPopup = ({
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                                <p>Студентів за запитом "{searchQuery}" не знайдено</p>
+                                <p>{t('admin.users.parent.noStudentsFound', { query: searchQuery })}</p>
                             </div>
                         )
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                            <p>Введіть запит для пошуку студентів</p>
+                            <p>{t('admin.users.parent.enterSearchQuery')}</p>
                         </div>
                     )}
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     FaUserFriends, FaEnvelope, FaPhone, FaChild,
     FaSearch, FaEdit, FaTrash, FaTimes, FaUserPlus, FaUserMinus,
@@ -19,6 +20,7 @@ const ParentCard = ({
     onRemoveParentFromChild,
     isMobile
 }) => {
+    const { t } = useTranslation();
     const [showDeleteChildPopup, setShowDeleteChildPopup] = useState(false);
     const [showAddParentPopup, setShowAddParentPopup] = useState(false);
     const [showRemoveParentChoicePopup, setShowRemoveParentChoicePopup] = useState(false);
@@ -235,7 +237,7 @@ const ParentCard = ({
                                     }}
                                 >
                                     <FaSearch size={10} />
-                                    Знайти дитину
+                                    {t('admin.users.parent.findChild')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -259,7 +261,7 @@ const ParentCard = ({
                                     }}
                                 >
                                     <FaEdit size={10} />
-                                    Редагувати
+                                    {t('admin.users.parent.edit')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -325,7 +327,7 @@ const ParentCard = ({
                             }}
                         >
                             <FaEdit size={12} />
-                            Редагувати
+                            {t('admin.users.parent.edit')}
                         </button>
                         <button
                             onClick={() => onDelete(parent)}
@@ -344,7 +346,7 @@ const ParentCard = ({
                             }}
                         >
                             <FaTrash size={12} />
-                            Видалити
+                            {t('admin.users.parent.delete')}
                         </button>
                     </div>
                 )}
@@ -363,8 +365,7 @@ const ParentCard = ({
                         color: 'rgba(105, 180, 185, 1)',
                         fontSize: isMobile ? '13px' : '14px'
                     }}>
-                        Діти ({parent.children ? parent.children.length : 0})
-                    </div>
+                        {t('admin.users.parent.children')} ({parent.children?.length || 0})                    </div>
                 </div>
 
                 {parent.children && parent.children.length > 0 ? (
@@ -440,7 +441,7 @@ const ParentCard = ({
                                             }}
                                         >
                                             <FaUserPlus size={isMobile ? 9 : 10} />
-                                            {!isMobile && 'Додати батька'}
+                                            {!isMobile && t('admin.users.parent.addParent')}
                                         </button>
                                     )}
 
@@ -462,7 +463,7 @@ const ParentCard = ({
                                             }}
                                         >
                                             <FaUserMinus size={isMobile ? 9 : 10} />
-                                            {!isMobile && 'Відв\'язати'}
+                                            {!isMobile && t('admin.users.parent.removeParent')}
                                         </button>
                                     )}
 
@@ -483,7 +484,7 @@ const ParentCard = ({
                                         }}
                                     >
                                         <FaTimes size={isMobile ? 9 : 10} />
-                                        {!isMobile && 'Видалити'}
+                                        {!isMobile && t('admin.users.parent.delete')}
                                     </button>
                                 </div>
                             </div>
@@ -499,7 +500,7 @@ const ParentCard = ({
                         border: '1px dashed #e5e7eb',
                         fontSize: isMobile ? '13px' : '14px'
                     }}>
-                        <p>Дітей не додано</p>
+                        <p>{t('admin.users.parent.noChildren')}</p>
                     </div>
                 )}
             </div>

@@ -18,7 +18,7 @@ const TeacherHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                 fontSize: isMobile ? '18px' : '20px',
                 textAlign: isMobile ? 'center' : 'left'
             }}>
-                {t('admin.users.teacher.headerTitle')}
+                {t('admin.users.teacher.title')}
             </h3>
             <button
                 onClick={onToggleAll}

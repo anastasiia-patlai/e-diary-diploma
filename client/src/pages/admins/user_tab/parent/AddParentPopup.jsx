@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaSearch, FaUserFriends } from "react-icons/fa";
 import axios from "axios";
 
 const AddParentPopup = ({
     child,
     currentParent,
-    databaseName, // Додаємо databaseName в пропси
+    databaseName,
     onClose,
-    onAddParent
+    onAddParent,
+    isMobile
 }) => {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -30,15 +33,11 @@ const AddParentPopup = ({
 
         try {
             const response = await axios.get(`${API_URL}/parents`, {
-                params: { databaseName } // Додаємо databaseName як параметр
+                params: { databaseName }
             });
             setAllParents(response.data);
         } catch (err) {
             console.error("Помилка завантаження батьків:", err);
-            if (err.response) {
-                console.error("Статус помилки:", err.response.status);
-                console.error("Дані помилки:", err.response.data);
-            }
         }
     };
 
@@ -105,9 +104,11 @@ const AddParentPopup = ({
                     marginBottom: '20px'
                 }}>
                     <div>
-                        <h3 style={{ margin: 0, marginBottom: '5px' }}>Додати батька для {child.fullName}</h3>
+                        <h3 style={{ margin: 0, marginBottom: '5px' }}>
+                            {t('admin.users.parent.addParent')} {child.fullName}
+                        </h3>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
-                            Поточний батько: {currentParent.fullName}
+                            {t('admin.users.parent.currentParent', { name: currentParent.fullName })}
                         </p>
                         {databaseName && (
                             <div style={{
@@ -119,7 +120,7 @@ const AddParentPopup = ({
                                 borderRadius: '4px',
                                 display: 'inline-block'
                             }}>
-                                База даних: {databaseName}
+                                {t('admin.users.parent.databaseName', { name: databaseName })}
                             </div>
                         )}
                     </div>
@@ -141,7 +142,7 @@ const AddParentPopup = ({
                     <div style={{ position: 'relative' }}>
                         <input
                             type="text"
-                            placeholder="Введіть ім'я, email або телефон батька (мінімум 3 символи)..."
+                            placeholder={t('admin.users.parent.searchParents')}
                             value={searchQuery}
                             onChange={(e) => handleSearch(e.target.value)}
                             style={{
@@ -171,7 +172,7 @@ const AddParentPopup = ({
                             color: '#ef4444',
                             marginTop: '5px'
                         }}>
-                            Введіть щонайменше 3 символи для пошуку
+                            {t('admin.users.parent.searchMinLength')}
                         </div>
                     )}
 
@@ -181,7 +182,7 @@ const AddParentPopup = ({
                             color: '#ef4444',
                             marginTop: '5px'
                         }}>
-                            Помилка: Не вказано базу даних
+                            {t('admin.users.parent.noDatabaseError')}
                         </div>
                     )}
                 </div>
@@ -240,7 +241,7 @@ const AddParentPopup = ({
                                                     fontSize: '13px',
                                                     color: '#6b7280'
                                                 }}>
-                                                    Телефон: {parent.phone}
+                                                    {t('admin.users.parent.phone')}: {parent.phone}
                                                 </div>
                                             )}
                                         </div>
@@ -249,12 +250,12 @@ const AddParentPopup = ({
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                                <p>Батьків за запитом "{searchQuery}" не знайдено</p>
+                                <p>{t('admin.users.parent.noParentsFound', { query: searchQuery })}</p>
                             </div>
                         )
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
-                            <p>Введіть запит для пошуку батьків</p>
+                            <p>{t('admin.users.parent.enterParentSearchQuery')}</p>
                         </div>
                     )}
                 </div>

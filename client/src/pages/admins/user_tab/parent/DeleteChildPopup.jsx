@@ -1,12 +1,15 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaExclamationTriangle, FaTimes, FaUser } from 'react-icons/fa';
 
 const DeleteChildPopup = ({
     child,
     parent,
     onConfirm,
-    onClose
+    onClose,
+    isMobile
 }) => {
+    const { t } = useTranslation();
     if (!child) return null;
 
     return (
@@ -30,7 +33,6 @@ const DeleteChildPopup = ({
                 maxWidth: '450px',
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -52,10 +54,10 @@ const DeleteChildPopup = ({
                         </div>
                         <div>
                             <h3 style={{ margin: 0, color: '#1f2937' }}>
-                                Видалення дитини
+                                {t('admin.users.parent.removeChildTitle')}
                             </h3>
                             <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-                                Підтвердіть видалення
+                                {t('admin.users.parent.removeChildConfirm')}
                             </p>
                         </div>
                     </div>
@@ -74,7 +76,6 @@ const DeleteChildPopup = ({
                     </button>
                 </div>
 
-                {/* Інформація про дитину */}
                 <div style={{
                     backgroundColor: '#f8fafc',
                     padding: '16px',
@@ -84,7 +85,7 @@ const DeleteChildPopup = ({
                 }}>
                     <div style={{ marginBottom: '12px' }}>
                         <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-                            Дитина
+                            {t('admin.users.parent.childInfo')}
                         </div>
                         <div style={{
                             display: 'flex',
@@ -116,7 +117,7 @@ const DeleteChildPopup = ({
                                 </div>
                                 {child.group && (
                                     <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-                                        Група: {child.group.name}
+                                        {t('admin.users.parent.childGroup')}: {child.group.name}
                                     </div>
                                 )}
                             </div>
@@ -126,7 +127,7 @@ const DeleteChildPopup = ({
                     {parent && (
                         <div>
                             <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px' }}>
-                                Батько
+                                {t('admin.users.parent.parentInfo')}
                             </div>
                             <div style={{ fontSize: '14px', color: '#1f2937' }}>
                                 {parent.fullName}
@@ -135,7 +136,6 @@ const DeleteChildPopup = ({
                     )}
                 </div>
 
-                {/* Попередження */}
                 <div style={{
                     backgroundColor: '#fffbeb',
                     border: '1px solid #fcd34d',
@@ -147,16 +147,15 @@ const DeleteChildPopup = ({
                         <FaExclamationTriangle style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
                         <div>
                             <div style={{ fontWeight: '600', color: '#92400e', fontSize: '14px' }}>
-                                Увага!
+                                {t('admin.users.parent.deleteParentWarning')}
                             </div>
                             <div style={{ color: '#b45309', fontSize: '13px', lineHeight: '1.4' }}>
-                                Дитина буде відв'язана від батька. Батько більше не зможе отримувати інформацію про успішність цієї дитини.
+                                {t('admin.users.parent.removeChildWarning')}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Кнопки дій */}
                 <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -182,7 +181,7 @@ const DeleteChildPopup = ({
                             e.currentTarget.style.backgroundColor = 'white';
                         }}
                     >
-                        Скасувати
+                        {t('admin.users.parent.cancel')}
                     </button>
                     <button
                         onClick={() => onConfirm(child._id)}
@@ -204,7 +203,7 @@ const DeleteChildPopup = ({
                             e.currentTarget.style.backgroundColor = '#dc2626';
                         }}
                     >
-                        Видалити дитину
+                        {t('admin.users.parent.removeChild')}
                     </button>
                 </div>
             </div>

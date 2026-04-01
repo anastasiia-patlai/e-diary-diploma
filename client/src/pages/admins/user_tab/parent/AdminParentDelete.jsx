@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaExclamationTriangle, FaTrash, FaTimes } from "react-icons/fa";
 import axios from "axios";
 
 const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const handleDelete = async () => {
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t('admin.users.parent.noDatabaseError'));
             return;
         }
 
@@ -23,7 +25,7 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
             onClose();
         } catch (err) {
             console.error('Помилка видалення батька:', err);
-            setError(err.response?.data?.error || 'Помилка видалення батька');
+            setError(err.response?.data?.error || t('admin.users.parent.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -60,7 +62,7 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <h3 style={{ margin: 0, color: '#dc2626' }}>
-                        Видалення батька
+                        {t('admin.users.parent.deleteParent')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -89,10 +91,10 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px' }} />
                     <div>
                         <div style={{ fontWeight: '600', color: '#dc2626', marginBottom: '5px' }}>
-                            Увага! Цю дію не можна скасувати
+                            {t('admin.users.parent.deleteParentWarning')}
                         </div>
                         <div style={{ fontSize: '14px', color: '#7f1d1d' }}>
-                            Ви дійсно хочете видалити цього батька?
+                            {t('admin.users.parent.deleteParentConfirm')}
                         </div>
                     </div>
                 </div>
@@ -104,15 +106,15 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <div style={{ fontWeight: '600', marginBottom: '8px' }}>
-                        Інформація про батька:
+                        {t('admin.users.parent.parentInfo')}:
                     </div>
                     <div style={{ fontSize: '14px', color: '#374151' }}>
-                        <div><strong>ПІБ:</strong> {parent.fullName}</div>
-                        <div><strong>Email:</strong> {parent.email}</div>
-                        {parent.phone && <div><strong>Телефон:</strong> {parent.phone}</div>}
+                        <div><strong>{t('admin.users.parent.fullName')}:</strong> {parent.fullName}</div>
+                        <div><strong>{t('admin.users.parent.login')}:</strong> {parent.email}</div>
+                        {parent.phone && <div><strong>{t('admin.users.parent.phone')}:</strong> {parent.phone}</div>}
                         {parent.children && parent.children.length > 0 && (
                             <div style={{ color: '#dc2626', marginTop: '8px' }}>
-                                <strong>Увага!</strong> У батька є {parent.children.length} дітей
+                                <strong>{t('admin.users.parent.parentHasChildren', { count: parent.children.length })}</strong>
                             </div>
                         )}
                     </div>
@@ -154,7 +156,7 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
                         }}
                     >
                         <FaTimes />
-                        Скасувати
+                        {t('admin.users.parent.cancel')}
                     </button>
                     <button
                         onClick={handleDelete}
@@ -174,7 +176,7 @@ const AdminParentDelete = ({ parent, onClose, onDelete, databaseName }) => {
                         }}
                     >
                         <FaTrash />
-                        {loading ? 'Видалення...' : 'Видалити'}
+                        {loading ? t('admin.users.parent.deleting') : t('admin.users.parent.confirmDelete')}
                     </button>
                 </div>
             </div>

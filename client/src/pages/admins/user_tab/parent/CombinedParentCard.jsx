@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     FaUserFriends, FaEnvelope, FaPhone, FaChild,
     FaSearch, FaEdit, FaTrash, FaUserPlus, FaUserMinus, FaTimes,
@@ -19,6 +20,7 @@ const CombinedParentCard = ({
     onRemoveParentFromChild,
     isMobile
 }) => {
+    const { t } = useTranslation();
     const [showDeleteChildPopup, setShowDeleteChildPopup] = useState(false);
     const [showAddParentPopup, setShowAddParentPopup] = useState(false);
     const [childToDelete, setChildToDelete] = useState(null);
@@ -130,7 +132,7 @@ const CombinedParentCard = ({
                         color: '#374151',
                         marginBottom: isMobile ? '8px' : '10px'
                     }}>
-                        Батьки ({parents.length})
+                        {t('admin.users.parent.children')} ({parents.length})
                     </div>
                     {parents.map(parent => (
                         <div key={parent._id} style={{
@@ -272,7 +274,7 @@ const CombinedParentCard = ({
                                                 }}
                                             >
                                                 <FaSearch size={10} />
-                                                Знайти дитину
+                                                {t('admin.users.parent.findChild')}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -296,7 +298,7 @@ const CombinedParentCard = ({
                                                 }}
                                             >
                                                 <FaEdit size={10} />
-                                                Редагувати
+                                                {t('admin.users.parent.edit')}
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -319,7 +321,7 @@ const CombinedParentCard = ({
                                                 }}
                                             >
                                                 <FaTrash size={10} />
-                                                Видалити
+                                                {t('admin.users.parent.delete')}
                                             </button>
                                         </div>
                                     )}
@@ -350,8 +352,7 @@ const CombinedParentCard = ({
                                         }}
                                     >
                                         <FaSearch size={12} />
-                                        Знайти дитину
-                                    </button>
+                                        {t('admin.users.parent.findChild')}                                    </button>
                                     <button
                                         onClick={() => onEdit(parent)}
                                         style={{
@@ -370,8 +371,7 @@ const CombinedParentCard = ({
                                         }}
                                     >
                                         <FaEdit size={12} />
-                                        Редагувати
-                                    </button>
+                                        {t('admin.users.parent.edit')}                                    </button>
                                     <button
                                         onClick={() => onDelete(parent)}
                                         style={{
@@ -390,7 +390,7 @@ const CombinedParentCard = ({
                                         }}
                                     >
                                         <FaTrash size={12} />
-                                        Видалити
+                                        {t('admin.users.parent.delete')}
                                     </button>
                                 </div>
                             )}
@@ -415,7 +415,7 @@ const CombinedParentCard = ({
                         fontSize: isMobile ? '15px' : '16px',
                         color: '#374151'
                     }}>
-                        Діти ({allChildren.length})
+                        {t('admin.users.parent.children')} ({allChildren.length})
                     </div>
                 </div>
 
@@ -492,7 +492,7 @@ const CombinedParentCard = ({
                                             }}
                                         >
                                             <FaUserPlus size={isMobile ? 9 : 12} />
-                                            {!isMobile && 'Додати батька'}
+                                            {!isMobile && t('admin.users.parent.addParent')}
                                         </button>
                                     )}
 
@@ -514,7 +514,7 @@ const CombinedParentCard = ({
                                             }}
                                         >
                                             <FaUserMinus size={isMobile ? 9 : 13} />
-                                            {!isMobile ? 'Відв\'язати батька' : 'Відв\'язати'}
+                                            {!isMobile ? t('admin.users.parent.removeParent') : t('admin.users.parent.removeParent')}
                                         </button>
                                     )}
 
@@ -535,7 +535,7 @@ const CombinedParentCard = ({
                                         }}
                                     >
                                         <FaTimes size={isMobile ? 9 : 12} />
-                                        {!isMobile && 'Видалити'}
+                                        {!isMobile && t('admin.users.parent.delete')}
                                     </button>
                                 </div>
                             </div>
@@ -551,7 +551,7 @@ const CombinedParentCard = ({
                         border: '1px dashed #e5e7eb',
                         fontSize: isMobile ? '13px' : '14px'
                     }}>
-                        <p>Спільних дітей не знайдено</p>
+                        <p>{t('admin.users.parent.noSharedChildren')}</p>
                     </div>
                 )}
             </div>
