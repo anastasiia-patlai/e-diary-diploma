@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const TeacherHeader = ({ onToggleAll, allExpanded, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             display: 'flex',
@@ -15,7 +18,7 @@ const TeacherHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                 fontSize: isMobile ? '18px' : '20px',
                 textAlign: isMobile ? 'center' : 'left'
             }}>
-                Список викладачів за предметами
+                {t('admin.users.teacher.headerTitle')}
             </h3>
             <button
                 onClick={onToggleAll}
@@ -31,7 +34,7 @@ const TeacherHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                     minHeight: isMobile ? '44px' : 'auto'
                 }}
             >
-                {allExpanded ? 'Згорнути всі' : 'Розгорнути всі'}
+                {allExpanded ? t('admin.teacher.collapseAll') : t('admin.teacher.expandAll')}
             </button>
         </div>
     );

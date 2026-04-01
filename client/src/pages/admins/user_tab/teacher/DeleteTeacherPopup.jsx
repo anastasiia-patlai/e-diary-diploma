@@ -1,14 +1,16 @@
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 
 const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleDelete = async () => {
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t('admin.teacher.errors.noDatabase'));
             return;
         }
 
@@ -22,7 +24,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
             onDelete(teacher._id);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || "Помилка при видаленні викладача");
+            setError(err.response?.data?.error || t('admin.teacher.errors.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -48,7 +50,6 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                 width: '90%',
                 maxWidth: '450px'
             }}>
-                {/* Заголовок */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -56,7 +57,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#dc2626' }}>
-                        Видалення викладача
+                        {t('admin.teacher.deleteTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -84,7 +85,6 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                     </div>
                 )}
 
-                {/* Попередження */}
                 <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -97,7 +97,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px', flexShrink: 0 }} />
                     <div>
                         <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
-                            Ви впевнені, що хочете видалити викладача?
+                            {t('admin.teacher.deleteConfirmQuestion')}
                         </p>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             <strong>{teacher.fullName}</strong>
@@ -106,17 +106,16 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             {teacher.position && (
                                 <>
                                     <br />
-                                    Предмет: {teacher.position}
+                                    {t('admin.teacher.subject')}: {teacher.position}
                                 </>
                             )}
                         </p>
                         <p style={{ margin: '12px 0 0 0', fontSize: '14px', color: '#dc2626' }}>
-                            Цю дію неможливо буде скасувати!
+                            {t('admin.teacher.deleteWarning')}
                         </p>
                     </div>
                 </div>
 
-                {/* Кнопки */}
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button
                         onClick={handleDelete}
@@ -133,7 +132,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {loading ? 'Видалення...' : 'Так, видалити'}
+                        {loading ? t('admin.teacher.deleting') : t('admin.teacher.confirmDelete')}
                     </button>
                     <button
                         onClick={onClose}
@@ -150,7 +149,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        Скасувати
+                        {t('admin.teacher.cancel')}
                     </button>
                 </div>
             </div>

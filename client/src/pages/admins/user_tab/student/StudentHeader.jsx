@@ -18,7 +18,7 @@ const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                 fontSize: '24px',
                 textAlign: isMobile ? 'center' : 'left'
             }}>
-                {t('admin.studentManagement.title')}
+                {t('admin.users.student.title')}
             </h3>
             <button
                 onClick={onToggleAll}

@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import SubjectItem from './SubjectItem';
 
 const SubjectsList = ({ subjects, expandedSubjects, onToggleSubject, onEditTeacher, onDeleteTeacher, isMobile }) => {
+    const { t } = useTranslation();
+
     if (Object.keys(subjects).length === 0) {
         return (
             <div style={{
@@ -16,7 +19,7 @@ const SubjectsList = ({ subjects, expandedSubjects, onToggleSubject, onEditTeach
                     color: '#6b7280',
                     margin: 0
                 }}>
-                    Викладачі не знайдені
+                    {t('admin.users.teacher.noTeachers')}
                 </p>
             </div>
         );

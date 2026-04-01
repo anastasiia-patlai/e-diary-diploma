@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaCalendar, FaChalkboardTeacher, FaPlus, FaMinus, FaCertificate, FaUserTie } from "react-icons/fa";
 import axios from "axios";
 
-// Додаємо регулярний вираз для перевірки логіна
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
 const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: "",
         email: "",
@@ -23,7 +24,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
     useEffect(() => {
         const fetchUserData = async () => {
             if (!databaseName) {
-                setError("Не вказано базу даних");
+                setError(t('admin.teacher.errors.noDatabase'));
                 setFetchingUser(false);
                 return;
             }
@@ -54,19 +55,17 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                 setFetchingUser(false);
             } catch (err) {
                 console.error("Помилка завантаження даних:", err);
-                setError("Помилка завантаження даних користувача");
+                setError(t('admin.teacher.errors.loadError'));
                 setFetchingUser(false);
             }
         };
 
         fetchUserData();
-    }, [teacher._id, databaseName]);
+    }, [teacher._id, databaseName, t]);
 
-    // ФУНКЦІЯ ДЛЯ ОБРОБКИ ЗМІН В ПОЛЯХ ФОРМИ
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        // Очищаємо помилку логіна при зміні поля email
         if (name === 'email') {
             setLoginError("");
         }
@@ -77,7 +76,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         });
     };
 
-    // ФУНКЦІЯ ДЛЯ ДОАВАННЯ НОВОГО ПОЛЯ ПРЕДМЕТУ
     const addPositionField = () => {
         setFormData(prev => ({
             ...prev,
@@ -85,7 +83,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }));
     };
 
-    // ФУНКЦІЯ ДЛЯ ВИДАЛЕНЯ ПОЛЯ ПРЕДМЕТУ
     const removePositionField = (index) => {
         if (formData.positions.length > 1) {
             setFormData(prev => ({
@@ -95,7 +92,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }
     };
 
-    // ФУНКЦІЯ ДЛЯ ОНОВЛЕННЯ ПОЛЯ ПРЕДМЕТУ
     const updatePosition = (index, value) => {
         setFormData(prev => ({
             ...prev,
@@ -103,13 +99,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }));
     };
 
-    // ФУНКЦІЯ ДЛЯ ВАЛІДАЦІЇ ЛОГІНА
     const validateLogin = (login) => {
         if (!login.trim()) {
-            return "Логін обов'язковий";
+            return t('admin.teacher.errors.loginRequired');
         }
         if (!LOGIN_REGEX.test(login)) {
-            return "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)";
+            return t('admin.teacher.errors.loginInvalid');
         }
         return "";
     };
@@ -121,12 +116,11 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         setLoginError("");
 
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t('admin.teacher.errors.noDatabase'));
             setLoading(false);
             return;
         }
 
-        // Валідація логіна
         const loginValidationError = validateLogin(formData.email);
         if (loginValidationError) {
             setLoginError(loginValidationError);
@@ -138,7 +132,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
             const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
 
             if (filteredPositions.length === 0) {
-                setError("Вкажіть хоча б один предмет");
+                setError(t('admin.teacher.errors.subjectRequired'));
                 setLoading(false);
                 return;
             }
@@ -155,7 +149,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                 databaseName: databaseName
             };
 
-            // АВТОМАТИЧНО ДОДАЄМО allowedCategories НА ОСНОВІ teacherType
             if (formData.teacherType === "young") {
                 submitData.allowedCategories = ["young"];
             } else if (formData.teacherType === "middle") {
@@ -176,11 +169,10 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
             onUpdate(response.data.user);
             onClose();
         } catch (err) {
-            // Перевіряємо помилку дублювання логіна
             if (err.response?.data?.error?.includes("email") || err.response?.data?.error?.includes("логін")) {
-                setLoginError("Користувач з таким логіном вже існує");
+                setLoginError(t('admin.teacher.errors.loginExists'));
             } else {
-                setError(err.response?.data?.error || "Помилка при оновленні викладача");
+                setError(err.response?.data?.error || t('admin.teacher.errors.updateError'));
             }
         } finally {
             setLoading(false);
@@ -234,7 +226,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                         flex: 1
                     }}>
                         <FaChalkboardTeacher size={isMobile ? 18 : 20} />
-                        Редагувати викладача
+                        {t('admin.teacher.editTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -247,16 +239,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                             transition: isMobile ? 'none' : 'color 0.2s',
                             padding: isMobile ? '4px' : '0',
                             flexShrink: 0
-                        }}
-                        onMouseOver={(e) => {
-                            if (!isMobile) {
-                                e.target.style.color = '#374151';
-                            }
-                        }}
-                        onMouseOut={(e) => {
-                            if (!isMobile) {
-                                e.target.style.color = '#6b7280';
-                            }
                         }}
                     >
                         <FaTimes />
@@ -281,7 +263,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                         textAlign: 'center',
                         padding: isMobile ? '40px 20px' : '20px'
                     }}>
-                        <p style={{ fontSize: isMobile ? '16px' : '14px' }}>Завантаження даних...</p>
+                        <p style={{ fontSize: isMobile ? '16px' : '14px' }}>{t('common.loading')}</p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>
@@ -300,7 +282,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                ПІБ *
+                                {t('admin.teacher.fullName')} *
                             </label>
                             <input
                                 type="text"
@@ -318,12 +300,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
                                     height: isMobile ? '40px' : 'auto'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
@@ -343,7 +319,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                Логін *
+                                {t('admin.teacher.login')} *
                             </label>
                             <input
                                 type="text"
@@ -363,14 +339,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     transition: 'border-color 0.2s',
                                     height: isMobile ? '40px' : 'auto'
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = loginError ? '#dc2626' : 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    if (!loginError) {
-                                        e.target.style.borderColor = '#e5e7eb';
-                                    }
-                                }}
                             />
                             {loginError && (
                                 <div style={{
@@ -381,6 +349,13 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     {loginError}
                                 </div>
                             )}
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#6b7280',
+                                marginTop: '4px'
+                            }}>
+                                {t('admin.teacher.loginFormatHint')}
+                            </div>
                         </div>
 
                         <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
@@ -398,7 +373,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                Телефон *
+                                {t('admin.teacher.phone')} *
                             </label>
                             <input
                                 type="tel"
@@ -416,12 +391,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
                                     height: isMobile ? '40px' : 'auto'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
                                 }}
                             />
                         </div>
@@ -441,7 +410,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                Дата народження
+                                {t('admin.teacher.birthDate')}
                             </label>
                             <input
                                 type="date"
@@ -459,16 +428,9 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     transition: 'border-color 0.2s',
                                     height: isMobile ? '40px' : 'auto'
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
-                                }}
                             />
                         </div>
 
-                        {/* ТИП ВИКЛАДАЧА */}
                         <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -484,7 +446,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                Тип викладача *
+                                {t('admin.teacher.teacherType')} *
                             </label>
                             <select
                                 name="teacherType"
@@ -503,23 +465,16 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     backgroundColor: 'white',
                                     height: isMobile ? '50px' : 'auto'
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
-                                }}
                             >
-                                <option value="">-- Оберіть тип --</option>
-                                <option value="young">Викладач молодших класів (1-4)</option>
-                                <option value="middle">Викладач середніх класів (5-9)</option>
-                                <option value="senior">Викладач старших класів (10-11)</option>
-                                <option value="middle-senior">Викладач середніх та старших класів</option>
-                                <option value="all">Викладач усіх класів</option>
+                                <option value="">-- {t('admin.teacher.selectType')} --</option>
+                                <option value="young">{t('admin.teacher.types.young')}</option>
+                                <option value="middle">{t('admin.teacher.types.middle')}</option>
+                                <option value="senior">{t('admin.teacher.types.senior')}</option>
+                                <option value="middle-senior">{t('admin.teacher.types.middleSenior')}</option>
+                                <option value="all">{t('admin.teacher.types.all')}</option>
                             </select>
                         </div>
 
-                        {/* КАТЕГОРІЯ КВАЛІФІКАЦІЇ */}
                         <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -535,7 +490,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                Категорія кваліфікації
+                                {t('admin.teacher.qualificationCategory')}
                             </label>
                             <select
                                 name="category"
@@ -553,24 +508,17 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     backgroundColor: 'white',
                                     height: isMobile ? '50px' : 'auto'
                                 }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = '#e5e7eb';
-                                }}
                             >
-                                <option value="">-- Оберіть категорію --</option>
-                                <option value="Вища категорія">Вища категорія</option>
-                                <option value="Перша категорія">Перша категорія</option>
-                                <option value="Друга категорія">Друга категорія</option>
-                                <option value="Спеціаліст">Спеціаліст</option>
-                                <option value="Молодший спеціаліст">Молодший спеціаліст</option>
-                                <option value="Без категорії">Без категорії</option>
+                                <option value="">-- {t('admin.teacher.selectCategory')} --</option>
+                                <option value="Вища категорія">{t('admin.teacher.qualifications.highest')}</option>
+                                <option value="Перша категорія">{t('admin.teacher.qualifications.first')}</option>
+                                <option value="Друга категорія">{t('admin.teacher.qualifications.second')}</option>
+                                <option value="Спеціаліст">{t('admin.teacher.qualifications.specialist')}</option>
+                                <option value="Молодший спеціаліст">{t('admin.teacher.qualifications.juniorSpecialist')}</option>
+                                <option value="Без категорії">{t('admin.teacher.qualifications.noCategory')}</option>
                             </select>
                         </div>
 
-                        {/* КІЛЬКА ПРЕДМЕТІВ */}
                         <div style={{ marginBottom: isMobile ? '20px' : '16px' }}>
                             <label style={{
                                 display: 'flex',
@@ -586,7 +534,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                Предмети *
+                                {t('admin.teacher.subjects')} *
                             </label>
 
                             {formData.positions.map((position, index) => (
@@ -600,7 +548,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                         type="text"
                                         value={position}
                                         onChange={(e) => updatePosition(index, e.target.value)}
-                                        placeholder={`Предмет ${index + 1}`}
+                                        placeholder={`${t('admin.teacher.subject')} ${index + 1}`}
                                         style={{
                                             flex: 1,
                                             padding: isMobile ? '14px 16px' : '10px 12px',
@@ -611,12 +559,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                             outline: 'none',
                                             transition: 'border-color 0.2s',
                                             height: isMobile ? '40px' : 'auto'
-                                        }}
-                                        onFocus={(e) => {
-                                            e.target.style.borderColor = 'rgba(105, 180, 185, 1)';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.target.style.borderColor = '#e5e7eb';
                                         }}
                                     />
                                     {formData.positions.length > 1 && (
@@ -636,16 +578,6 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                                 transition: isMobile ? 'none' : 'background-color 0.2s',
                                                 height: isMobile ? '40px' : 'auto',
                                                 minWidth: isMobile ? '40px' : 'auto'
-                                            }}
-                                            onMouseOver={(e) => {
-                                                if (!isMobile) {
-                                                    e.target.style.backgroundColor = '#dc2626';
-                                                }
-                                            }}
-                                            onMouseOut={(e) => {
-                                                if (!isMobile) {
-                                                    e.target.style.backgroundColor = '#ef4444';
-                                                }
                                             }}
                                         >
                                             <FaMinus size={isMobile ? 16 : 14} />
@@ -674,19 +606,9 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     height: isMobile ? '40px' : 'auto',
                                     marginTop: '8px'
                                 }}
-                                onMouseOver={(e) => {
-                                    if (!isMobile && !loading) {
-                                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (!isMobile && !loading) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                    }
-                                }}
                             >
                                 <FaPlus size={isMobile ? 14 : 12} />
-                                Додати ще предмет
+                                {t('admin.teacher.addSubject')}
                             </button>
                         </div>
 
@@ -719,19 +641,9 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     minHeight: '40px',
                                     height: '40px'
                                 }}
-                                onMouseOver={(e) => {
-                                    if (!isMobile) {
-                                        e.target.style.backgroundColor = '#4b5563';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (!isMobile) {
-                                        e.target.style.backgroundColor = '#6b7280';
-                                    }
-                                }}
                             >
                                 <FaTimes size={isMobile ? 14 : 12} />
-                                Скасувати
+                                {t('admin.teacher.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -755,18 +667,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     minHeight: '40px',
                                     height: '40px'
                                 }}
-                                onMouseOver={(e) => {
-                                    if (!isMobile && !loading) {
-                                        e.target.style.backgroundColor = 'rgba(85, 160, 165, 1)';
-                                    }
-                                }}
-                                onMouseOut={(e) => {
-                                    if (!isMobile && !loading) {
-                                        e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)';
-                                    }
-                                }}
                             >
-                                {loading ? 'Збереження...' : 'Зберегти зміни'}
+                                {loading ? t('admin.teacher.saving') : t('admin.teacher.saveChanges')}
                             </button>
                         </div>
                     </form>

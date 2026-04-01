@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from "axios";
 import TeacherHeader from './TeacherHeader';
 import SubjectsList from './SubjectsList';
@@ -6,6 +7,7 @@ import EditTeacherPopup from "./EditTeacherPopup";
 import DeleteTeacherPopup from "./DeleteTeacherPopup";
 
 const AdminShowTeacher = ({ isMobile }) => {
+    const { t } = useTranslation();
     const [teachers, setTeachers] = useState([]);
     const [expandedSubjects, setExpandedSubjects] = useState({});
     const [loading, setLoading] = useState(true);
@@ -15,7 +17,12 @@ const AdminShowTeacher = ({ isMobile }) => {
     const [showDeletePopup, setShowDeletePopup] = useState(false);
     const [databaseName, setDatabaseName] = useState("");
 
-    // Отримуємо databaseName з localStorage
+    // Функція для перекладу назви предмета
+    const getTranslatedSubject = (subjectName) => {
+        const translated = t(`subjects.${subjectName}`, { defaultValue: subjectName });
+        return translated;
+    };
+
     useEffect(() => {
         const getDatabaseName = () => {
             let dbName = localStorage.getItem('databaseName');
@@ -47,22 +54,19 @@ const AdminShowTeacher = ({ isMobile }) => {
         const dbName = getDatabaseName();
         if (dbName) {
             setDatabaseName(dbName);
-            console.log("Database name для запиту:", dbName);
         } else {
             console.error("Database name не знайдено!");
-            setError("Не вдалося визначити базу даних школи");
+            setError(t('admin.users.errors.noDatabase'));
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const fetchTeachers = async () => {
         if (!databaseName) {
-            console.error("Database name відсутній для запиту");
             return;
         }
 
         try {
-            console.log("Запит викладачів для бази:", databaseName);
             const response = await axios.get("http://localhost:3001/api/users/teachers", {
                 params: {
                     databaseName: databaseName
@@ -71,17 +75,9 @@ const AdminShowTeacher = ({ isMobile }) => {
             setTeachers(response.data);
             setLoading(false);
         } catch (err) {
-            setError("Помилка завантаження викладачів");
+            setError(t('admin.users.errors.loadError'));
             setLoading(false);
             console.error("Детальна помилка завантаження викладачів:", err);
-
-            // Детальніше про помилку
-            if (err.response) {
-                console.error("Статус помилки:", err.response.status);
-                console.error("Дані помилки:", err.response.data);
-                console.error("Заголовки запиту:", err.config.headers);
-                console.error("URL запиту:", err.config.url);
-            }
         }
     };
 
@@ -91,7 +87,6 @@ const AdminShowTeacher = ({ isMobile }) => {
         }
     }, [databaseName]);
 
-    // Решта коду залишається без змін
     const groupTeachersBySubject = () => {
         const subjects = {};
 
@@ -107,10 +102,11 @@ const AdminShowTeacher = ({ isMobile }) => {
             }
 
             if (teacherSubjects.length === 0) {
-                teacherSubjects = ["Без предмета"];
+                teacherSubjects = [t('admin.users.teacher.noSubject')];
             }
 
             teacherSubjects.forEach(subject => {
+                // Використовуємо оригінальну назву як ключ, але для відображення буде переклад
                 if (!subjects[subject]) {
                     subjects[subject] = [];
                 }
@@ -120,10 +116,17 @@ const AdminShowTeacher = ({ isMobile }) => {
             });
         });
 
+        // Сортування з урахуванням перекладу
         const sortedSubjects = {};
-        Object.keys(subjects).sort().forEach(key => {
-            sortedSubjects[key] = subjects[key];
-        });
+        Object.keys(subjects)
+            .sort((a, b) => {
+                const translatedA = getTranslatedSubject(a);
+                const translatedB = getTranslatedSubject(b);
+                return translatedA.localeCompare(translatedB);
+            })
+            .forEach(key => {
+                sortedSubjects[key] = subjects[key];
+            });
 
         return sortedSubjects;
     };
@@ -173,7 +176,7 @@ const AdminShowTeacher = ({ isMobile }) => {
                 textAlign: 'center',
                 padding: isMobile ? '40px 20px' : '20px'
             }}>
-                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>Завантаження викладачів...</p>
+                <p style={{ fontSize: isMobile ? '16px' : '14px' }}>{t('common.loading')}</p>
             </div>
         );
     }
@@ -207,7 +210,7 @@ const AdminShowTeacher = ({ isMobile }) => {
                         minWidth: isMobile ? '140px' : 'auto'
                     }}
                 >
-                    Спробувати знову
+                    {t('admin.errorState.retry')}
                 </button>
             </div>
         );

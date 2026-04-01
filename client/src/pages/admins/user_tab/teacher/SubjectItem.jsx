@@ -1,8 +1,20 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronUp, FaBook } from "react-icons/fa";
 import TeachersList from './TeachersList';
 
 const SubjectItem = ({ subject, teachers, isExpanded, onToggle, onEditTeacher, onDeleteTeacher, isMobile }) => {
+    const { t } = useTranslation();
+
+    // Функція для перекладу назви предмета
+    const getTranslatedSubject = (subjectName) => {
+        // Якщо є переклад для цього предмета, використовуємо його
+        const translated = t(`subjects.${subjectName}`, { defaultValue: subjectName });
+        return translated;
+    };
+
+    const translatedSubject = getTranslatedSubject(subject);
+
     return (
         <div style={{
             border: '1px solid #e5e7eb',
@@ -22,16 +34,6 @@ const SubjectItem = ({ subject, teachers, isExpanded, onToggle, onEditTeacher, o
                     minHeight: isMobile ? '60px' : 'auto'
                 }}
                 onClick={() => onToggle(subject)}
-                onMouseOver={(e) => {
-                    if (!isMobile) {
-                        e.currentTarget.style.backgroundColor = 'rgba(105, 180, 185, 0.2)';
-                    }
-                }}
-                onMouseOut={(e) => {
-                    if (!isMobile) {
-                        e.currentTarget.style.backgroundColor = isExpanded ? 'rgba(105, 180, 185, 0.1)' : '#f9fafb';
-                    }
-                }}
             >
                 <div style={{
                     display: 'flex',
@@ -55,7 +57,7 @@ const SubjectItem = ({ subject, teachers, isExpanded, onToggle, onEditTeacher, o
                             fontSize: isMobile ? '15px' : '16px',
                             wordBreak: 'break-word'
                         }}>
-                            {subject}
+                            {translatedSubject}
                         </span>
                     </div>
                     <span style={{
@@ -66,7 +68,7 @@ const SubjectItem = ({ subject, teachers, isExpanded, onToggle, onEditTeacher, o
                         borderRadius: '12px',
                         whiteSpace: 'nowrap'
                     }}>
-                        Викладачів: {teachers.length}
+                        {t('admin.users.teacher.teachersCount', { count: teachers.length })}
                     </span>
                 </div>
                 <div style={{
