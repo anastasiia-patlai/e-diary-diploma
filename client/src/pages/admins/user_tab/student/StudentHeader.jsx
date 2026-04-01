@@ -34,7 +34,7 @@ const StudentHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                     minHeight: isMobile ? '44px' : 'auto'
                 }}
             >
-                {allExpanded ? t('admin.studentManagement.collapseAll') : t('admin.studentManagement.expandAll')}
+                {allExpanded ? t('admin.users.student.collapseAll') : t('admin.users.student.expandAll')}
             </button>
         </div>
     );

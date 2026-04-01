@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaArrowUp } from "react-icons/fa";
 import axios from "axios";
 
@@ -12,6 +13,7 @@ import AdminParentEdit from "./AdminParentEdit";
 import AdminParentDelete from "./AdminParentDelete";
 
 const AdminShowParent = () => {
+    const { t } = useTranslation();
     const [parents, setParents] = useState([]);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ const AdminShowParent = () => {
     const [filteredParents, setFilteredParents] = useState([]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10); // Змінено на 10 блоків на сторінку
+    const [itemsPerPage] = useState(10);
 
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -73,10 +75,10 @@ const AdminShowParent = () => {
             console.log("Database name для запитів:", dbName);
         } else {
             console.error("Database name не знайдено!");
-            setError("Не вдалося визначити базу даних школи");
+            setError(t('admin.users.parent.noDatabaseSpecified'));
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -110,7 +112,7 @@ const AdminShowParent = () => {
             applyFilters(response.data, parentSearchQuery);
             setLoading(false);
         } catch (err) {
-            setError("Помилка завантаження батьків");
+            setError(t('admin.users.parent.loadError'));
             setLoading(false);
             console.error("Помилка завантаження батьків:", err);
 
@@ -273,7 +275,6 @@ const AdminShowParent = () => {
 
     const handleUpdateParent = async (updatedParent) => {
         try {
-            // Отримуємо повний оновлений список батьків
             const response = await axios.get(`${API_URL}/parents`, {
                 params: { databaseName }
             });
@@ -282,7 +283,6 @@ const AdminShowParent = () => {
         } catch (err) {
             console.error("Помилка оновлення списку батьків:", err);
 
-            // Fallback: оновлюємо тільки конкретного батька
             const updatedParents = parents.map(p =>
                 p._id === updatedParent._id
                     ? { ...updatedParent, children: p.children || [] }
@@ -344,10 +344,9 @@ const AdminShowParent = () => {
         setShowAddChildPopup(true);
     };
 
-
     const handleAddChildToParent = async (studentId) => {
         if (!databaseName) {
-            alert("Помилка: не вказано базу даних");
+            alert(t('admin.users.parent.noDatabaseError'));
             return;
         }
 
@@ -397,16 +396,14 @@ const AdminShowParent = () => {
 
             await fetchParents();
 
-            console.log("Дитю успішно додано!");
+            console.log("Дитину успішно додано!");
         } catch (err) {
             console.error("Помилка додавання дитини:", err);
             if (err.response) {
                 console.error("Статус помилки:", err.response.status);
                 console.error("Дані помилки:", err.response.data);
-                console.error("URL запиту:", err.config.url);
-                console.error("Метод запиту:", err.config.method);
             }
-            alert(err.response?.data?.error || "Помилка додавання дитини");
+            alert(err.response?.data?.error || t('admin.users.parent.addChildError'));
         }
     };
 
@@ -425,7 +422,7 @@ const AdminShowParent = () => {
             await fetchParents();
         } catch (err) {
             console.error("Помилка видалення дитини:", err);
-            alert("Помилка видалення дитини");
+            alert(t('admin.users.parent.removeChildError'));
         }
     };
 
@@ -433,14 +430,14 @@ const AdminShowParent = () => {
         if (!databaseName) return;
 
         try {
-            const response = await axios.put(`${API_URL}/${childId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
+            await axios.put(`${API_URL}/${childId}/add-parent?databaseName=${encodeURIComponent(databaseName)}`, {
                 parentId: parentId
             });
 
             await fetchParents();
         } catch (err) {
             console.error("Помилка додавання батька:", err);
-            alert(err.response?.data?.error || "Помилка додавання батька");
+            alert(err.response?.data?.error || t('admin.users.parent.addParentError'));
         }
     };
 
@@ -455,7 +452,7 @@ const AdminShowParent = () => {
             await fetchParents();
         } catch (err) {
             console.error("Помилка видалення батька з дитини:", err);
-            alert("Помилка видалення батька з дитини");
+            alert(t('admin.users.parent.removeParentError'));
         }
     };
 
@@ -476,7 +473,7 @@ const AdminShowParent = () => {
                 justifyContent: 'center',
                 alignItems: 'center'
             }}>
-                <p>Завантаження батьків...</p>
+                <p>{t('admin.users.parent.loading')}</p>
             </div>
         );
     }
@@ -494,6 +491,21 @@ const AdminShowParent = () => {
                 alignItems: 'center'
             }}>
                 <p>{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                        marginTop: '10px',
+                        padding: isMobile ? '12px 20px' : '8px 16px',
+                        backgroundColor: 'rgba(105, 180, 185, 1)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: isMobile ? '14px' : '12px'
+                    }}
+                >
+                    {t('admin.users.parent.retry')}
+                </button>
             </div>
         );
     }
@@ -505,7 +517,6 @@ const AdminShowParent = () => {
             overflowX: 'hidden',
             boxSizing: 'border-box'
         }}>
-            {/* Заголовок з адаптивним стилем */}
             <div style={{
                 display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',
@@ -526,7 +537,7 @@ const AdminShowParent = () => {
                         fontSize: isMobile ? '18px' : '20px',
                         whiteSpace: 'nowrap'
                     }}>
-                        Батьки ({filteredParents.length})
+                        {t('admin.users.parent.headerTitle')} ({filteredParents.length})
                     </h3>
                     <ParentSort sortOrder={sortOrder} onSortToggle={handleSortToggle} />
                 </div>
@@ -550,14 +561,13 @@ const AdminShowParent = () => {
                 }}>
                     <p style={{ color: '#6b7280', margin: 0, fontSize: isMobile ? '14px' : '16px' }}>
                         {parentSearchQuery
-                            ? `Батьки за запитом "${parentSearchQuery}" не знайдені`
-                            : 'Батьки не знайдені'
+                            ? t('admin.users.parent.noResults', { query: parentSearchQuery })
+                            : t('admin.users.parent.noParents')
                         }
                     </p>
                 </div>
             ) : (
                 <>
-                    {/* Контейнер для карток батьків - 10 блоків на сторінку */}
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -596,7 +606,6 @@ const AdminShowParent = () => {
                         ))}
                     </div>
 
-                    {/* Пагінація */}
                     <ParentPagination
                         currentPage={currentPage}
                         totalPages={totalPages}
@@ -613,7 +622,6 @@ const AdminShowParent = () => {
                 </>
             )}
 
-            {/* Попапи */}
             <AddChildPopup
                 selectedParent={selectedParent}
                 searchQuery={searchQuery}

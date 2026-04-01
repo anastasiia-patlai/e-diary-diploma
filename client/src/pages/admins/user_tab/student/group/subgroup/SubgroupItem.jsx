@@ -61,7 +61,7 @@ const SubgroupItem = ({ subgroup, group, index, isExpanded, onToggle, onEditStud
                         }}>
                             <FaUsers size={isMobile ? 10 : 12} />
                             <span>
-                                {isClass ? t('admin.studentManagement.studentsCount') : t('admin.studentManagement.studentsCount')}: {subgroup.students?.length || 0}
+                                {isClass ? t('admin.subgroup.studentsCount') : t('admin.subgroup.studentsCount')}: {subgroup.students?.length || 0}
                             </span>
                         </div>
                     </div>

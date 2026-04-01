@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaSortAlphaDown, FaSortAlphaUp } from "react-icons/fa";
 
 const ParentSort = ({ sortOrder, onSortToggle }) => {
+    const { t } = useTranslation();
+
     return (
         <button
             onClick={onSortToggle}
@@ -27,7 +30,7 @@ const ParentSort = ({ sortOrder, onSortToggle }) => {
             }}
         >
             {sortOrder === 'asc' ? <FaSortAlphaDown /> : <FaSortAlphaUp />}
-            {sortOrder === 'asc' ? 'А-Я' : 'Я-А'}
+            {sortOrder === 'asc' ? t('admin.users.parent.sortAZ') : t('admin.users.parent.sortZA')}
         </button>
     );
 };

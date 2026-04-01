@@ -64,7 +64,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
                             color: '#6b7280',
                             textAlign: isMobile ? 'center' : 'left'
                         }}>
-                            {t('admin.studentManagement.studentsCount')}: {sortedStudents.length}
+                            {t('admin.users.student.studentsCount')}: {sortedStudents.length}
                         </div>
                         <button
                             onClick={toggleSortOrder}
@@ -99,7 +99,7 @@ const StudentsList = ({ group, onEditStudent, onDeleteStudent, isMobile, isClass
                                 <FaSortAlphaDown size={isMobile ? 16 : 14} /> :
                                 <FaSortAlphaUp size={isMobile ? 16 : 14} />
                             }
-                            {sortOrder === 'asc' ? t('admin.studentManagement.sortAZ') : t('admin.studentManagement.sortZA')}
+                            {sortOrder === 'asc' ? t('admin.users.student.sortAZ') : t('admin.users.student.sortZA')}
                         </button>
                     </div>
                 </>

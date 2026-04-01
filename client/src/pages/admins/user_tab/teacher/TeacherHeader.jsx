@@ -34,7 +34,7 @@ const TeacherHeader = ({ onToggleAll, allExpanded, isMobile }) => {
                     minHeight: isMobile ? '44px' : 'auto'
                 }}
             >
-                {allExpanded ? t('admin.teacher.collapseAll') : t('admin.teacher.expandAll')}
+                {allExpanded ? t('admin.users.teacher.collapseAll') : t('admin.users.teacher.expandAll')}
             </button>
         </div>
     );

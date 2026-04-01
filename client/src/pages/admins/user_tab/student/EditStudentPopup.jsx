@@ -147,7 +147,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#374151' }}>
-                        {t('admin.studentManagement.editStudent')}
+                        {t('admin.users.student.editTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -201,7 +201,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                {t('admin.studentManagement.fullName')} *
+                                {t('admin.users.student.fullName')} *
                             </label>
                             <input
                                 type="text"
@@ -241,7 +241,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                {t('admin.studentManagement.login')} *
+                                {t('admin.users.student.login')} *
                             </label>
                             <input
                                 type="text"
@@ -283,7 +283,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                 color: '#6b7280',
                                 marginTop: '4px'
                             }}>
-                                {t('admin.studentManagement.loginFormatHint')}
+                                {t('admin.users.student.loginFormatHint')}
                             </div>
                         </div>
 
@@ -300,7 +300,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                {t('admin.studentManagement.phone')} *
+                                {t('admin.users.student.phone')} *
                             </label>
                             <input
                                 type="tel"
@@ -340,7 +340,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                {t('admin.studentManagement.birthDate')}
+                                {t('admin.users.student.birthDate')}
                             </label>
                             <input
                                 type="date"
@@ -379,7 +379,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: '14px'
                                 }} />
-                                {t('admin.studentManagement.group')} *
+                                {t('admin.users.student.group')} *
                             </label>
                             <select
                                 name="group"
@@ -404,7 +404,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     e.target.style.borderColor = '#e5e7eb';
                                 }}
                             >
-                                <option value="">{t('admin.studentManagement.selectGroup')}</option>
+                                <option value="">{t('admin.users.student.selectGroup')}</option>
                                 {groups.map(group => (
                                     <option key={group._id} value={group._id}>
                                         {group.name}
@@ -447,7 +447,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                 }}
                             >
                                 <FaTimes />
-                                {t('admin.studentManagement.cancel')}
+                                {t('admin.users.common.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -480,7 +480,7 @@ const EditStudentPopup = ({ student, databaseName, onClose, onUpdate }) => {
                                     }
                                 }}
                             >
-                                {loading ? t('admin.studentManagement.saving') : t('admin.studentManagement.saveChanges')}
+                                {loading ? t('admin.users.common.saving') : t('admin.users.student.saveChanges')}
                             </button>
                         </div>
                     </form>

@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaSearch } from "react-icons/fa";
 
 const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount, isMobile }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             marginBottom: isMobile ? '15px' : '20px',
@@ -13,7 +16,7 @@ const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount, isMob
             <div style={{ position: 'relative' }}>
                 <input
                     type="text"
-                    placeholder={isMobile ? "Пошук батьків..." : "Пошук батьків за іменем, email, телефоном або іменем дитини..."}
+                    placeholder={isMobile ? t('admin.users.parent.searchPlaceholderMobile') : t('admin.users.parent.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     style={{
@@ -53,7 +56,7 @@ const ParentSearch = ({ searchQuery, onSearchChange, filteredParentsCount, isMob
                     gap: '6px'
                 }}>
                     <FaSearch size={isMobile ? 11 : 12} />
-                    Знайдено {filteredParentsCount} батьків за запитом "{searchQuery}"
+                    {t('admin.users.parent.searchResults', { count: filteredParentsCount, query: searchQuery })}
                 </div>
             )}
         </div>

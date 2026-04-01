@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     FaChevronLeft, FaChevronRight, FaAngleDoubleLeft, FaAngleDoubleRight
 } from "react-icons/fa";
@@ -16,6 +17,8 @@ const ParentPagination = ({
     onNextPage,
     isMobile
 }) => {
+    const { t } = useTranslation();
+
     const getPageNumbers = () => {
         const pages = [];
         const maxVisiblePages = isMobile ? 3 : 5;
@@ -49,14 +52,17 @@ const ParentPagination = ({
                 gap: isMobile ? '8px' : '0'
             }}>
                 <div style={{ fontSize: isMobile ? '13px' : '14px', color: '#6b7280' }}>
-                    Показано {startIndex + 1}-{Math.min(endIndex, totalItems)} з {totalItems} батьків
+                    {t('admin.users.parent.showing', {
+                        start: startIndex + 1,
+                        end: Math.min(endIndex, totalItems),
+                        total: totalItems
+                    })}
                 </div>
                 <div style={{ fontSize: isMobile ? '13px' : '14px', color: '#6b7280' }}>
-                    Сторінка {currentPage} з {totalPages}
+                    {t('admin.users.parent.page', { current: currentPage, total: totalPages })}
                 </div>
             </div>
 
-            {/* пАГІНЦІЯ ПОКАЗУВАТИМЕТЬСЯ, ЯКЩО ТІЛЬКИ БІЛЬШЕ 1 СТОРІНКИ */}
             {totalPages > 1 && (
                 <div style={{
                     display: 'flex',
@@ -109,7 +115,7 @@ const ParentPagination = ({
                         }}
                     >
                         <FaChevronLeft size={isMobile ? 10 : 12} />
-                        {!isMobile && 'Попередня'}
+                        {!isMobile && t('admin.users.parent.previous')}
                     </button>
 
                     {getPageNumbers().map(page => (
@@ -150,7 +156,7 @@ const ParentPagination = ({
                             transition: 'all 0.2s'
                         }}
                     >
-                        {!isMobile && 'Наступна'}
+                        {!isMobile && t('admin.users.parent.next')}
                         <FaChevronRight size={isMobile ? 10 : 12} />
                     </button>
 

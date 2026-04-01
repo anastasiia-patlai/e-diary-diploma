@@ -8,9 +8,18 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Функція для перекладу назви предмета
+    const getTranslatedSubject = (subjectName) => {
+        if (!subjectName) return subjectName;
+        // Розділяємо предмети, якщо їх декілька через кому
+        const subjects = subjectName.split(',').map(s => s.trim());
+        const translatedSubjects = subjects.map(s => t(`subjects.${s}`, { defaultValue: s }));
+        return translatedSubjects.join(', ');
+    };
+
     const handleDelete = async () => {
         if (!databaseName) {
-            setError(t('admin.teacher.errors.noDatabase'));
+            setError(t('admin.mainPage.errors.noDatabase'));
             return;
         }
 
@@ -24,7 +33,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
             onDelete(teacher._id);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.error || t('admin.teacher.errors.deleteError'));
+            setError(err.response?.data?.error || t('admin.errors.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -57,7 +66,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#dc2626' }}>
-                        {t('admin.teacher.deleteTitle')}
+                        {t('admin.users.teacher.deleteTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -97,7 +106,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px', flexShrink: 0 }} />
                     <div>
                         <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
-                            {t('admin.teacher.deleteConfirmQuestion')}
+                            {t('admin.users.teacher.deleteConfirmQuestion')}
                         </p>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             <strong>{teacher.fullName}</strong>
@@ -106,12 +115,12 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             {teacher.position && (
                                 <>
                                     <br />
-                                    {t('admin.teacher.subject')}: {teacher.position}
+                                    {t('admin.users.teacher.subjects')}: {getTranslatedSubject(teacher.position)}
                                 </>
                             )}
                         </p>
                         <p style={{ margin: '12px 0 0 0', fontSize: '14px', color: '#dc2626' }}>
-                            {t('admin.teacher.deleteWarning')}
+                            {t('admin.users.common.deleteWarning')}
                         </p>
                     </div>
                 </div>
@@ -132,7 +141,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {loading ? t('admin.teacher.deleting') : t('admin.teacher.confirmDelete')}
+                        {loading ? t('admin.users.common.deleting') : t('admin.users.common.confirmDelete')}
                     </button>
                     <button
                         onClick={onClose}
@@ -149,7 +158,7 @@ const DeleteTeacherPopup = ({ teacher, onClose, onDelete, databaseName }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {t('admin.teacher.cancel')}
+                        {t('admin.users.common.cancel')}
                     </button>
                 </div>
             </div>

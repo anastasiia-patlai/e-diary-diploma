@@ -58,7 +58,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                     marginBottom: '20px'
                 }}>
                     <h2 style={{ margin: 0, fontSize: '20px', color: '#dc2626' }}>
-                        {t('admin.studentManagement.deleteStudent')}
+                        {t('admin.users.student.deleteTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -98,7 +98,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                     <FaExclamationTriangle style={{ color: '#dc2626', fontSize: '24px', flexShrink: 0 }} />
                     <div>
                         <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>
-                            {t('admin.studentManagement.confirmDelete')}
+                            {t('admin.users.student.deleteConfirmQuestion')}
                         </p>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
                             <strong>{student.fullName}</strong>
@@ -106,7 +106,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             {student.email}
                         </p>
                         <p style={{ margin: '12px 0 0 0', fontSize: '14px', color: '#dc2626' }}>
-                            {t('admin.studentManagement.deleteWarning')}
+                            {t('admin.users.common.deleteWarning')}
                         </p>
                     </div>
                 </div>
@@ -127,7 +127,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {loading ? t('admin.studentManagement.saving') : t('admin.studentManagement.deleteStudent')}
+                        {loading ? t('admin.users.common.saving') : t('admin.users.common.confirmDelete')}
                     </button>
                     <button
                         onClick={onClose}
@@ -144,7 +144,7 @@ const DeleteStudentPopup = ({ student, databaseName, onClose, onDelete }) => {
                             opacity: loading ? 0.6 : 1
                         }}
                     >
-                        {t('admin.studentManagement.cancel')}
+                        {t('admin.users.common.cancel')}
                     </button>
                 </div>
             </div>

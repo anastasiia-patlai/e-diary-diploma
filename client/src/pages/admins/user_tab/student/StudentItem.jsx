@@ -104,7 +104,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                     }}
                 >
                     <FaEdit size={isMobile ? 14 : 12} />
-                    {t('admin.card.edit')}
+                    {t('admin.users.common.edit')}
                 </button>
                 <button
                     onClick={(e) => {
@@ -140,7 +140,7 @@ const StudentItem = ({ student, onEdit, onDelete, isMobile, isClass }) => {
                     }}
                 >
                     <FaTrash size={isMobile ? 14 : 12} />
-                    {t('admin.card.delete')}
+                    {t('admin.users.common.delete')}
                 </button>
             </div>
         </div>

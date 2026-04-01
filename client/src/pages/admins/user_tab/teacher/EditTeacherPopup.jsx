@@ -5,6 +5,24 @@ import axios from "axios";
 
 const LOGIN_REGEX = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+_[a-zA-Zа-яА-ЯіІїЇєЄґҐ]+$/;
 
+// Список доступних предметів для автодоповнення
+const AVAILABLE_SUBJECTS = [
+    'Математика', 'Алгебра', 'Геометрія', 'Українська мова', 'Українська література',
+    'Англійська мова', 'Німецька мова', 'Французька мова', 'Іспанська мова', 'Польська мова',
+    'Історія', 'Історія України', 'Всесвітня історія', 'Фізика', 'Астрономія', 'Хімія', 'Біологія',
+    'Географія', 'Інформатика', 'Інформаційні технології', 'Програмування', 'Веб-дизайн',
+    'Робототехніка', 'STEM', 'STEAM', 'Фізична культура', 'Спорт', 'Шахмати',
+    'Трудове навчання', 'Технології', 'Домогосподарство', 'Креслення', 'Музичне мистецтво',
+    'Образотворче мистецтво', 'Живопис', 'Хореографія', 'Театральне мистецтво', 'Фотомистецтво',
+    'Кіномистецтво', 'Дизайн', 'Архітектура', 'Моделювання', 'Конструювання', 'Основи здоров\'я',
+    'Основи безпеки життєдіяльності', 'Правознавство', 'Економіка', 'Фінансова грамотність',
+    'Підприємництво', 'Менеджмент', 'Маркетинг', 'Бухгалтерський облік', 'Туризм',
+    'Логіка', 'Психологія', 'Філософія', 'Етика', 'Естетика', 'Християнська етика',
+    'Риторика', 'Ораторське мистецтво', 'Журналістика', 'Дебати', 'Лідерство',
+    'Краєзнавство', 'Громадянська освіта', 'Країнознавство', 'Міжнародні відносини', 'Дипломатія',
+    'Зарубіжна література', 'Світова література', 'Екологія', 'Природознавство'
+];
+
 const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState({
@@ -20,6 +38,27 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
     const [fetchingUser, setFetchingUser] = useState(true);
     const [error, setError] = useState("");
     const [loginError, setLoginError] = useState("");
+
+    // Функція для перекладу назви предмета
+    const getTranslatedSubject = (subjectName) => {
+        if (!subjectName) return subjectName;
+        const translated = t(`subjects.${subjectName}`, { defaultValue: subjectName });
+        return translated;
+    };
+
+    // Функція для отримання оригінальної назви предмета з перекладеної
+    const getOriginalSubject = (translatedSubject) => {
+        if (!translatedSubject) return translatedSubject;
+
+        // Шукаємо оригінальну назву серед доступних предметів
+        for (const subject of AVAILABLE_SUBJECTS) {
+            const translated = getTranslatedSubject(subject);
+            if (translated === translatedSubject) {
+                return subject;
+            }
+        }
+        return translatedSubject;
+    };
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -37,9 +76,10 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
 
                 let positionsArray = [""];
                 if (userData.positions && userData.positions.length > 0) {
-                    positionsArray = [...userData.positions];
+                    // Перекладаємо предмети при завантаженні
+                    positionsArray = userData.positions.map(pos => getTranslatedSubject(pos));
                 } else if (userData.position) {
-                    positionsArray = userData.position.split(',').map(pos => pos.trim()).filter(pos => pos !== "");
+                    positionsArray = userData.position.split(',').map(pos => getTranslatedSubject(pos.trim())).filter(pos => pos !== "");
                 }
 
                 setFormData({
@@ -129,7 +169,10 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
         }
 
         try {
-            const filteredPositions = formData.positions.filter(pos => pos.trim() !== "");
+            // Фільтруємо пусті поля і повертаємо оригінальні назви предметів
+            const filteredPositions = formData.positions
+                .filter(pos => pos.trim() !== "")
+                .map(pos => getOriginalSubject(pos));
 
             if (filteredPositions.length === 0) {
                 setError(t('admin.teacher.errors.subjectRequired'));
@@ -226,7 +269,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                         flex: 1
                     }}>
                         <FaChalkboardTeacher size={isMobile ? 18 : 20} />
-                        {t('admin.teacher.editTitle')}
+                        {t('admin.users.teacher.editTitle')}
                     </h2>
                     <button
                         onClick={onClose}
@@ -282,7 +325,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.fullName')} *
+                                {t('admin.users.teacher.fullName')} *
                             </label>
                             <input
                                 type="text"
@@ -319,7 +362,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.login')} *
+                                {t('admin.users.teacher.login')} *
                             </label>
                             <input
                                 type="text"
@@ -354,7 +397,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 color: '#6b7280',
                                 marginTop: '4px'
                             }}>
-                                {t('admin.teacher.loginFormatHint')}
+                                {t('admin.users.teacher.loginFormatHint')}
                             </div>
                         </div>
 
@@ -373,7 +416,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.phone')} *
+                                {t('admin.users.teacher.phone')} *
                             </label>
                             <input
                                 type="tel"
@@ -410,7 +453,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: '14px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.birthDate')}
+                                {t('admin.users.teacher.birthDate')}
                             </label>
                             <input
                                 type="date"
@@ -446,7 +489,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.teacherType')} *
+                                {t('admin.users.teacher.teacherType')} *
                             </label>
                             <select
                                 name="teacherType"
@@ -466,12 +509,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     height: isMobile ? '50px' : 'auto'
                                 }}
                             >
-                                <option value="">-- {t('admin.teacher.selectType')} --</option>
-                                <option value="young">{t('admin.teacher.types.young')}</option>
-                                <option value="middle">{t('admin.teacher.types.middle')}</option>
-                                <option value="senior">{t('admin.teacher.types.senior')}</option>
-                                <option value="middle-senior">{t('admin.teacher.types.middleSenior')}</option>
-                                <option value="all">{t('admin.teacher.types.all')}</option>
+                                <option value="">-- {t('admin.users.teacher.selectType')} --</option>
+                                <option value="young">{t('admin.users.teacher.types.young')}</option>
+                                <option value="middle">{t('admin.users.teacher.types.middle')}</option>
+                                <option value="senior">{t('admin.users.teacher.types.senior')}</option>
+                                <option value="middle-senior">{t('admin.users.teacher.types.middleSenior')}</option>
+                                <option value="all">{t('admin.users.teacher.types.all')}</option>
                             </select>
                         </div>
 
@@ -490,7 +533,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.qualificationCategory')}
+                                {t('admin.users.teacher.qualificationCategory')}
                             </label>
                             <select
                                 name="category"
@@ -509,12 +552,12 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     height: isMobile ? '50px' : 'auto'
                                 }}
                             >
-                                <option value="">-- {t('admin.teacher.selectCategory')} --</option>
-                                <option value="Вища категорія">{t('admin.teacher.qualifications.highest')}</option>
-                                <option value="Перша категорія">{t('admin.teacher.qualifications.first')}</option>
-                                <option value="Друга категорія">{t('admin.teacher.qualifications.second')}</option>
-                                <option value="Спеціаліст">{t('admin.teacher.qualifications.specialist')}</option>
-                                <option value="Молодший спеціаліст">{t('admin.teacher.qualifications.juniorSpecialist')}</option>
+                                <option value="">-- {t('admin.users.teacher.selectCategory')} --</option>
+                                <option value="Вища категорія">{t('admin.users.teacher.qualifications.highest')}</option>
+                                <option value="Перша категорія">{t('admin.users.teacher.qualifications.first')}</option>
+                                <option value="Друга категорія">{t('admin.users.teacher.qualifications.second')}</option>
+                                <option value="Спеціаліст">{t('admin.users.teacher.qualifications.specialist')}</option>
+                                <option value="Молодший спеціаліст">{t('admin.users.teacher.qualifications.juniorSpecialist')}</option>
                                 <option value="Без категорії">{t('admin.teacher.qualifications.noCategory')}</option>
                             </select>
                         </div>
@@ -534,7 +577,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     fontSize: isMobile ? '14px' : '12px',
                                     flexShrink: 0
                                 }} />
-                                {t('admin.teacher.subjects')} *
+                                {t('admin.users.teacher.subjects')} *
                             </label>
 
                             {formData.positions.map((position, index) => (
@@ -548,7 +591,8 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                         type="text"
                                         value={position}
                                         onChange={(e) => updatePosition(index, e.target.value)}
-                                        placeholder={`${t('admin.teacher.subject')} ${index + 1}`}
+                                        list="subjects-list"
+                                        placeholder={`${t('admin.users.teacher.subject')} ${index + 1}`}
                                         style={{
                                             flex: 1,
                                             padding: isMobile ? '14px 16px' : '10px 12px',
@@ -586,6 +630,14 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 </div>
                             ))}
 
+                            <datalist id="subjects-list">
+                                {AVAILABLE_SUBJECTS.map(subject => (
+                                    <option key={subject} value={getTranslatedSubject(subject)}>
+                                        {getTranslatedSubject(subject)}
+                                    </option>
+                                ))}
+                            </datalist>
+
                             <button
                                 type="button"
                                 onClick={addPositionField}
@@ -608,7 +660,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 }}
                             >
                                 <FaPlus size={isMobile ? 14 : 12} />
-                                {t('admin.teacher.addSubject')}
+                                {t('admin.users.teacher.addSubject')}
                             </button>
                         </div>
 
@@ -643,7 +695,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                 }}
                             >
                                 <FaTimes size={isMobile ? 14 : 12} />
-                                {t('admin.teacher.cancel')}
+                                {t('admin.users.common.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -668,7 +720,7 @@ const EditTeacherPopup = ({ teacher, onClose, onUpdate, databaseName, isMobile }
                                     height: '40px'
                                 }}
                             >
-                                {loading ? t('admin.teacher.saving') : t('admin.teacher.saveChanges')}
+                                {loading ? t('admin.teacher.saving') : t('admin.users.teacher.saveChanges')}
                             </button>
                         </div>
                     </form>
