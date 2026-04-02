@@ -1,7 +1,9 @@
 {
     "common": {
         "exit": "Exit",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "notSpecified": "Not specified",
+        "close": "Close"
     },
     "welcome": {
         "title": "Educational Institution Registration",
@@ -469,6 +471,9 @@
                     "first": "First Category",
                     "second": "Second Category",
                     "specialist": "Specialist",
+                    "specialistHighest": "Specialist of Highest Category",
+                    "specialistFirst": "Specialist of First Category",
+                    "specialistSecond": "Specialist of Second Category",
                     "juniorSpecialist": "Junior Specialist",
                     "noCategory": "Without Category"
                 }
@@ -734,7 +739,7 @@
                 "email": "Email",
                 "phone": "Phone",
                 "birthDate": "Date of Birth",
-                "dateFormat": "Format: DD-MM-YYYY",
+                "dateFormat": "Format: YYYY-MM-DD",
                 "currentProfessionalInfo": "Current Professional Information",
                 "contactAdmin": "To change this data, contact the school administrator",
                 "cancel": "Cancel",
@@ -784,6 +789,24 @@
                 "updateError": "Error during update",
                 "saveError": "Error saving data",
                 "loadError": "Failed to load data"
+            },
+            "teacherTypes": {
+                "young": "Primary School Teacher (Grades 1-4)",
+                "middle": "Middle School Teacher (Grades 5-9)",
+                "senior": "High School Teacher (Grades 10-11)",
+                "middleSenior": "Middle and High School Teacher",
+                "all": "All Grades Teacher"
+            },
+            "qualifications": {
+                "highest": "Highest Category",
+                "first": "First Category",
+                "second": "Second Category",
+                "specialistHighest": "Specialist of Highest Category",
+                "specialistFirst": "Specialist of First Category",
+                "specialistSecond": "Specialist of Second Category",
+                "specialist": "Specialist",
+                "juniorSpecialist": "Junior Specialist",
+                "noCategory": "Without Category"
             }
         },
         "schedule": {
@@ -802,7 +825,7 @@
             "legendGroup": "Group/Class",
             "legendClassroom": "Classroom",
             "legendSubgroup": "Subgroup designation",
-            "number": "№",
+            "number": "No.",
             "time": "Time",
             "subject": "Subject",
             "group": "Group",
@@ -859,102 +882,6 @@
             "errors": {
                 "accessDenied": "Access denied. Please log in as a teacher.",
                 "loadData": "An error occurred while loading data"
-            }
-        },
-        "student": {
-            "menuTitle": "Student Sections",
-            "welcome": "Welcome!",
-            "selectSection": "Select a section from the menu to start",
-            "sections": {
-                "home": "Home",
-                "profile": "My Profile",
-                "classmates": "Classmates",
-                "schedule": "Schedule",
-                "grades": "Grades",
-                "homework": "Homework",
-                "progress": "My Progress"
-            },
-            "dashboard": {
-                "title": "Student Dashboard",
-                "myProgress": "My Progress",
-                "averageGrade": "Average Grade",
-                "homeworkCompleted": "Homework Completed",
-                "absences": "Absences",
-                "nextLesson": "Next Lesson",
-                "math": "Mathematics",
-                "time": "Time",
-                "room": "Room",
-                "upcomingDeadlines": "Upcoming Deadlines",
-                "mathHomework": "Mathematics Homework",
-                "essay": "Ukrainian Language Essay",
-                "dueDate": "Due Date",
-                "announcements": "Announcements",
-                "schoolEvent": "School Event",
-                "eventDescription": "Drawing competition will take place on March 18",
-                "parentMeeting": "Parent Meeting",
-                "meetingDate": "Meeting Date"
-            },
-            "profile": {
-                "title": "My Profile",
-                "student": "Student",
-                "group": "Class/Group",
-                "email": "Email",
-                "phone": "Phone",
-                "parentPhone": "Parent's Phone",
-                "address": "Address",
-                "birthDate": "Date of Birth",
-                "enrollmentDate": "Enrollment Date"
-            },
-            "classmates": {
-                "title": "Classmates",
-                "search": "Search classmates...",
-                "classmate": "Classmate",
-                "email": "Email",
-                "call": "Call",
-                "noResults": "No classmates found"
-            },
-            "schedule": {
-                "title": "Schedule",
-                "noLessons": "No lessons on this day",
-                "monday": "Monday",
-                "tuesday": "Tuesday",
-                "wednesday": "Wednesday",
-                "thursday": "Thursday",
-                "friday": "Friday",
-                "saturday": "Saturday"
-            },
-            "grades": {
-                "title": "My Grades",
-                "averageGrade": "Average Grade",
-                "totalGrades": "Total Grades",
-                "allSubjects": "All Subjects",
-                "subject": "Subject",
-                "type": "Type",
-                "grade": "Grade",
-                "date": "Date",
-                "noGrades": "No grades yet"
-            },
-            "homework": {
-                "title": "Homework",
-                "dueDate": "Due Date",
-                "submit": "Submit Assignment",
-                "send": "Send",
-                "commentPlaceholder": "Add a comment (optional)...",
-                "pending": "Pending",
-                "submitted": "Awaiting Review",
-                "completed": "Reviewed",
-                "waitingCheck": "Awaiting Review",
-                "checked": "Reviewed",
-                "submitSuccess": "Assignment submitted successfully!",
-                "submitError": "Error submitting assignment",
-                "noHomework": "No active homework assignments"
-            },
-            "progress": {
-                "title": "My Progress",
-                "performanceBySubjects": "Performance by Subjects",
-                "attendance": "Attendance",
-                "present": "Present",
-                "absent": "Absent"
             }
         },
         "subjects": {
@@ -1050,6 +977,217 @@
                 "saved": "Classroom successfully saved",
                 "deleted": "Classroom successfully deleted",
                 "toggled": "Classroom status successfully changed"
+            },
+            "roomNames": {
+                "Assembly Hall": "Assembly Hall",
+                "Gymnasium": "Gymnasium",
+                "Library": "Library",
+                "Computer Lab": "Computer Lab",
+                "Laboratory": "Laboratory",
+                "Workshop": "Workshop",
+                "Principal's Office": "Principal's Office",
+                "Teachers' Room": "Teachers' Room",
+                "Medical Room": "Medical Room",
+                "Canteen": "Canteen"
+            },
+            "equipment": {
+                "projector": "projector",
+                "computers": "computers",
+                "microscopes": "microscopes",
+                "blackboard": "blackboard",
+                "interactive whiteboard": "interactive whiteboard",
+                "laptops": "laptops",
+                "tablets": "tablets",
+                "laboratory equipment": "laboratory equipment",
+                "sports equipment": "sports equipment",
+                "musical instruments": "musical instruments",
+                "TV": "TV",
+                "speakers": "speakers",
+                "air conditioner": "air conditioner",
+                "cabinets": "cabinets",
+                "desks": "desks",
+                "chairs": "chairs"
+            }
+        }
+    },
+    "student": {
+        "menuTitle": "Student Sections",
+        "welcome": "Welcome!",
+        "selectSection": "Select a section from the menu to start",
+        "sections": {
+            "home": "Home",
+            "profile": "My Profile",
+            "classmates": "Classmates",
+            "schedule": "Schedule",
+            "grades": "Grades",
+            "homework": "Homework",
+            "progress": "My Progress"
+        },
+        "dashboard": {
+            "title": "Student Dashboard",
+            "myProgress": "My Progress",
+            "averageGrade": "Average Grade",
+            "homeworkCompleted": "Homework Completed",
+            "absences": "Absences",
+            "nextLesson": "Next Lesson",
+            "math": "Mathematics",
+            "time": "Time",
+            "room": "Room",
+            "upcomingDeadlines": "Upcoming Deadlines",
+            "mathHomework": "Mathematics Homework",
+            "essay": "Ukrainian Language Essay",
+            "dueDate": "Due Date",
+            "announcements": "Announcements",
+            "schoolEvent": "School Event",
+            "eventDescription": "Drawing competition will take place on March 18",
+            "parentMeeting": "Parent Meeting",
+            "meetingDate": "Meeting Date"
+        },
+        "profile": {
+            "title": "My Profile",
+            "student": "Student",
+            "group": "Class/Group",
+            "login": "Login",
+            "phone": "Phone",
+            "parentPhone": "Parent's Phone",
+            "address": "Address",
+            "birthDate": "Date of Birth",
+            "enrollmentDate": "Enrollment Date",
+            "personalInfo": "Personal Information",
+            "contactInfo": "Contact Information",
+            "academicPerformance": "Academic Performance",
+            "averageGrade": "Average Grade",
+            "totalSubjects": "Subjects",
+            "completedAssignments": "Completed Assignments",
+            "attendance": "Attendance",
+            "class": "Class",
+            "registrationDate": "Registration Date",
+            "parentLogin": "Parent's Login",
+            "studentId": "Student ID",
+            "status": "Status",
+            "parents": "Parents",
+            "accessDescription": "You have access to view personal information. To change any data, contact the school administrator.",
+            "noParents": "No parents linked to this student"
+        },
+        "editPopup": {
+            "title": "Edit Student Profile",
+            "fullName": "Full Name",
+            "login": "Login",
+            "phone": "Phone",
+            "group": "Class/Group",
+            "birthDate": "Date of Birth",
+            "address": "Address",
+            "parentPhone": "Parent's Phone",
+            "parentLogin": "Parent's Login",
+            "dateFormat": "Format: YYYY-MM-DD",
+            "addressPlaceholder": "123 Example St., Kyiv",
+            "currentSchoolInfo": "Current School Information",
+            "contactAdmin": "To change class, student ID or other school information, contact the administrator.",
+            "cancel": "Cancel",
+            "save": "Save",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "fullNameMinLength": "Full name must be at least 2 characters",
+                "emailInvalid": "Enter a valid login",
+                "phoneInvalid": "Enter a valid phone number"
+            }
+        },
+        "classmates": {
+            "title": "Classmates",
+            "search": "Search classmates...",
+            "classmate": "Classmate",
+            "email": "Email",
+            "call": "Call",
+            "noResults": "No classmates found"
+        },
+        "schedule": {
+            "title": "Schedule",
+            "noLessons": "No lessons on this day",
+            "monday": "Monday",
+            "tuesday": "Tuesday",
+            "wednesday": "Wednesday",
+            "thursday": "Thursday",
+            "friday": "Friday",
+            "saturday": "Saturday"
+        },
+        "grades": {
+            "title": "My Grades",
+            "averageGrade": "Average Grade",
+            "totalGrades": "Total Grades",
+            "allSubjects": "All Subjects",
+            "subject": "Subject",
+            "type": "Type",
+            "grade": "Grade",
+            "date": "Date",
+            "noGrades": "No grades yet",
+            "notAvailable": "No data available",
+            "excellent": "Excellent",
+            "good": "Good",
+            "satisfactory": "Satisfactory",
+            "needsImprovement": "Needs Improvement"
+        },
+        "homework": {
+            "title": "Homework",
+            "dueDate": "Due Date",
+            "submit": "Submit Assignment",
+            "send": "Send",
+            "commentPlaceholder": "Add a comment (optional)...",
+            "pending": "Pending",
+            "submitted": "Awaiting Review",
+            "completed": "Reviewed",
+            "waitingCheck": "Awaiting Review",
+            "checked": "Reviewed",
+            "submitSuccess": "Assignment submitted successfully!",
+            "submitError": "Error submitting assignment",
+            "noHomework": "No active homework assignments"
+        },
+        "progress": {
+            "title": "My Progress",
+            "performanceBySubjects": "Performance by Subjects",
+            "attendance": "Attendance",
+            "present": "Present",
+            "absent": "Absent"
+        },
+        "buttons": {
+            "editProfile": "Edit Profile"
+        },
+        "roles": {
+            "admin": "Administrator",
+            "teacher": "Teacher",
+            "student": "Student",
+            "parent": "Parent",
+            "user": "User"
+        },
+        "notifications": {
+            "updateSuccess": "Data updated successfully!"
+        },
+        "errors": {
+            "noDataFound": "No user data found",
+            "serverError": "Server error",
+            "updateError": "Error updating data",
+            "saveError": "Error saving data",
+            "loadError": "Failed to load profile data"
+        },
+        "profileEditPopup": {
+            "title": "Edit Profile",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "birthDate": "Date of Birth",
+            "group": "Class/Group",
+            "selectGroup": "Select group",
+            "dateFormat": "Format: YYYY-MM-DD",
+            "currentInfo": "Current Information",
+            "contactAdmin": "To change group or other data, contact the school administrator",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "fullNameMinLength": "Full name must be at least 2 characters",
+                "emailRequired": "Email is required",
+                "emailInvalid": "Invalid email format",
+                "phoneRequired": "Phone is required",
+                "phoneInvalid": "Invalid phone format"
             }
         }
     }

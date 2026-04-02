@@ -859,102 +859,6 @@
                 "loadData": "Сталася помилка при завантаженні даних"
             }
         },
-        "student": {
-            "menuTitle": "Розділи студента",
-            "welcome": "Ласкаво просимо!",
-            "selectSection": "Оберіть розділ з меню для початку роботи",
-            "sections": {
-                "home": "Головна",
-                "profile": "Мій профіль",
-                "classmates": "Однокласники",
-                "schedule": "Розклад",
-                "grades": "Оцінки",
-                "homework": "Домашні завдання",
-                "progress": "Мій прогрес"
-            },
-            "dashboard": {
-                "title": "Студентська панель",
-                "myProgress": "Мій прогрес",
-                "averageGrade": "Середній бал",
-                "homeworkCompleted": "Виконано ДЗ",
-                "absences": "Пропуски",
-                "nextLesson": "Наступний урок",
-                "math": "Математика",
-                "time": "Час",
-                "room": "Кабінет",
-                "upcomingDeadlines": "Найближчі дедлайни",
-                "mathHomework": "Домашнє завдання з математики",
-                "essay": "Твір з української мови",
-                "dueDate": "Термін здачі",
-                "announcements": "Оголошення",
-                "schoolEvent": "Шкільний захід",
-                "eventDescription": "Конкурс малюнків відбудеться 18 березня",
-                "parentMeeting": "Батьківські збори",
-                "meetingDate": "Дата проведення"
-            },
-            "profile": {
-                "title": "Мій профіль",
-                "student": "Учень/Студент",
-                "group": "Клас/Група",
-                "email": "Електронна пошта",
-                "phone": "Телефон",
-                "parentPhone": "Телефон батьків",
-                "address": "Адреса проживання",
-                "birthDate": "Дата народження",
-                "enrollmentDate": "Дата вступу"
-            },
-            "classmates": {
-                "title": "Однокласники",
-                "search": "Пошук однокласників...",
-                "classmate": "Однокласник",
-                "email": "Написати",
-                "call": "Зателефонувати",
-                "noResults": "Однокласників не знайдено"
-            },
-            "schedule": {
-                "title": "Розклад занять",
-                "noLessons": "Немає занять на цей день",
-                "monday": "Понеділок",
-                "tuesday": "Вівторок",
-                "wednesday": "Середа",
-                "thursday": "Четвер",
-                "friday": "П'ятниця",
-                "saturday": "Субота"
-            },
-            "grades": {
-                "title": "Мої оцінки",
-                "averageGrade": "Середній бал",
-                "totalGrades": "Всього оцінок",
-                "allSubjects": "Всі предмети",
-                "subject": "Предмет",
-                "type": "Тип роботи",
-                "grade": "Оцінка",
-                "date": "Дата",
-                "noGrades": "Оцінок поки що немає"
-            },
-            "homework": {
-                "title": "Домашні завдання",
-                "dueDate": "Термін здачі",
-                "submit": "Здати завдання",
-                "send": "Відправити",
-                "commentPlaceholder": "Додати коментар (необов'язково)...",
-                "pending": "Очікує виконання",
-                "submitted": "Очікує перевірки",
-                "completed": "Перевірено",
-                "waitingCheck": "Очікує перевірки",
-                "checked": "Перевірено",
-                "submitSuccess": "Завдання успішно відправлено!",
-                "submitError": "Помилка при відправці завдання",
-                "noHomework": "Немає активних домашніх завдань"
-            },
-            "progress": {
-                "title": "Мій прогрес",
-                "performanceBySubjects": "Успішність по предметах",
-                "attendance": "Відвідуваність",
-                "present": "Присутність",
-                "absent": "Відсутність"
-            }
-        },
         "subjects": {
             "Математика": "Математика",
             "Алгебра": "Алгебра",
@@ -1078,6 +982,186 @@
                 "шафи": "cabinets",
                 "парти": "desks",
                 "стільці": "chairs"
+            }
+        }
+    },
+    "student": {
+        "menuTitle": "Розділи студента",
+        "welcome": "Ласкаво просимо!",
+        "selectSection": "Оберіть розділ з меню для початку роботи",
+        "sections": {
+            "home": "Головна",
+            "profile": "Мій профіль",
+            "classmates": "Однокласники",
+            "schedule": "Розклад",
+            "grades": "Оцінки",
+            "homework": "Домашні завдання",
+            "progress": "Мій прогрес"
+        },
+        "dashboard": {
+            "title": "Студентська панель",
+            "myProgress": "Мій прогрес",
+            "averageGrade": "Середній бал",
+            "homeworkCompleted": "Виконано ДЗ",
+            "absences": "Пропуски",
+            "nextLesson": "Наступний урок",
+            "math": "Математика",
+            "time": "Час",
+            "room": "Кабінет",
+            "upcomingDeadlines": "Найближчі дедлайни",
+            "mathHomework": "Домашнє завдання з математики",
+            "essay": "Твір з української мови",
+            "dueDate": "Термін здачі",
+            "announcements": "Оголошення",
+            "schoolEvent": "Шкільний захід",
+            "eventDescription": "Конкурс малюнків відбудеться 18 березня",
+            "parentMeeting": "Батьківські збори",
+            "meetingDate": "Дата проведення"
+        },
+        "profile": {
+            "title": "Мій профіль",
+            "student": "Учень/Студент",
+            "group": "Клас/Група",
+            "login": "Логін",
+            "phone": "Телефон",
+            "parentPhone": "Телефон батьків",
+            "address": "Адреса проживання",
+            "birthDate": "Дата народження",
+            "enrollmentDate": "Дата вступу",
+            "personalInfo": "Особиста інформація",
+            "contactInfo": "Контактна інформація",
+            "academicPerformance": "Успішність",
+            "averageGrade": "Середній бал",
+            "totalSubjects": "Предметів",
+            "completedAssignments": "Виконаних завдань",
+            "attendance": "Відвідуваність",
+            "class": "Клас",
+            "registrationDate": "Дата реєстрації",
+            "parentLogin": "Логін батьків",
+            "studentId": "№ учня",
+            "status": "Статус",
+            "parents": "Батьки",
+            "accessDescription": "Ви маєте доступ до перегляду особистої інформації. Для зміни даних профілю зверніться до адміністратора школи."
+        },
+        "editPopup": {
+            "title": "Редагування профілю учня",
+            "fullName": "ПІБ",
+            "login": "Логін",
+            "phone": "Телефон",
+            "group": "Клас/Група",
+            "birthDate": "Дата народження",
+            "address": "Адреса проживання",
+            "parentPhone": "Телефон батьків",
+            "parentLogin": "Логін батьків",
+            "dateFormat": "Формат: РРРР-ММ-ДД",
+            "addressPlaceholder": "вул. Прикладна, 123, м. Київ",
+            "currentSchoolInfo": "Поточна інформація про навчання",
+            "contactAdmin": "Для зміни класу, номера учня або іншої шкільної інформації зверніться до адміністратора.",
+            "cancel": "Скасувати",
+            "save": "Зберегти",
+            "errors": {
+                "fullNameRequired": "ПІБ є обов'язковим полем",
+                "fullNameMinLength": "ПІБ має містити хоча б 2 символи",
+                "emailInvalid": "Введіть коректний логін",
+                "phoneInvalid": "Введіть коректний номер телефону"
+            }
+        },
+        "classmates": {
+            "title": "Однокласники",
+            "search": "Пошук однокласників...",
+            "classmate": "Однокласник",
+            "email": "Написати",
+            "call": "Зателефонувати",
+            "noResults": "Однокласників не знайдено"
+        },
+        "schedule": {
+            "title": "Розклад занять",
+            "noLessons": "Немає занять на цей день",
+            "monday": "Понеділок",
+            "tuesday": "Вівторок",
+            "wednesday": "Середа",
+            "thursday": "Четвер",
+            "friday": "П'ятниця",
+            "saturday": "Субота"
+        },
+        "grades": {
+            "title": "Мої оцінки",
+            "averageGrade": "Середній бал",
+            "totalGrades": "Всього оцінок",
+            "allSubjects": "Всі предмети",
+            "subject": "Предмет",
+            "type": "Тип роботи",
+            "grade": "Оцінка",
+            "date": "Дата",
+            "noGrades": "Оцінок поки що немає",
+            "notAvailable": "Немає даних",
+            "excellent": "Відмінно",
+            "good": "Добре",
+            "satisfactory": "Задовільно",
+            "needsImprovement": "Потребує покращення"
+        },
+        "homework": {
+            "title": "Домашні завдання",
+            "dueDate": "Термін здачі",
+            "submit": "Здати завдання",
+            "send": "Відправити",
+            "commentPlaceholder": "Додати коментар (необов'язково)...",
+            "pending": "Очікує виконання",
+            "submitted": "Очікує перевірки",
+            "completed": "Перевірено",
+            "waitingCheck": "Очікує перевірки",
+            "checked": "Перевірено",
+            "submitSuccess": "Завдання успішно відправлено!",
+            "submitError": "Помилка при відправці завдання",
+            "noHomework": "Немає активних домашніх завдань"
+        },
+        "progress": {
+            "title": "Мій прогрес",
+            "performanceBySubjects": "Успішність по предметах",
+            "attendance": "Відвідуваність",
+            "present": "Присутність",
+            "absent": "Відсутність"
+        },
+        "buttons": {
+            "editProfile": "Редагувати профіль"
+        },
+        "roles": {
+            "admin": "Адміністратор",
+            "teacher": "Вчитель",
+            "student": "Учень",
+            "parent": "Батько",
+            "user": "Користувач"
+        },
+        "notifications": {
+            "updateSuccess": "Дані успішно оновлено!"
+        },
+        "errors": {
+            "noDataFound": "Не знайдено даних користувача",
+            "serverError": "Помилка сервера",
+            "updateError": "Помилка оновлення даних",
+            "saveError": "Помилка збереження даних",
+            "loadError": "Не вдалося завантажити дані профілю"
+        },
+        "profileEditPopup": {
+            "title": "Редагувати профіль",
+            "fullName": "ПІБ",
+            "email": "Електронна пошта",
+            "phone": "Телефон",
+            "birthDate": "Дата народження",
+            "group": "Клас/Група",
+            "selectGroup": "Оберіть групу",
+            "dateFormat": "Формат: ДД-ММ-РРРР",
+            "currentInfo": "Поточна інформація",
+            "contactAdmin": "Для зміни групи або інших даних зверніться до адміністратора школи",
+            "cancel": "Скасувати",
+            "save": "Зберегти зміни",
+            "errors": {
+                "fullNameRequired": "ПІБ обов'язкове поле",
+                "fullNameMinLength": "ПІБ повинно містити щонайменше 2 символи",
+                "emailRequired": "Електронна пошта обов'язкова",
+                "emailInvalid": "Невірний формат електронної пошти",
+                "phoneRequired": "Телефон обов'язковий",
+                "phoneInvalid": "Невірний формат телефону"
             }
         }
     }
