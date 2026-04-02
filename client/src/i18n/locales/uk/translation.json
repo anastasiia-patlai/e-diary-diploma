@@ -322,81 +322,6 @@
                 "noDatabase": "Помилка: не вдалося визначити базу даних школи. Будь ласка, перезавантажте сторінку або увійдіть знову."
             }
         },
-        "header": {
-            "title": "Адміністратори ({{count}})",
-            "sortAZ": "А-Я",
-            "sortZA": "Я-А",
-            "searchPlaceholder": "Пошук адміністраторів..."
-        },
-        "list": {
-            "noResults": "Адміністратори за запитом \"{{query}}\" не знайдені",
-            "noAdmins": "Адміністратори не знайдені"
-        },
-        "pagination": {
-            "showing": "Показано {{start}}-{{end}} з {{total}}",
-            "page": "Сторінка {{current}} з {{total}}",
-            "previous": "Попередня",
-            "next": "Наступна",
-            "first": "Перша",
-            "last": "Остання"
-        },
-        "card": {
-            "edit": "Редагувати",
-            "delete": "Видалити",
-            "birthDate": "Дата народження",
-            "ageYear": "рік",
-            "ageYears": "років"
-        },
-        "editAdminPopup": {
-            "title": "Редагувати адміністратора",
-            "fullName": "ПІБ",
-            "fullNamePlaceholder": "Введіть ПІБ",
-            "phone": "Телефон",
-            "email": "Логін",
-            "position": "Посада",
-            "positionPlaceholder": "Введіть посаду",
-            "birthDate": "Дата народження",
-            "cancel": "Скасувати",
-            "save": "Зберегти",
-            "saving": "Збереження...",
-            "success": "Адміністратора успішно оновлено",
-            "errors": {
-                "fullNameRequired": "ПІБ обов'язкове поле",
-                "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
-                "emailInvalid": "Логін має бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
-                "positionRequired": "Посада обов'язкова",
-                "loginRequired": "Логін обов'язковий",
-                "loginInvalid": "Логін повинен бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
-                "birthDateRequired": "Дата народження обов'язкова",
-                "birthDateFuture": "Дата народження не може бути у майбутньому",
-                "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
-                "noDatabase": "Не вказано базу даних",
-                "updateError": "Помилка оновлення адміністратора"
-            }
-        },
-        "deletePopup": {
-            "title": "Видалення адміністратора",
-            "confirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
-            "warning": "Цю дію неможливо буде скасувати!",
-            "confirm": "Так, видалити",
-            "cancel": "Скасувати",
-            "deleting": "Видалення...",
-            "errors": {
-                "noDatabase": "Не вказано базу даних",
-                "deleteError": "Помилка при видаленні адміністратора"
-            }
-        },
-        "showAdmin": {
-            "loading": "Завантаження адміністраторів...",
-            "noAdmins": "Інших адміністраторів не знайдено",
-            "noResults": "Інших адміністраторів за запитом \"{{query}}\" не знайдено",
-            "noOtherAdmins": "У системі немає інших адміністраторів",
-            "errors": {
-                "noDatabase": "Не вдалося визначити базу даних школи",
-                "noDatabaseSpecified": "Не вказано базу даних",
-                "loadError": "Помилка завантаження адміністраторів"
-            }
-        },
         "users": {
             "common": {
                 "exit": "Вихід",
@@ -432,46 +357,6 @@
                 "deleteConfirmQuestion": "Ви впевнені, що хочете видалити студента?",
                 "deleteSuccess": "Студента успішно видалено",
                 "updateSuccess": "Дані студента успішно оновлено"
-            },
-            "teacher": {
-                "title": "Управління викладачами",
-                "headerTitle": "Список викладачів за предметами",
-                "editTitle": "Редагувати викладача",
-                "deleteTitle": "Видалити викладача",
-                "fullName": "ПІБ",
-                "login": "Логін",
-                "phone": "Телефон",
-                "birthDate": "Дата народження",
-                "teacherType": "Тип викладача",
-                "qualificationCategory": "Категорія кваліфікації",
-                "subjects": "Предмети",
-                "subject": "Предмет",
-                "addSubject": "Додати ще предмет",
-                "selectType": "Оберіть тип",
-                "selectCategory": "Оберіть категорію",
-                "noSubject": "Без предмета",
-                "noTeachers": "Викладачі не знайдені",
-                "teachersCount": "Викладачів: {{count}}",
-                "saveChanges": "Зберегти зміни",
-                "deleteConfirmQuestion": "Ви впевнені, що хочете видалити викладача?",
-                "loginFormatHint": "Формат: прізвище_ім'я (напр. ivanenko_ivan)",
-                "expandAll": "Розгорнути всі",
-                "collapseAll": "Згорнути всі",
-                "types": {
-                    "young": "Викладач молодших класів (1-4)",
-                    "middle": "Викладач середніх класів (5-9)",
-                    "senior": "Викладач старших класів (10-11)",
-                    "middleSenior": "Викладач середніх та старших класів",
-                    "all": "Викладач усіх класів"
-                },
-                "qualifications": {
-                    "highest": "Вища категорія",
-                    "first": "Перша категорія",
-                    "second": "Друга категорія",
-                    "specialist": "Спеціаліст",
-                    "juniorSpecialist": "Молодший спеціаліст",
-                    "noCategory": "Без категорії"
-                }
             },
             "parent": {
                 "title": "Управління батьками",
@@ -625,6 +510,8 @@
                         "fullNameRequired": "ПІБ обов'язкове поле",
                         "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
                         "positionRequired": "Посада обов'язкова",
+                        "loginRequired": "Логін обов'язковий",
+                        "loginInvalid": "Логін повинен бути у форматі прізвище_ім'я (напр. ivanenko_ivan)",
                         "birthDateRequired": "Дата народження обов'язкова",
                         "birthDateFuture": "Дата народження не може бути у майбутньому",
                         "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
@@ -685,103 +572,6 @@
             },
             "success": {
                 "createSuccess": "Підгрупи успішно створені"
-            }
-        },
-        "teacher": {
-            "menuTitle": "Розділи вчителя",
-            "welcome": "Ласкаво просимо!",
-            "selectSection": "Оберіть розділ з меню для початку роботи",
-            "sections": {
-                "home": "Головна",
-                "profile": "Мій профіль",
-                "schedule": "Мій розклад",
-                "journal": "Журнал",
-                "attendance": "Відвідуваність",
-                "homework": "Домашні завдання",
-                "myStudents": "Мої учні",
-                "reports": "Звіти",
-                "tests": "Контрольні роботи"
-            },
-            "dashboard": {
-                "title": "Головна панель вчителя",
-                "welcome": "Ласкаво просимо,",
-                "subject": "Предмет",
-                "upcomingLessons": "Найближчі уроки",
-                "lessonExample": "Понеділок, 9:00 - 9А клас\nПонеділок, 10:00 - 10Б клас",
-                "statistics": "Статистика",
-                "studentsCount": "Учнів",
-                "averageScore": "Середній бал"
-            },
-            "profile": {
-                "profileInfo": "Профільна інформація",
-                "teacherType": "Тип викладача",
-                "qualificationCategory": "Категорія кваліфікації",
-                "birthDate": "Дата народження",
-                "registrationDate": "Дата реєстрації",
-                "contactInfo": "Контактна інформація та предмети",
-                "email": "Електронна пошта",
-                "phone": "Телефон",
-                "subjects": "Викладає предмети",
-                "noSubjects": "Предмети не додані",
-                "status": "Статус",
-                "accessDescription": "Ви маєте доступ до функцій вчителя: ведення журналу, виставлення оцінок, управління домашніми завданнями та комунікація з учнями та батьками."
-            },
-            "profileEditPopup": {
-                "title": "Редагування профілю",
-                "fullName": "ПІБ",
-                "email": "Електронна пошта",
-                "phone": "Телефон",
-                "birthDate": "Дата народження",
-                "dateFormat": "Формат: ДД-ММ-РРРР",
-                "currentProfessionalInfo": "Поточна професійна інформація",
-                "contactAdmin": "Для зміни цих даних зверніться до адміністратора школи",
-                "cancel": "Скасувати",
-                "save": "Зберегти зміни",
-                "errors": {
-                    "fullNameRequired": "ПІБ обов'язкове поле",
-                    "fullNameMinLength": "ПІБ повинно містити щонайменше 2 символи",
-                    "emailRequired": "Електронна пошта обов'язкова",
-                    "emailInvalid": "Невірний формат електронної пошти",
-                    "phoneRequired": "Телефон обов'язковий",
-                    "phoneInvalid": "Невірний формат телефону"
-                }
-            },
-            "journal": {
-                "title": "Журнал"
-            },
-            "homework": {
-                "title": "Домашні завдання",
-                "createButton": "Створити завдання",
-                "mathExample": "Завдання з математики",
-                "classExample": "Клас",
-                "deadline": "Дедлайн"
-            },
-            "reports": {
-                "title": "Звіти та статистика",
-                "academicPerformance": "Успішність класів",
-                "charts": "Графіки успішності",
-                "attendance": "Відвідуваність",
-                "attendanceStats": "Статистика відвідувань"
-            },
-            "buttons": {
-                "backToSchedule": "Назад до списку журналів",
-                "createDiary": "Створити щоденник",
-                "createNewDiary": "Створити новий щоденник",
-                "editProfile": "Редагувати профіль"
-            },
-            "defaults": {
-                "position": "Вчитель",
-                "subject": "Математика"
-            },
-            "notifications": {
-                "updateSuccess": "Дані успішно оновлено!"
-            },
-            "errors": {
-                "noDataFound": "Не вдалося знайти дані для оновлення в localStorage",
-                "serverError": "Помилка сервера:",
-                "updateError": "Помилка при оновленні",
-                "saveError": "Помилка при збереженні даних",
-                "loadError": "Не вдалося завантажити дані"
             }
         },
         "schedule": {
@@ -985,6 +775,121 @@
             }
         }
     },
+    "teacher": {
+        "menuTitle": "Розділи вчителя",
+        "welcome": "Ласкаво просимо!",
+        "selectSection": "Оберіть розділ з меню для початку роботи",
+        "sections": {
+            "home": "Головна",
+            "profile": "Мій профіль",
+            "schedule": "Мій розклад",
+            "journal": "Журнал",
+            "attendance": "Відвідуваність",
+            "homework": "Домашні завдання",
+            "myStudents": "Мої учні",
+            "reports": "Звіти",
+            "tests": "Контрольні роботи"
+        },
+        "dashboard": {
+            "title": "Головна панель вчителя",
+            "welcome": "Ласкаво просимо,",
+            "subject": "Предмет",
+            "upcomingLessons": "Найближчі уроки",
+            "lessonExample": "Понеділок, 9:00 - 9А клас\nПонеділок, 10:00 - 10Б клас",
+            "statistics": "Статистика",
+            "studentsCount": "Учнів",
+            "averageScore": "Середній бал"
+        },
+        "profile": {
+            "profileInfo": "Профільна інформація",
+            "teacherType": "Тип викладача",
+            "qualificationCategory": "Категорія кваліфікації",
+            "birthDate": "Дата народження",
+            "registrationDate": "Дата реєстрації",
+            "contactInfo": "Контактна інформація та предмети",
+            "email": "Електронна пошта",
+            "phone": "Телефон",
+            "subjects": "Викладає предмети",
+            "noSubjects": "Предмети не додані",
+            "status": "Статус",
+            "accessDescription": "Ви маєте доступ до функцій вчителя: ведення журналу, виставлення оцінок, управління домашніми завданнями та комунікація з учнями та батьками."
+        },
+        "profileEditPopup": {
+            "title": "Редагування профілю",
+            "fullName": "ПІБ",
+            "email": "Електронна пошта",
+            "phone": "Телефон",
+            "birthDate": "Дата народження",
+            "dateFormat": "Формат: ДД-ММ-РРРР",
+            "currentProfessionalInfo": "Поточна професійна інформація",
+            "contactAdmin": "Для зміни цих даних зверніться до адміністратора школи",
+            "cancel": "Скасувати",
+            "save": "Зберегти зміни",
+            "errors": {
+                "fullNameRequired": "ПІБ обов'язкове поле",
+                "fullNameMinLength": "ПІБ повинно містити щонайменше 2 символи",
+                "emailRequired": "Електронна пошта обов'язкова",
+                "emailInvalid": "Невірний формат електронної пошти",
+                "phoneRequired": "Телефон обов'язковий",
+                "phoneInvalid": "Невірний формат телефону"
+            }
+        },
+        "journal": {
+            "title": "Журнал"
+        },
+        "homework": {
+            "title": "Домашні завдання",
+            "createButton": "Створити завдання",
+            "mathExample": "Завдання з математики",
+            "classExample": "Клас",
+            "deadline": "Дедлайн"
+        },
+        "reports": {
+            "title": "Звіти та статистика",
+            "academicPerformance": "Успішність класів",
+            "charts": "Графіки успішності",
+            "attendance": "Відвідуваність",
+            "attendanceStats": "Статистика відвідувань"
+        },
+        "buttons": {
+            "backToSchedule": "Назад до списку журналів",
+            "createDiary": "Створити щоденник",
+            "createNewDiary": "Створити новий щоденник",
+            "editProfile": "Редагувати профіль"
+        },
+        "defaults": {
+            "position": "Вчитель",
+            "subject": "Математика"
+        },
+        "notifications": {
+            "updateSuccess": "Дані успішно оновлено!"
+        },
+        "errors": {
+            "noDataFound": "Не вдалося знайти дані для оновлення в localStorage",
+            "serverError": "Помилка сервера:",
+            "updateError": "Помилка при оновленні",
+            "saveError": "Помилка при збереженні даних",
+            "loadError": "Не вдалося завантажити дані"
+        },
+        "teacherTypes": {
+            "young": "Викладач молодших класів (1-4)",
+            "middle": "Викладач середніх класів (5-9)",
+            "senior": "Викладач старших класів (10-11)",
+            "middleSenior": "Викладач середніх та старших класів",
+            "all": "Викладач усіх класів"
+        },
+        "qualifications": {
+            "highest": "Вища категорія",
+            "first": "Перша категорія",
+            "second": "Друга категорія",
+            "specialistHighest": "Спеціаліст вищої категорії",
+            "specialistFirst": "Спеціаліст першої категорії",
+            "specialistSecond": "Спеціаліст другої категорії",
+            "specialist": "Спеціаліст",
+            "juniorSpecialist": "Молодший спеціаліст",
+            "noCategory": "Без категорії"
+        }
+    },
     "student": {
         "menuTitle": "Розділи студента",
         "welcome": "Ласкаво просимо!",
@@ -1078,13 +983,36 @@
         },
         "schedule": {
             "title": "Розклад занять",
+            "time": "Час",
+            "teacher": "Викладач",
+            "legendSubject": "Предмет",
+            "legendClassroom": "Аудиторія",
+            "number": "№",
+            "subject": "Предмет",
+            "classroom": "Аудиторія",
+            "subgroup": "Підгрупа",
+            "showingForSubgroup": "Показуємо для підгрупи",
             "noLessons": "Немає занять на цей день",
-            "monday": "Понеділок",
-            "tuesday": "Вівторок",
-            "wednesday": "Середа",
-            "thursday": "Четвер",
-            "friday": "П'ятниця",
-            "saturday": "Субота"
+            "days": {
+                "monday": "Понеділок",
+                "mondayShort": "Пн",
+                "tuesday": "Вівторок",
+                "tuesdayShort": "Вт",
+                "wednesday": "Середа",
+                "wednesdayShort": "Ср",
+                "thursday": "Четвер",
+                "thursdayShort": "Чт",
+                "friday": "П'ятниця",
+                "fridayShort": "Пт",
+                "saturday": "Субота",
+                "saturdayShort": "Сб"
+            },
+            "classroomTypes": {
+                "classroom": "кабінет",
+                "lecture": "лекція",
+                "practice": "практика",
+                "lab": "лабораторна"
+            }
         },
         "grades": {
             "title": "Мої оцінки",

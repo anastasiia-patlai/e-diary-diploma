@@ -324,81 +324,6 @@
                 "noDatabase": "Error: Could not determine the school database. Please reload the page or log in again."
             }
         },
-        "header": {
-            "title": "Administrators ({{count}})",
-            "sortAZ": "A-Z",
-            "sortZA": "Z-A",
-            "searchPlaceholder": "Search administrators..."
-        },
-        "list": {
-            "noResults": "No administrators found for query \"{{query}}\"",
-            "noAdmins": "No administrators found"
-        },
-        "pagination": {
-            "showing": "Showing {{start}}-{{end}} of {{total}}",
-            "page": "Page {{current}} of {{total}}",
-            "previous": "Previous",
-            "next": "Next",
-            "first": "First",
-            "last": "Last"
-        },
-        "card": {
-            "edit": "Edit",
-            "delete": "Delete",
-            "birthDate": "Date of birth",
-            "ageYear": "year",
-            "ageYears": "years"
-        },
-        "editAdminPopup": {
-            "title": "Edit Administrator",
-            "fullName": "Full Name",
-            "fullNamePlaceholder": "Enter full name",
-            "phone": "Phone",
-            "email": "Login",
-            "position": "Position",
-            "positionPlaceholder": "Enter position",
-            "birthDate": "Date of Birth",
-            "cancel": "Cancel",
-            "save": "Save",
-            "saving": "Saving...",
-            "success": "Administrator successfully updated",
-            "errors": {
-                "fullNameRequired": "Full name is required",
-                "phoneInvalid": "Phone number must be in format +380XXXXXXXXX",
-                "emailInvalid": "Login must be in format lastname_firstname (e.g. ivanenko_ivan)",
-                "positionRequired": "Position is required",
-                "loginRequired": "Login is required",
-                "loginInvalid": "Login must be in format lastname_firstname (e.g. ivanenko_ivan)",
-                "birthDateRequired": "Date of birth is required",
-                "birthDateFuture": "Date of birth cannot be in the future",
-                "birthDateTooOld": "Date of birth cannot be more than 100 years ago",
-                "noDatabase": "Database not specified",
-                "updateError": "Error updating administrator"
-            }
-        },
-        "deletePopup": {
-            "title": "Delete Administrator",
-            "confirmQuestion": "Are you sure you want to delete this administrator?",
-            "warning": "This action cannot be undone!",
-            "confirm": "Yes, delete",
-            "cancel": "Cancel",
-            "deleting": "Deleting...",
-            "errors": {
-                "noDatabase": "Database not specified",
-                "deleteError": "Error deleting administrator"
-            }
-        },
-        "showAdmin": {
-            "loading": "Loading administrators...",
-            "noAdmins": "No other administrators found",
-            "noResults": "No other administrators found for query \"{{query}}\"",
-            "noOtherAdmins": "There are no other administrators in the system",
-            "errors": {
-                "noDatabase": "Failed to determine the school database",
-                "noDatabaseSpecified": "Database not specified",
-                "loadError": "Error loading administrators"
-            }
-        },
         "users": {
             "common": {
                 "exit": "Exit",
@@ -434,49 +359,6 @@
                 "deleteConfirmQuestion": "Are you sure you want to delete this student?",
                 "deleteSuccess": "Student successfully deleted",
                 "updateSuccess": "Student data successfully updated"
-            },
-            "teacher": {
-                "title": "Teacher Management",
-                "headerTitle": "Teachers by Subject",
-                "editTitle": "Edit Teacher",
-                "deleteTitle": "Delete Teacher",
-                "fullName": "Full Name",
-                "login": "Login",
-                "phone": "Phone",
-                "birthDate": "Date of Birth",
-                "teacherType": "Teacher Type",
-                "qualificationCategory": "Qualification Category",
-                "subjects": "Subjects",
-                "subject": "Subject",
-                "addSubject": "Add Another Subject",
-                "selectType": "Select type",
-                "selectCategory": "Select category",
-                "noSubject": "No Subject",
-                "noTeachers": "No teachers found",
-                "teachersCount": "Teachers: {{count}}",
-                "saveChanges": "Save Changes",
-                "deleteConfirmQuestion": "Are you sure you want to delete this teacher?",
-                "loginFormatHint": "Format: lastname_firstname (e.g. ivanenko_ivan)",
-                "expandAll": "Expand All",
-                "collapseAll": "Collapse All",
-                "types": {
-                    "young": "Primary School Teacher (Grades 1-4)",
-                    "middle": "Middle School Teacher (Grades 5-9)",
-                    "senior": "High School Teacher (Grades 10-11)",
-                    "middleSenior": "Middle and High School Teacher",
-                    "all": "All Grades Teacher"
-                },
-                "qualifications": {
-                    "highest": "Highest Category",
-                    "first": "First Category",
-                    "second": "Second Category",
-                    "specialist": "Specialist",
-                    "specialistHighest": "Specialist of Highest Category",
-                    "specialistFirst": "Specialist of First Category",
-                    "specialistSecond": "Specialist of Second Category",
-                    "juniorSpecialist": "Junior Specialist",
-                    "noCategory": "Without Category"
-                }
             },
             "parent": {
                 "title": "Parent Management",
@@ -694,121 +576,6 @@
                 "createSuccess": "Subgroups successfully created"
             }
         },
-        "teacher": {
-            "menuTitle": "Teacher Sections",
-            "welcome": "Welcome!",
-            "selectSection": "Select a section from the menu to start",
-            "sections": {
-                "home": "Home",
-                "profile": "My Profile",
-                "schedule": "My Schedule",
-                "journal": "Journal",
-                "attendance": "Attendance",
-                "homework": "Homework",
-                "myStudents": "My Students",
-                "reports": "Reports",
-                "tests": "Tests"
-            },
-            "dashboard": {
-                "title": "Teacher Dashboard",
-                "welcome": "Welcome,",
-                "subject": "Subject",
-                "upcomingLessons": "Upcoming Lessons",
-                "lessonExample": "Monday, 9:00 - 9A class\nMonday, 10:00 - 10B class",
-                "statistics": "Statistics",
-                "studentsCount": "Students",
-                "averageScore": "Average score"
-            },
-            "profile": {
-                "profileInfo": "Profile Information",
-                "teacherType": "Teacher Type",
-                "qualificationCategory": "Qualification Category",
-                "birthDate": "Date of Birth",
-                "registrationDate": "Registration Date",
-                "contactInfo": "Contact Information & Subjects",
-                "email": "Email",
-                "phone": "Phone",
-                "subjects": "Teaches Subjects",
-                "noSubjects": "No subjects added",
-                "status": "Status",
-                "accessDescription": "You have access to teacher functions: journal management, grading, homework management, and communication with students and parents."
-            },
-            "profileEditPopup": {
-                "title": "Edit Profile",
-                "fullName": "Full Name",
-                "email": "Email",
-                "phone": "Phone",
-                "birthDate": "Date of Birth",
-                "dateFormat": "Format: YYYY-MM-DD",
-                "currentProfessionalInfo": "Current Professional Information",
-                "contactAdmin": "To change this data, contact the school administrator",
-                "cancel": "Cancel",
-                "save": "Save Changes",
-                "errors": {
-                    "fullNameRequired": "Full name is required",
-                    "fullNameMinLength": "Full name must be at least 2 characters",
-                    "emailRequired": "Email is required",
-                    "emailInvalid": "Invalid email format",
-                    "phoneRequired": "Phone is required",
-                    "phoneInvalid": "Invalid phone format"
-                }
-            },
-            "journal": {
-                "title": "Journal"
-            },
-            "homework": {
-                "title": "Homework",
-                "createButton": "Create Assignment",
-                "mathExample": "Math Assignment",
-                "classExample": "Class",
-                "deadline": "Deadline"
-            },
-            "reports": {
-                "title": "Reports & Statistics",
-                "academicPerformance": "Academic Performance",
-                "charts": "Performance Charts",
-                "attendance": "Attendance",
-                "attendanceStats": "Attendance Statistics"
-            },
-            "buttons": {
-                "backToSchedule": "Back to Journals List",
-                "createDiary": "Create Diary",
-                "createNewDiary": "Create New Diary",
-                "editProfile": "Edit Profile"
-            },
-            "defaults": {
-                "position": "Teacher",
-                "subject": "Mathematics"
-            },
-            "notifications": {
-                "updateSuccess": "Data updated successfully!"
-            },
-            "errors": {
-                "noDataFound": "No data found for update in localStorage",
-                "serverError": "Server error:",
-                "updateError": "Error during update",
-                "saveError": "Error saving data",
-                "loadError": "Failed to load data"
-            },
-            "teacherTypes": {
-                "young": "Primary School Teacher (Grades 1-4)",
-                "middle": "Middle School Teacher (Grades 5-9)",
-                "senior": "High School Teacher (Grades 10-11)",
-                "middleSenior": "Middle and High School Teacher",
-                "all": "All Grades Teacher"
-            },
-            "qualifications": {
-                "highest": "Highest Category",
-                "first": "First Category",
-                "second": "Second Category",
-                "specialistHighest": "Specialist of Highest Category",
-                "specialistFirst": "Specialist of First Category",
-                "specialistSecond": "Specialist of Second Category",
-                "specialist": "Specialist",
-                "juniorSpecialist": "Junior Specialist",
-                "noCategory": "Without Category"
-            }
-        },
         "schedule": {
             "title": "Schedule",
             "semester": "Semester",
@@ -1010,6 +777,121 @@
             }
         }
     },
+    "teacher": {
+        "menuTitle": "Teacher Sections",
+        "welcome": "Welcome!",
+        "selectSection": "Select a section from the menu to start",
+        "sections": {
+            "home": "Home",
+            "profile": "My Profile",
+            "schedule": "My Schedule",
+            "journal": "Journal",
+            "attendance": "Attendance",
+            "homework": "Homework",
+            "myStudents": "My Students",
+            "reports": "Reports",
+            "tests": "Tests"
+        },
+        "dashboard": {
+            "title": "Teacher Dashboard",
+            "welcome": "Welcome,",
+            "subject": "Subject",
+            "upcomingLessons": "Upcoming Lessons",
+            "lessonExample": "Monday, 9:00 - 9A class\nMonday, 10:00 - 10B class",
+            "statistics": "Statistics",
+            "studentsCount": "Students",
+            "averageScore": "Average score"
+        },
+        "profile": {
+            "profileInfo": "Profile Information",
+            "teacherType": "Teacher Type",
+            "qualificationCategory": "Qualification Category",
+            "birthDate": "Date of Birth",
+            "registrationDate": "Registration Date",
+            "contactInfo": "Contact Information & Subjects",
+            "email": "Email",
+            "phone": "Phone",
+            "subjects": "Teaches Subjects",
+            "noSubjects": "No subjects added",
+            "status": "Status",
+            "accessDescription": "You have access to teacher functions: journal management, grading, homework management, and communication with students and parents."
+        },
+        "profileEditPopup": {
+            "title": "Edit Profile",
+            "fullName": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "birthDate": "Date of Birth",
+            "dateFormat": "Format: YYYY-MM-DD",
+            "currentProfessionalInfo": "Current Professional Information",
+            "contactAdmin": "To change this data, contact the school administrator",
+            "cancel": "Cancel",
+            "save": "Save Changes",
+            "errors": {
+                "fullNameRequired": "Full name is required",
+                "fullNameMinLength": "Full name must be at least 2 characters",
+                "emailRequired": "Email is required",
+                "emailInvalid": "Invalid email format",
+                "phoneRequired": "Phone is required",
+                "phoneInvalid": "Invalid phone format"
+            }
+        },
+        "journal": {
+            "title": "Journal"
+        },
+        "homework": {
+            "title": "Homework",
+            "createButton": "Create Assignment",
+            "mathExample": "Math Assignment",
+            "classExample": "Class",
+            "deadline": "Deadline"
+        },
+        "reports": {
+            "title": "Reports & Statistics",
+            "academicPerformance": "Academic Performance",
+            "charts": "Performance Charts",
+            "attendance": "Attendance",
+            "attendanceStats": "Attendance Statistics"
+        },
+        "buttons": {
+            "backToSchedule": "Back to Journals List",
+            "createDiary": "Create Diary",
+            "createNewDiary": "Create New Diary",
+            "editProfile": "Edit Profile"
+        },
+        "defaults": {
+            "position": "Teacher",
+            "subject": "Mathematics"
+        },
+        "notifications": {
+            "updateSuccess": "Data updated successfully!"
+        },
+        "errors": {
+            "noDataFound": "No data found for update in localStorage",
+            "serverError": "Server error:",
+            "updateError": "Error during update",
+            "saveError": "Error saving data",
+            "loadError": "Failed to load data"
+        },
+        "teacherTypes": {
+            "young": "Primary School Teacher (Grades 1-4)",
+            "middle": "Middle School Teacher (Grades 5-9)",
+            "senior": "High School Teacher (Grades 10-11)",
+            "middleSenior": "Middle and High School Teacher",
+            "all": "All Grades Teacher"
+        },
+        "qualifications": {
+            "highest": "Highest Category",
+            "first": "First Category",
+            "second": "Second Category",
+            "specialistHighest": "Specialist of Highest Category",
+            "specialistFirst": "Specialist of First Category",
+            "specialistSecond": "Specialist of Second Category",
+            "specialist": "Specialist",
+            "juniorSpecialist": "Junior Specialist",
+            "noCategory": "Without Category"
+        }
+    },
     "student": {
         "menuTitle": "Student Sections",
         "welcome": "Welcome!",
@@ -1104,13 +986,36 @@
         },
         "schedule": {
             "title": "Schedule",
+            "time": "Time",
+            "teacher": "Teacher",
+            "legendSubject": "Subject",
+            "legendClassroom": "Classroom",
             "noLessons": "No lessons on this day",
-            "monday": "Monday",
-            "tuesday": "Tuesday",
-            "wednesday": "Wednesday",
-            "thursday": "Thursday",
-            "friday": "Friday",
-            "saturday": "Saturday"
+            "number": "No.",
+            "subject": "Subject",
+            "classroom": "Classroom",
+            "subgroup": "Subgroup",
+            "showingForSubgroup": "Showing for subgroup",
+            "days": {
+                "monday": "Monday",
+                "mondayShort": "Mon",
+                "tuesday": "Tuesday",
+                "tuesdayShort": "Tue",
+                "wednesday": "Wednesday",
+                "wednesdayShort": "Wed",
+                "thursday": "Thursday",
+                "thursdayShort": "Thu",
+                "friday": "Friday",
+                "fridayShort": "Fri",
+                "saturday": "Saturday",
+                "saturdayShort": "Sat"
+            },
+            "classroomTypes": {
+                "classroom": "classroom",
+                "lecture": "lecture",
+                "practice": "practice",
+                "lab": "lab"
+            }
         },
         "grades": {
             "title": "My Grades",
