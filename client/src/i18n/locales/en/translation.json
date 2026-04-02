@@ -1098,7 +1098,9 @@
             "classmate": "Classmate",
             "email": "Email",
             "call": "Call",
-            "noResults": "No classmates found"
+            "noResults": "No classmates found",
+            "noClassmatesMessage": "There are no other students in your class yet",
+            "classTeacher": "Class Teacher"
         },
         "schedule": {
             "title": "Schedule",
