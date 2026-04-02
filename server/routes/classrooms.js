@@ -13,6 +13,8 @@ router.get('/', async (req, res) => {
 
         const ClassroomModel = getSchoolClassroomModel(databaseName);
         const classrooms = await ClassroomModel.find().sort({ name: 1 });
+
+        // Відправляємо обидві версії (українську та англійську)
         res.json(classrooms);
     } catch (error) {
         console.error('Error fetching classrooms:', error);
@@ -206,6 +208,41 @@ router.patch('/:id/availability', async (req, res) => {
         console.error('Error updating classroom availability:', error);
         res.status(500).json({
             message: 'Помилка при оновленні статусу доступності аудиторії',
+            error: error.message
+        });
+    }
+});
+
+// ОТРИМАТИ АУДИТОРІЮ З ПЕРЕКЛАДОМ (додатковий маршрут)
+router.get('/:id/translated', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { databaseName, lang = 'uk' } = req.query;
+
+        if (!databaseName) {
+            return res.status(400).json({ error: 'Не вказано databaseName' });
+        }
+
+        const ClassroomModel = getSchoolClassroomModel(databaseName);
+        const classroom = await ClassroomModel.findById(id);
+
+        if (!classroom) {
+            return res.status(404).json({ message: 'Аудиторія не знайдена' });
+        }
+
+        // Повертаємо перекладену версію
+        const translatedClassroom = classroom.toObject();
+
+        if (lang === 'en') {
+            translatedClassroom.name = classroom.nameEn || classroom.name;
+            translatedClassroom.equipment = classroom.equipmentEn || classroom.equipment;
+        }
+
+        res.json(translatedClassroom);
+    } catch (error) {
+        console.error('Error getting translated classroom:', error);
+        res.status(500).json({
+            message: 'Помилка при отриманні перекладу аудиторії',
             error: error.message
         });
     }

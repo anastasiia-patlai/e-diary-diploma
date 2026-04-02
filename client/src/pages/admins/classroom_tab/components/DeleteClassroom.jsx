@@ -1,18 +1,11 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { FaExclamationTriangle, FaTimes, FaTrash } from "react-icons/fa";
 
 const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false }) => {
-    if (!show) return null;
+    const { t } = useTranslation();
 
-    const getTypeLabel = (type) => {
-        const labels = {
-            'lecture': 'Лекційна',
-            'practice': 'Практична',
-            'lab': 'Лабораторія',
-            'general': 'Загальна'
-        };
-        return labels[type] || 'Загальна';
-    };
+    if (!show) return null;
 
     return (
         <div style={{
@@ -24,7 +17,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: isMobile ? 'flex-start' : 'center',
+            alignItems: 'center',  // ЗМІНЕНО: завжди center
             zIndex: 1000,
             padding: isMobile ? '16px' : '0'
         }}>
@@ -34,8 +27,10 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                 padding: isMobile ? '16px' : '24px',
                 width: isMobile ? '100%' : '90%',
                 maxWidth: '400px',
+                maxHeight: isMobile ? '90vh' : 'auto',  // ДОДАНО: обмеження висоти для мобільних
+                overflowY: 'auto',  // ДОДАНО: скрол якщо контент не влазить
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-                marginTop: isMobile ? '0' : 'auto'
+                margin: 'auto'  // ДОДАНО: центрування
             }}>
                 <div style={{
                     display: 'flex',
@@ -68,7 +63,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                             color: '#374151',
                             fontWeight: '600'
                         }}>
-                            Видалення аудиторії
+                            {t('admin.classrooms.deleteModalTitle')}
                         </h3>
                     </div>
                     <button
@@ -94,7 +89,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                         lineHeight: '1.5',
                         fontSize: isMobile ? '14px' : '15px'
                     }}>
-                        Ви впевнені, що хочете видалити аудиторію?
+                        {t('admin.classrooms.deleteConfirmMessage')}
                     </p>
 
                     {classroom && (
@@ -118,7 +113,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                                 fontSize: isMobile ? '13px' : '14px',
                                 color: '#6b7280'
                             }}>
-                                Тип: {getTypeLabel(classroom.type)} • Місткість: {classroom.capacity} осіб
+                                {t('admin.classrooms.typeLabel')}: {t(`admin.classrooms.types.${classroom.type}`)} • {t('admin.classrooms.capacityLabel')}: {classroom.capacity} {t('admin.classrooms.capacityUnit')}
                             </p>
                         </div>
                     )}
@@ -138,7 +133,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                             gap: '6px'
                         }}>
                             <FaExclamationTriangle />
-                            Цю дію неможливо скасувати!
+                            {t('admin.classrooms.deleteWarning')}
                         </p>
                     </div>
                 </div>
@@ -168,7 +163,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                         }}
                     >
                         <FaTimes size={isMobile ? 12 : 14} />
-                        Скасувати
+                        {t('admin.classrooms.cancel')}
                     </button>
                     <button
                         type="button"
@@ -189,7 +184,7 @@ const DeleteClassroom = ({ show, onClose, onConfirm, classroom, isMobile = false
                         }}
                     >
                         <FaTrash size={isMobile ? 12 : 14} />
-                        Видалити
+                        {t('admin.classrooms.deleteButtonFull')}
                     </button>
                 </div>
             </div>

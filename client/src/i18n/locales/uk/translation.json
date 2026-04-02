@@ -553,100 +553,100 @@
                 "phoneRequired": "Телефон обов'язковий",
                 "noDatabaseSpecified": "Не вказано базу даних",
                 "retry": "Спробувати знову"
-            }
-        },
-        "admin": {
-            "title": "Управління адміністраторами",
-            "headerTitle": "Адміністратори",
-            "editTitle": "Редагувати адміністратора",
-            "deleteTitle": "Видалити адміністратора",
-            "fullName": "ПІБ",
-            "login": "Логін",
-            "phone": "Телефон",
-            "email": "Електронна пошта",
-            "position": "Посада",
-            "birthDate": "Дата народження",
-            "saveChanges": "Зберегти зміни",
-            "deleteConfirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
-            "loginFormatHint": "Формат: прізвище_ім'я (напр. ivanenko_ivan)",
-            "errors": {
-                "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
-                "emailInvalid": "Некоректна електронна адреса",
-                "birthDateRequired": "Дата народження обов'язкова",
-                "birthDateFuture": "Дата народження не може бути у майбутньому",
-                "birthDateTooOld": "Дата народження не може бути більше 100 років тому"
             },
-            "card": {
-                "edit": "Редагувати",
-                "delete": "Видалити",
-                "birthDate": "Дата народження",
-                "ageYear": "рік",
-                "ageYears": "років"
-            },
-            "header": {
-                "sortAZ": "А-Я",
-                "sortZA": "Я-А",
-                "searchPlaceholder": "Пошук адміністраторів..."
-            },
-            "list": {
-                "noResults": "Адміністратори за запитом \"{{query}}\" не знайдені",
-                "noAdmins": "Адміністратори не знайдені"
-            },
-            "pagination": {
-                "showing": "Показано {{start}}-{{end}} з {{total}}",
-                "page": "Сторінка {{current}} з {{total}}",
-                "previous": "Попередня",
-                "next": "Наступна"
-            },
-            "showAdmin": {
-                "loading": "Завантаження адміністраторів...",
-                "noAdmins": "Інших адміністраторів не знайдено",
-                "noResults": "Інших адміністраторів за запитом \"{{query}}\" не знайдено",
-                "noOtherAdmins": "У системі немає інших адміністраторів",
-                "errors": {
-                    "noDatabase": "Не вдалося визначити базу даних школи",
-                    "noDatabaseSpecified": "Не вказано базу даних",
-                    "loadError": "Помилка завантаження адміністраторів"
-                }
-            },
-            "editPopup": {
-                "title": "Редагувати адміністратора",
+            "admin": {
+                "title": "Управління адміністраторами",
+                "headerTitle": "Адміністратори",
+                "editTitle": "Редагувати адміністратора",
+                "deleteTitle": "Видалити адміністратора",
                 "fullName": "ПІБ",
-                "fullNamePlaceholder": "Введіть ПІБ",
-                "phone": "Телефон",
                 "login": "Логін",
+                "phone": "Телефон",
+                "email": "Електронна пошта",
                 "position": "Посада",
-                "positionPlaceholder": "Введіть посаду",
                 "birthDate": "Дата народження",
-                "cancel": "Скасувати",
-                "save": "Зберегти",
-                "saving": "Збереження...",
-                "success": "Адміністратора успішно оновлено",
+                "saveChanges": "Зберегти зміни",
+                "deleteConfirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
+                "loginFormatHint": "Формат: прізвище_ім'я (напр. ivanenko_ivan)",
                 "errors": {
-                    "fullNameRequired": "ПІБ обов'язкове поле",
                     "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
-                    "positionRequired": "Посада обов'язкова",
+                    "emailInvalid": "Некоректна електронна адреса",
                     "birthDateRequired": "Дата народження обов'язкова",
                     "birthDateFuture": "Дата народження не може бути у майбутньому",
-                    "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
-                    "noDatabase": "Не вказано базу даних",
-                    "updateError": "Помилка оновлення адміністратора"
+                    "birthDateTooOld": "Дата народження не може бути більше 100 років тому"
+                },
+                "card": {
+                    "edit": "Редагувати",
+                    "delete": "Видалити",
+                    "birthDate": "Дата народження",
+                    "ageYear": "рік",
+                    "ageYears": "років"
+                },
+                "header": {
+                    "sortAZ": "А-Я",
+                    "sortZA": "Я-А",
+                    "searchPlaceholder": "Пошук адміністраторів..."
+                },
+                "list": {
+                    "noResults": "Адміністратори за запитом \"{{query}}\" не знайдені",
+                    "noAdmins": "Адміністратори не знайдені"
+                },
+                "pagination": {
+                    "showing": "Показано {{start}}-{{end}} з {{total}}",
+                    "page": "Сторінка {{current}} з {{total}}",
+                    "previous": "Попередня",
+                    "next": "Наступна"
+                },
+                "showAdmin": {
+                    "loading": "Завантаження адміністраторів...",
+                    "noAdmins": "Інших адміністраторів не знайдено",
+                    "noResults": "Інших адміністраторів за запитом \"{{query}}\" не знайдено",
+                    "noOtherAdmins": "У системі немає інших адміністраторів",
+                    "errors": {
+                        "noDatabase": "Не вдалося визначити базу даних школи",
+                        "noDatabaseSpecified": "Не вказано базу даних",
+                        "loadError": "Помилка завантаження адміністраторів"
+                    }
+                },
+                "editPopup": {
+                    "title": "Редагувати адміністратора",
+                    "fullName": "ПІБ",
+                    "fullNamePlaceholder": "Введіть ПІБ",
+                    "phone": "Телефон",
+                    "login": "Логін",
+                    "position": "Посада",
+                    "positionPlaceholder": "Введіть посаду",
+                    "birthDate": "Дата народження",
+                    "cancel": "Скасувати",
+                    "save": "Зберегти",
+                    "saving": "Збереження...",
+                    "success": "Адміністратора успішно оновлено",
+                    "errors": {
+                        "fullNameRequired": "ПІБ обов'язкове поле",
+                        "phoneInvalid": "Телефон у форматі +380XXXXXXXXX",
+                        "positionRequired": "Посада обов'язкова",
+                        "birthDateRequired": "Дата народження обов'язкова",
+                        "birthDateFuture": "Дата народження не може бути у майбутньому",
+                        "birthDateTooOld": "Дата народження не може бути більше 100 років тому",
+                        "noDatabase": "Не вказано базу даних",
+                        "updateError": "Помилка оновлення адміністратора"
+                    }
+                },
+                "deletePopup": {
+                    "title": "Видалення адміністратора",
+                    "confirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
+                    "warning": "Цю дію неможливо буде скасувати!",
+                    "confirm": "Так, видалити",
+                    "cancel": "Скасувати",
+                    "deleting": "Видалення...",
+                    "errors": {
+                        "noDatabase": "Не вказано базу даних",
+                        "deleteError": "Помилка при видаленні адміністратора"
+                    }
+                },
+                "errorState": {
+                    "retry": "Спробувати знову"
                 }
-            },
-            "deletePopup": {
-                "title": "Видалення адміністратора",
-                "confirmQuestion": "Ви впевнені, що хочете видалити цього адміністратора?",
-                "warning": "Цю дію неможливо буде скасувати!",
-                "confirm": "Так, видалити",
-                "cancel": "Скасувати",
-                "deleting": "Видалення...",
-                "errors": {
-                    "noDatabase": "Не вказано базу даних",
-                    "deleteError": "Помилка при видаленні адміністратора"
-                }
-            },
-            "errorState": {
-                "retry": "Спробувати знову"
             }
         },
         "group": {
@@ -986,6 +986,99 @@
             "Астрономія": "Астрономія",
             "Екологія": "Екологія",
             "Природознавство": "Природознавство"
+        },
+        "classrooms": {
+            "title": "Управління аудиторіями",
+            "subtitle": "Створення та редагування навчальних приміщень",
+            "addButton": "Додати аудиторію",
+            "listTitle": "Список аудиторій",
+            "classroomsCount": "{{count}} аудиторій",
+            "loading": "Завантаження аудиторій...",
+            "emptyTitle": "Аудиторії ще не додані",
+            "emptyMessage": "Натисніть кнопку \"Додати аудиторію\" щоб створити першу аудиторію",
+            "addModalTitle": "Додати аудиторію",
+            "editModalTitle": "Редагувати аудиторію",
+            "nameLabel": "Назва аудиторії",
+            "namePlaceholder": "Наприклад: 101, Актовий зал, Лабораторія 2А",
+            "capacityLabel": "Місткість",
+            "typeLabel": "Тип аудиторії",
+            "equipmentLabel": "Обладнання",
+            "equipmentPlaceholder": "Наприклад: проектор, комп'ютери, мікроскопи",
+            "addEquipment": "Додати обладнання",
+            "descriptionLabel": "Опис (необов'язково)",
+            "descriptionPlaceholder": "Додатковий опис аудиторії...",
+            "activeLabel": "Аудиторія активна",
+            "cancel": "Скасувати",
+            "create": "Створити",
+            "update": "Оновити",
+            "types": {
+                "general": "Загальна",
+                "lecture": "Лекційна",
+                "practice": "Практична",
+                "lab": "Лабораторія"
+            },
+            "status": {
+                "active": "Активна",
+                "inactive": "Неактивна"
+            },
+            "capacityUnit": "осіб",
+            "equipmentLabelShort": "Обладнання:",
+            "descriptionLabelShort": "Опис:",
+            "editButton": "Ред.",
+            "editButtonFull": "Редагувати",
+            "activateButton": "Акт.",
+            "activateButtonFull": "Актив.",
+            "deactivateButton": "Деакт.",
+            "deactivateButtonFull": "Деактив.",
+            "deleteButton": "Вид.",
+            "deleteButtonFull": "Видалити",
+            "deleteModalTitle": "Видалення аудиторії",
+            "deleteConfirmMessage": "Ви впевнені, що хочете видалити аудиторію?",
+            "deleteWarning": "Цю дію неможливо скасувати!",
+            "errors": {
+                "nameRequired": "Назва аудиторії обов'язкова",
+                "capacityInvalid": "Місткість повинна бути від 1 до 500 осіб",
+                "noDatabase": "Не вдалося визначити базу даних школи",
+                "loadError": "Помилка при завантаженні аудиторій: {{error}}",
+                "saveError": "Помилка при збереженні аудиторії",
+                "deleteError": "Помилка при видаленні аудиторії",
+                "toggleError": "Помилка при зміні статусу аудиторії"
+            },
+            "success": {
+                "saved": "Аудиторію успішно збережено",
+                "deleted": "Аудиторію успішно видалено",
+                "toggled": "Статус аудиторії успішно змінено"
+            },
+            "roomNames": {
+                "Актовий зал": "Assembly Hall",
+                "Спортивна зала": "Gymnasium",
+                "Бібліотека": "Library",
+                "Комп'ютерний клас": "Computer Lab",
+                "Лабораторія": "Laboratory",
+                "Майстерня": "Workshop",
+                "Кабінет директора": "Principal's Office",
+                "Вчительська": "Teachers' Room",
+                "Медпункт": "Medical Room",
+                "Їдальня": "Canteen"
+            },
+            "equipment": {
+                "проектор": "projector",
+                "комп'ютери": "computers",
+                "мікроскопи": "microscopes",
+                "дошка": "blackboard",
+                "інтерактивна дошка": "interactive whiteboard",
+                "ноутбуки": "laptops",
+                "планшети": "tablets",
+                "лабораторне обладнання": "laboratory equipment",
+                "спортивний інвентар": "sports equipment",
+                "музичні інструменти": "musical instruments",
+                "телевізор": "TV",
+                "колонки": "speakers",
+                "кондиціонер": "air conditioner",
+                "шафи": "cabinets",
+                "парти": "desks",
+                "стільці": "chairs"
+            }
         }
     }
 }

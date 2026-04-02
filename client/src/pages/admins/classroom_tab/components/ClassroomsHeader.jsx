@@ -1,7 +1,10 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { FaPlus, FaDoorOpen } from "react-icons/fa";
 
 const ClassroomsHeader = ({ onShowCreateModal, isMobile = false }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             display: 'flex',
@@ -28,14 +31,14 @@ const ClassroomsHeader = ({ onShowCreateModal, isMobile = false }) => {
                         fontWeight: '500',
                         color: '#1f2937'
                     }}>
-                        Управління аудиторіями
+                        {t('admin.classrooms.title')}
                     </h3>
                     <p style={{
                         margin: isMobile ? '2px 0 0 0' : '4px 0 0 0',
                         color: '#6b7280',
                         fontSize: isMobile ? '12px' : '14px'
                     }}>
-                        Створення та редагування навчальних приміщень
+                        {t('admin.classrooms.subtitle')}
                     </p>
                 </div>
             </div>
@@ -70,7 +73,7 @@ const ClassroomsHeader = ({ onShowCreateModal, isMobile = false }) => {
                 }}
             >
                 <FaPlus size={isMobile ? 14 : 16} />
-                Додати аудиторію
+                {t('admin.classrooms.addButton')}
             </button>
         </div>
     );

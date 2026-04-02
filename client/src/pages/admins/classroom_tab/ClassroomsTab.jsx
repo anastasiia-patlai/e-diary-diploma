@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
 import ClassroomsHeader from "./components/ClassroomsHeader";
 import ClassroomsList from "./components/ClassroomsList";
@@ -6,6 +7,7 @@ import ClassroomModal from "./components/ClassroomModal";
 import DeleteClassroom from "./components/DeleteClassroom";
 
 const ClassroomsTab = ({ isMobile = false }) => {
+    const { t } = useTranslation();
     const [classrooms, setClassrooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -43,10 +45,10 @@ const ClassroomsTab = ({ isMobile = false }) => {
         if (dbName) {
             setDatabaseName(dbName);
         } else {
-            setError("Не вдалося визначити базу даних школи");
+            setError(t("classrooms.errors.noDatabase"));
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const loadClassrooms = async () => {
         if (!databaseName) return;
@@ -64,7 +66,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
             }
             setError("");
         } catch (err) {
-            setError("Помилка при завантаженні аудиторій: " + (err.response?.data?.message || err.message));
+            setError(t("classrooms.errors.loadError", { error: err.response?.data?.message || err.message }));
             setClassrooms([]);
         } finally {
             setLoading(false);
@@ -107,7 +109,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
             setDeletingClassroom(null);
             setError("");
         } catch (err) {
-            setError(err.response?.data?.message || "Помилка при видаленні аудиторії");
+            setError(err.response?.data?.message || t("classrooms.errors.deleteError"));
             setShowDeleteModal(false);
             setDeletingClassroom(null);
         }
@@ -120,7 +122,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
 
     const handleSaveClassroom = async (classroomData) => {
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t("classrooms.errors.noDatabase"));
             return;
         }
 
@@ -150,7 +152,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
             setEditingClassroom(null);
             setError("");
         } catch (err) {
-            setError(err.response?.data?.message || "Помилка при збереженні аудиторії");
+            setError(err.response?.data?.message || t("classrooms.errors.saveError"));
         } finally {
             setLoading(false);
         }
@@ -158,7 +160,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
 
     const handleToggleClassroom = async (id) => {
         if (!databaseName) {
-            setError("Не вказано базу даних");
+            setError(t("classrooms.errors.noDatabase"));
             return;
         }
 
@@ -169,7 +171,7 @@ const ClassroomsTab = ({ isMobile = false }) => {
             await loadClassrooms();
             setError("");
         } catch (err) {
-            setError(err.response?.data?.message || "Помилка при зміні статусу аудиторії");
+            setError(err.response?.data?.message || t("classrooms.errors.toggleError"));
         }
     };
 

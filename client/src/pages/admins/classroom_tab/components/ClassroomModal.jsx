@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from 'react-i18next';
 import { FaTimes, FaSave, FaDoorOpen, FaUsers, FaList, FaPlus, FaMinus } from "react-icons/fa";
 
 const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: "",
         capacity: 30,
@@ -74,11 +76,11 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
 
     const handleSave = () => {
         if (!formData.name.trim()) {
-            setError("Назва аудиторії обов'язкова");
+            setError(t("classrooms.errors.nameRequired"));
             return;
         }
         if (formData.capacity < 1 || formData.capacity > 500) {
-            setError("Місткість повинна бути від 1 до 500 осіб");
+            setError(t("classrooms.errors.capacityInvalid"));
             return;
         }
 
@@ -119,7 +121,6 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                 maxHeight: isMobile ? 'calc(100vh - 32px)' : '90vh',
                 overflowY: 'auto',
                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
-                // Додаємо для центрування
                 position: 'relative',
                 margin: 'auto'
             }}>
@@ -140,7 +141,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                             gap: isMobile ? '8px' : '10px'
                         }}>
                             <FaDoorOpen size={isMobile ? 16 : 18} />
-                            {classroom ? 'Редагувати аудиторію' : 'Додати аудиторію'}
+                            {classroom ? t('admin.classrooms.editModalTitle') : t('admin.classrooms.addModalTitle')}
                         </h2>
                     </div>
                     <button
@@ -192,14 +193,14 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                 color: 'rgba(105, 180, 185, 1)',
                                 fontSize: isMobile ? '13px' : '14px'
                             }} />
-                            Назва аудиторії *
+                            {t('admin.classrooms.nameLabel')} *
                         </label>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Наприклад: 101, Актовий зал, Лабораторія 2А"
+                            placeholder={t('admin.classrooms.namePlaceholder')}
                             style={{
                                 width: '100%',
                                 padding: isMobile ? '10px 12px' : '12px 14px',
@@ -231,7 +232,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: isMobile ? '13px' : '14px'
                                 }} />
-                                Місткість *
+                                {t('admin.classrooms.capacityLabel')} *
                             </label>
                             <input
                                 type="number"
@@ -266,7 +267,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                     color: 'rgba(105, 180, 185, 1)',
                                     fontSize: isMobile ? '13px' : '14px'
                                 }} />
-                                Тип аудиторії
+                                {t('admin.classrooms.typeLabel')}
                             </label>
                             <select
                                 name="type"
@@ -282,10 +283,10 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                     outline: 'none'
                                 }}
                             >
-                                <option value="general">Загальна</option>
-                                <option value="lecture">Лекційна</option>
-                                <option value="practice">Практична</option>
-                                <option value="lab">Лабораторія</option>
+                                <option value="general">{t('admin.classrooms.types.general')}</option>
+                                <option value="lecture">{t('admin.classrooms.types.lecture')}</option>
+                                <option value="practice">{t('admin.classrooms.types.practice')}</option>
+                                <option value="lab">{t('admin.classrooms.types.lab')}</option>
                             </select>
                         </div>
                     </div>
@@ -304,7 +305,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                 color: 'rgba(105, 180, 185, 1)',
                                 fontSize: isMobile ? '13px' : '14px'
                             }} />
-                            Обладнання
+                            {t('admin.classrooms.equipmentLabel')}
                         </label>
                         {formData.equipment.map((item, index) => (
                             <div key={index} style={{
@@ -317,7 +318,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                     type="text"
                                     value={item}
                                     onChange={(e) => handleEquipmentChange(index, e.target.value)}
-                                    placeholder="Наприклад: проектор, комп'ютери, мікроскопи"
+                                    placeholder={t('admin.classrooms.equipmentPlaceholder')}
                                     style={{
                                         flex: 1,
                                         padding: isMobile ? '10px 12px' : '12px 14px',
@@ -369,7 +370,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                             }}
                         >
                             <FaPlus size={isMobile ? 12 : 14} />
-                            Додати обладнання
+                            {t('admin.classrooms.addEquipment')}
                         </button>
                     </div>
 
@@ -381,13 +382,13 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                             color: '#374151',
                             fontSize: isMobile ? '13px' : '14px'
                         }}>
-                            Опис (необов'язково)
+                            {t('admin.classrooms.descriptionLabel')}
                         </label>
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            placeholder="Додатковий опис аудиторії..."
+                            placeholder={t('admin.classrooms.descriptionPlaceholder')}
                             rows="3"
                             style={{
                                 width: '100%',
@@ -427,7 +428,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                                 cursor: 'pointer',
                                 fontSize: isMobile ? '13px' : '14px'
                             }}>
-                                Аудиторія активна
+                                {t('admin.classrooms.activeLabel')}
                             </label>
                         </div>
                     )}
@@ -460,7 +461,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                         }}
                     >
                         <FaTimes size={isMobile ? 12 : 14} />
-                        Скасувати
+                        {t('admin.classrooms.cancel')}
                     </button>
                     <button
                         type="button"
@@ -481,7 +482,7 @@ const ClassroomModal = ({ show, onClose, onSave, classroom, isMobile = false }) 
                         }}
                     >
                         <FaSave size={isMobile ? 12 : 14} />
-                        {classroom ? 'Оновити' : 'Створити'}
+                        {classroom ? t('admin.classrooms.update') : t('admin.classrooms.create')}
                     </button>
                 </div>
             </div>

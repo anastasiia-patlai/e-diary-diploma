@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@universal-i18n/react": "^3.0.5",
     "bootstrap": "^5.3.8",
     "i18next": "^25.8.20",
     "i18next-browser-languagedetector": "^8.2.1",

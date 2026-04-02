@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import { FaDoorOpen } from "react-icons/fa";
 import ClassroomCard from "./ClassroomCard";
 
@@ -10,6 +11,8 @@ const ClassroomsList = ({
     onToggleClassroom,
     isMobile = false
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div style={{
             border: "1px solid #e5e7eb",
@@ -40,7 +43,7 @@ const ClassroomsList = ({
                             color: "#374151",
                             fontWeight: "600"
                         }}>
-                            Список аудиторій
+                            {t('admin.classrooms.listTitle')}
                         </h5>
                     </div>
                     <div style={{
@@ -52,7 +55,7 @@ const ClassroomsList = ({
                         borderRadius: '12px',
                         whiteSpace: 'nowrap'
                     }}>
-                        {classrooms.length} аудиторій
+                        {t('admin.classrooms.classroomsCount', { count: classrooms.length })}
                     </div>
                 </div>
             </div>
@@ -63,7 +66,7 @@ const ClassroomsList = ({
             }}>
                 {loading ? (
                     <div style={{ textAlign: "center", padding: isMobile ? "40px 20px" : "60px 20px" }}>
-                        <p style={{ color: "#6b7280", margin: 0 }}>Завантаження аудиторій...</p>
+                        <p style={{ color: "#6b7280", margin: 0 }}>{t('classrooms.loading')}</p>
                     </div>
                 ) : classrooms.length === 0 ? (
                     <div style={{
@@ -81,14 +84,14 @@ const ClassroomsList = ({
                             marginBottom: "8px",
                             fontSize: isMobile ? "16px" : "18px"
                         }}>
-                            Аудиторії ще не додані
+                            {t('admin.classrooms.emptyTitle')}
                         </h6>
                         <p style={{
                             color: "#6b7280",
                             margin: 0,
                             fontSize: isMobile ? "13px" : "14px"
                         }}>
-                            Натисніть кнопку "Додати аудиторію" щоб створити першу аудиторію
+                            {t('admin.classrooms.emptyMessage')}
                         </p>
                     </div>
                 ) : (

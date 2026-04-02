@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from 'react-i18next';
 import {
     FaEdit,
     FaTrash,
@@ -12,6 +13,25 @@ import {
 } from "react-icons/fa";
 
 const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false }) => {
+    const { t, i18n } = useTranslation();
+    const currentLang = i18n.language;
+
+    // Отримуємо назву залежно від мови
+    const getDisplayName = () => {
+        if (currentLang === 'en' && classroom.nameEn) {
+            return classroom.nameEn;
+        }
+        return classroom.name;
+    };
+
+    // Отримуємо обладнання залежно від мови
+    const getDisplayEquipment = () => {
+        if (currentLang === 'en' && classroom.equipmentEn && classroom.equipmentEn.length > 0) {
+            return classroom.equipmentEn;
+        }
+        return classroom.equipment || [];
+    };
+
     const getTypeIcon = (type) => {
         const icons = {
             'lecture': FaChalkboard,
@@ -23,16 +43,6 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
         return <IconComponent size={isMobile ? 14 : 16} />;
     };
 
-    const getTypeLabel = (type) => {
-        const labels = {
-            'lecture': 'Лекційна',
-            'practice': 'Практична',
-            'lab': 'Лабораторія',
-            'general': 'Загальна'
-        };
-        return labels[type] || 'Загальна';
-    };
-
     const getTypeColor = (type) => {
         const colors = {
             'lecture': '#3b82f6',
@@ -42,6 +52,8 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
         };
         return colors[type] || '#6b7280';
     };
+
+    const displayEquipment = getDisplayEquipment();
 
     return (
         <div style={{
@@ -87,7 +99,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             fontSize: isMobile ? '14px' : '16px',
                             wordBreak: 'break-word'
                         }}>
-                            {classroom.name}
+                            {getDisplayName()}
                         </h6>
                     </div>
                     <div style={{
@@ -104,7 +116,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             fontWeight: "500",
                             border: `1px solid ${getTypeColor(classroom.type)}40`
                         }}>
-                            {getTypeLabel(classroom.type)}
+                            {t(`admin.classrooms.types.${classroom.type}`)}
                         </span>
                         <span style={{
                             backgroundColor: classroom.isActive ? "#10b98120" : "#ef444420",
@@ -115,7 +127,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             fontWeight: "500",
                             border: `1px solid ${classroom.isActive ? '#10b98140' : '#ef444440'}`
                         }}>
-                            {classroom.isActive ? "Активна" : "Неактивна"}
+                            {classroom.isActive ? t('admin.classrooms.status.active') : t('admin.classrooms.status.inactive')}
                         </span>
                     </div>
                 </div>
@@ -136,17 +148,17 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             color: "#6b7280",
                             fontSize: isMobile ? '13px' : '14px'
                         }}>
-                            <strong>Місткість:</strong> {classroom.capacity} осіб
+                            <strong>{t('admin.classrooms.capacityLabel')}:</strong> {classroom.capacity} {t('admin.classrooms.capacityUnit')}
                         </span>
                     </div>
 
-                    {classroom.equipment && classroom.equipment.length > 0 && (
+                    {displayEquipment.length > 0 && (
                         <div style={{ marginBottom: "6px" }}>
                             <span style={{
                                 color: "#6b7280",
                                 fontSize: isMobile ? '13px' : '14px'
                             }}>
-                                <strong>Обладнання:</strong> {classroom.equipment.join(', ')}
+                                <strong>{t('admin.classrooms.equipmentLabelShort')}</strong> {displayEquipment.join(', ')}
                             </span>
                         </div>
                     )}
@@ -157,7 +169,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                                 color: "#6b7280",
                                 fontSize: isMobile ? '13px' : '14px'
                             }}>
-                                <strong>Опис:</strong> {classroom.description}
+                                <strong>{t('admin.classrooms.descriptionLabelShort')}</strong> {classroom.description}
                             </span>
                         </div>
                     )}
@@ -194,7 +206,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             }}
                         >
                             <FaEdit size={isMobile ? 12 : 14} />
-                            {isMobile ? "Ред." : "Редагувати"}
+                            {isMobile ? t('admin.classrooms.editButton') : t('admin.classrooms.editButtonFull')}
                         </button>
                         <button
                             onClick={() => onToggle(classroom._id)}
@@ -215,7 +227,10 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                             }}
                         >
                             {classroom.isActive ? <FaPowerOff size={isMobile ? 12 : 14} /> : <FaPlay size={isMobile ? 12 : 14} />}
-                            {isMobile ? (classroom.isActive ? "Деакт." : "Акт.") : (classroom.isActive ? "Деактив." : "Актив.")}
+                            {isMobile
+                                ? (classroom.isActive ? t('admin.classrooms.deactivateButton') : t('admin.classrooms.activateButton'))
+                                : (classroom.isActive ? t('admin.classrooms.deactivateButtonFull') : t('admin.classrooms.activateButtonFull'))
+                            }
                         </button>
                     </div>
                     <button
@@ -237,7 +252,7 @@ const ClassroomCard = ({ classroom, onEdit, onDelete, onToggle, isMobile = false
                         }}
                     >
                         <FaTrash size={isMobile ? 12 : 14} />
-                        {isMobile ? "Вид." : "Видалити"}
+                        {isMobile ? t('admin.classrooms.deleteButton') : t('admin.classrooms.deleteButtonFull')}
                     </button>
                 </div>
             </div>
