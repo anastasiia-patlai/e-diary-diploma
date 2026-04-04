@@ -1030,21 +1030,27 @@
             "classTeacher": "Class Teacher"
         },
         "schedule": {
-            "title": "Schedule",
+            "title": "Class Schedule",
             "time": "Time",
             "teacher": "Teacher",
             "legendSubject": "Subject",
-            "legendClassroom": "Classroom",
-            "noLessons": "No lessons on this day",
+            "legendClassroom": "Room",
             "number": "No.",
             "subject": "Subject",
-            "classroom": "Classroom",
+            "classroom": "Room",
             "subgroup": "Subgroup",
             "showingForSubgroup": "Showing for subgroup",
+            "noLessons": "No lessons on this day",
             "timeSlots": "time slots",
-            "timeSlotsShort": "slots",
+            "timeSlotsShort": "sl.",
             "legendTitle": "Legend",
             "noLesson": "Window (no lesson)",
+            "allGroup": "All group",
+            "showMySubgroup": "Show my subgroup",
+            "showAllSubgroups": "Show all subgroups",
+            "mySubgroup": "My subgroup",
+            "notSpecified": "Not specified",
+            "slotsCount": "slots",
             "days": {
                 "monday": "Monday",
                 "mondayShort": "Mon",
@@ -1064,6 +1070,10 @@
                 "lecture": "lecture",
                 "practice": "practice",
                 "lab": "lab"
+            },
+            "errors": {
+                "noDataFound": "No data found to display",
+                "loadError": "Error loading schedule. Please try again later"
             }
         },
         "grades": {

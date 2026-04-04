@@ -1042,6 +1042,12 @@
             "timeSlotsShort": "сл.",
             "legendTitle": "Легенда",
             "noLesson": "Вікно (немає уроку)",
+            "allGroup": "Вся група",
+            "showMySubgroup": "Показати мою підгрупу",
+            "showAllSubgroups": "Показати всі підгрупи",
+            "mySubgroup": "Моя підгрупа",
+            "notSpecified": "Не вказано",
+            "slotsCount": "слотів",
             "days": {
                 "monday": "Понеділок",
                 "mondayShort": "Пн",
@@ -1061,6 +1067,10 @@
                 "lecture": "лекція",
                 "practice": "практика",
                 "lab": "лабораторна"
+            },
+            "errors": {
+                "noDataFound": "Не знайдено даних для відображення",
+                "loadError": "Помилка завантаження розкладу. Спробуйте пізніше"
             }
         },
         "grades": {
