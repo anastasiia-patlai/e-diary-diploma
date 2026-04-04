@@ -59,8 +59,8 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                 const student = await studentRes.json();
 
                 const groupId = student.group?._id || student.group;
-                const groupNameValue = student.group?.name || "";
-                const subgroupValue = student.subgroup || null;
+                setGroupName(student.group?.name || "");
+                setStudentSubgroup(student.subgroup || null);
 
                 if (!groupId) {
                     setError(t("schedule.errors.noDataFound"));
@@ -68,36 +68,20 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                     return;
                 }
 
-                setGroupName(groupNameValue);
-                setStudentSubgroup(subgroupValue);
-
                 const groupRes = await fetch(`/api/groups/${groupId}?databaseName=${encodeURIComponent(db)}`);
                 if (groupRes.ok) {
                     const groupData = await groupRes.json();
-                    if (groupData.subgroups && Array.isArray(groupData.subgroups) && groupData.subgroups.length > 0) {
-                        setGroupSubgroups(groupData.subgroups);
-                    }
+                    setGroupSubgroups(groupData.subgroups || []);
                 }
 
                 const daysRes = await fetch(`/api/days/active?databaseName=${encodeURIComponent(db)}`);
-                if (!daysRes.ok) throw new Error("Помилка завантаження днів");
                 const daysData = await daysRes.json();
-
-                if (!daysData || daysData.length === 0) {
-                    setError(t("schedule.errors.noDataFound"));
-                    setLoading(false);
-                    return;
-                }
 
                 const slotsMap = {};
                 for (const day of daysData) {
-                    try {
-                        const slotsRes = await fetch(`/api/time-slots?dayOfWeekId=${day.id}&databaseName=${encodeURIComponent(db)}`);
-                        const slots = slotsRes.ok ? await slotsRes.json() : [];
-                        slotsMap[day._id.toString()] = Array.isArray(slots) ? slots.sort((a, b) => a.order - b.order) : [];
-                    } catch (err) {
-                        slotsMap[day._id.toString()] = [];
-                    }
+                    const slotsRes = await fetch(`/api/time-slots?dayOfWeekId=${day.id}&databaseName=${encodeURIComponent(db)}`);
+                    const slots = slotsRes.ok ? await slotsRes.json() : [];
+                    slotsMap[day._id.toString()] = Array.isArray(slots) ? slots.sort((a, b) => a.order - b.order) : [];
                 }
 
                 const scheduleRes = await fetch(`/api/schedule/group/${groupId}?databaseName=${encodeURIComponent(db)}`);
@@ -109,43 +93,79 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
 
                 setDays(daysData);
                 setSlotsByDay(slotsMap);
-                setSchedule(Array.isArray(scheduleData) ? scheduleData : []);
+                setSchedule(scheduleData);
                 setActiveDay(activeDayData);
                 setLoading(false);
-
             } catch (err) {
-                console.error("Помилка завантаження:", err);
                 setError(t("schedule.errors.loadError"));
                 setLoading(false);
             }
         };
-
         loadAllData();
-    }, [userData?._id, userData?.id, getDatabaseName, t]);
+    }, [userData?._id, getDatabaseName, t]);
 
-    const getLessonsForDay = useCallback(() => {
-        if (!schedule.length || !activeDay) return [];
+    // Допоміжна функція для пошуку уроку
+    const findLesson = (timeSlotId, subOrder) => {
+        // Спочатку шукаємо урок для конкретної підгрупи
+        const specificLesson = schedule.find(lesson => {
+            const dayId = (lesson.dayOfWeek?._id || lesson.dayOfWeek)?.toString();
+            const slotId = (lesson.timeSlot?._id || lesson.timeSlot)?.toString();
 
-        const activeDayId = activeDay._id?.toString();
+            if (dayId !== activeDay?._id?.toString() || slotId !== timeSlotId) return false;
 
-        return schedule.filter(lesson => {
-            const dayOfWeek = lesson.dayOfWeek;
-            if (!dayOfWeek) return false;
-            const dayId = typeof dayOfWeek === "object" ? dayOfWeek._id?.toString() : dayOfWeek?.toString();
-            return dayId === activeDayId;
-        }).sort((a, b) => (a.timeSlot?.order ?? 999) - (b.timeSlot?.order ?? 999));
-    }, [schedule, activeDay]);
+            const lessonSub = String(lesson.subgroup || "all");
+            return lessonSub === String(subOrder);
+        });
 
-    const getSubgroupsList = () => {
-        if (showAllSubgroups && groupSubgroups.length > 0) {
-            return groupSubgroups;
+        if (specificLesson) return specificLesson;
+
+        // Якщо немає уроку для конкретної підгрупи, шукаємо урок для всієї групи
+        const allGroupLesson = schedule.find(lesson => {
+            const dayId = (lesson.dayOfWeek?._id || lesson.dayOfWeek)?.toString();
+            const slotId = (lesson.timeSlot?._id || lesson.timeSlot)?.toString();
+
+            if (dayId !== activeDay?._id?.toString() || slotId !== timeSlotId) return false;
+
+            const lessonSub = String(lesson.subgroup || "all");
+            return lessonSub === "all" || lessonSub === "0";
+        });
+
+        return allGroupLesson;
+    };
+
+    // Перевіряє, чи всі підгрупи мають однаковий урок (або урок для всієї групи)
+    const shouldMergeSubgroups = (slotId) => {
+        if (!showAllSubgroups || groupSubgroups.length <= 1) return false;
+
+        // Перевіряємо, чи є урок для всієї групи
+        const allGroupLesson = schedule.find(lesson => {
+            const dayId = (lesson.dayOfWeek?._id || lesson.dayOfWeek)?.toString();
+            const slotId_ = (lesson.timeSlot?._id || lesson.timeSlot)?.toString();
+            if (dayId !== activeDay?._id?.toString() || slotId_ !== slotId) return false;
+            const lessonSub = String(lesson.subgroup || "all");
+            return lessonSub === "all" || lessonSub === "0";
+        });
+
+        // Якщо є урок для всієї групи - об'єднуємо
+        if (allGroupLesson) return true;
+
+        // Інакше перевіряємо, чи всі підгрупи мають однаковий урок
+        let firstLesson = null;
+
+        for (const sub of groupSubgroups) {
+            const lesson = findLesson(slotId, sub.order);
+            if (!lesson) return false; // Якщо хоч в однієї підгрупи немає уроку
+
+            const lessonKey = `${lesson.subject?._id || lesson.subject}_${lesson.teacher?._id || lesson.teacher?.fullName}_${lesson.classroom?._id || lesson.classroom?.name}`;
+
+            if (firstLesson === null) {
+                firstLesson = lessonKey;
+            } else if (firstLesson !== lessonKey) {
+                return false; // Уроки різні
+            }
         }
-        if (studentSubgroup) {
-            const found = groupSubgroups.find(sg => String(sg.order) === String(studentSubgroup));
-            if (found) return [found];
-            return [{ name: `${t("schedule.subgroup")} ${studentSubgroup}`, order: studentSubgroup }];
-        }
-        return [{ name: t("schedule.entireGroup"), order: 0 }];
+
+        return true; // Всі уроки однакові
     };
 
     if (loading) {
@@ -166,36 +186,15 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
         );
     }
 
-    const allLessons = getLessonsForDay();
-    const activeDayId = activeDay?._id?.toString();
-    const timeSlots = activeDayId ? (slotsByDay[activeDayId] || []) : [];
+    const timeSlots = activeDay ? (slotsByDay[activeDay._id.toString()] || []) : [];
 
-    const lessonsMap = new Map();
-    allLessons.forEach(lesson => {
-        const timeSlotId = typeof lesson.timeSlot === "object" ? lesson.timeSlot?._id?.toString() : lesson.timeSlot?.toString();
-        const subgroupId = lesson.subgroup || "all";
-        lessonsMap.set(`${timeSlotId}_${subgroupId}`, lesson);
-    });
-
-    const subgroupsList = getSubgroupsList();
-    const hasMultiple = groupSubgroups.length > 1;
-    const showSubgroupColumn = hasMultiple && showAllSubgroups;
-
-    const isAllGroupLesson = (timeSlotId) => {
-        return lessonsMap.has(`${timeSlotId}_all`);
-    };
-
-    const getAllGroupLesson = (timeSlotId) => {
-        return lessonsMap.get(`${timeSlotId}_all`);
-    };
-
-    const getSubgroupLesson = (timeSlotId, subgroupId) => {
-        return lessonsMap.get(`${timeSlotId}_${subgroupId}`);
-    };
+    const renderSubgroups = showAllSubgroups && groupSubgroups.length > 0
+        ? groupSubgroups
+        : [{ order: studentSubgroup || 1, name: `${t("schedule.subgroup")} ${studentSubgroup || 1}` }];
 
     return (
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "0 12px" : "0" }}>
-
+            {/* Картка студента */}
             <div style={{
                 backgroundColor: "white", borderRadius: 12, padding: isMobile ? "14px 16px" : "16px 20px",
                 marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb",
@@ -218,7 +217,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                         )}
                     </p>
                 </div>
-                {hasMultiple && (
+                {groupSubgroups.length > 1 && (
                     <button
                         onClick={() => setShowAllSubgroups(!showAllSubgroups)}
                         style={{
@@ -236,40 +235,10 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                 )}
             </div>
 
+            {/* Вкладки днів */}
             <div style={{ display: "flex", gap: isMobile ? 4 : 8, marginBottom: 20, overflowX: "auto", paddingBottom: 4 }}>
                 {days.map(day => {
-                    const isActive = activeDay?._id?.toString() === day._id?.toString();
-
-                    const getTranslatedDayName = (dayName, isShort = false) => {
-                        if (!dayName) return '';
-
-                        const dayMap = {
-                            'понеділок': isShort ? 'mondayShort' : 'monday',
-                            'вівторок': isShort ? 'tuesdayShort' : 'tuesday',
-                            'середа': isShort ? 'wednesdayShort' : 'wednesday',
-                            'четвер': isShort ? 'thursdayShort' : 'thursday',
-                            "п'ятниця": isShort ? 'fridayShort' : 'friday',
-                            'пятниця': isShort ? 'fridayShort' : 'friday',
-                            'субота': isShort ? 'saturdayShort' : 'saturday',
-                            'monday': isShort ? 'mondayShort' : 'monday',
-                            'tuesday': isShort ? 'tuesdayShort' : 'tuesday',
-                            'wednesday': isShort ? 'wednesdayShort' : 'wednesday',
-                            'thursday': isShort ? 'thursdayShort' : 'thursday',
-                            'friday': isShort ? 'fridayShort' : 'friday',
-                            'saturday': isShort ? 'saturdayShort' : 'saturday'
-                        };
-
-                        const key = dayMap[dayName?.toLowerCase()];
-                        if (key) {
-                            return t(`student.schedule.days.${key}`, { defaultValue: dayName });
-                        }
-                        return dayName;
-                    };
-
-                    const displayName = isMobile
-                        ? getTranslatedDayName(day.name, true)
-                        : getTranslatedDayName(day.name, false);
-
+                    const isActive = activeDay?._id === day._id;
                     return (
                         <button
                             key={day._id}
@@ -279,32 +248,27 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                 backgroundColor: isActive ? "rgba(105,180,185,1)" : "white",
                                 color: isActive ? "white" : "#374151",
                                 border: isActive ? "none" : "1px solid #e5e7eb",
-                                borderRadius: 8,
-                                cursor: "pointer",
-                                fontSize: isMobile ? 13 : 15,
-                                fontWeight: isActive ? 600 : 400,
-                                whiteSpace: "nowrap",
-                                flexShrink: 0,
-                                transition: "all 0.18s"
+                                borderRadius: 8, cursor: "pointer", fontSize: isMobile ? 13 : 15,
+                                fontWeight: isActive ? 600 : 400, whiteSpace: "nowrap", flexShrink: 0
                             }}
                         >
-                            {displayName}
+                            {isMobile ? day.nameShort : day.name}
                         </button>
                     );
                 })}
             </div>
 
+            {/* Таблиця розкладу */}
             <div style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-
                 <div style={{
                     padding: "13px 20px", backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb",
                     display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8
                 }}>
                     <h3 style={{ margin: 0, fontSize: isMobile ? 15 : 17, fontWeight: 600, color: "rgba(105,180,185,1)" }}>
-                        {t(`schedule.days.${activeDay?.name?.toLowerCase()}`, { defaultValue: activeDay?.name })}
+                        {activeDay?.name}
                         {timeSlots.length > 0 && (
                             <span style={{ marginLeft: 8, fontSize: 12, color: "#9ca3af" }}>
-                                ({timeSlots.length} {t("student.schedule.slotsCount")})
+                                ({timeSlots.length} слотів)
                             </span>
                         )}
                     </h3>
@@ -326,7 +290,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                     <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", width: 110 }}>
                                         {t("student.schedule.time")}
                                     </th>
-                                    {showSubgroupColumn && (
+                                    {showAllSubgroups && (
                                         <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", width: 80 }}>
                                             {t("student.schedule.subgroup")}
                                         </th>
@@ -345,25 +309,26 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                 </tr>
                             </thead>
                             <tbody>
-                                {timeSlots.map((slot, slotIdx) => {
-                                    const hasAllGroupLesson = isAllGroupLesson(slot._id?.toString());
-                                    const allGroupLesson = hasAllGroupLesson ? getAllGroupLesson(slot._id?.toString()) : null;
+                                {timeSlots.map((slot, sIdx) => {
+                                    const slotId = slot._id.toString();
+                                    const shouldMerge = shouldMergeSubgroups(slotId);
 
-                                    if (hasAllGroupLesson && !showSubgroupColumn) {
-                                        const lesson = allGroupLesson;
+                                    // Якщо потрібно об'єднати всі підгрупи
+                                    if (showAllSubgroups && shouldMerge && groupSubgroups.length > 1) {
+                                        const lesson = findLesson(slotId, groupSubgroups[0].order);
                                         const hasLesson = !!lesson;
 
                                         return (
-                                            <tr key={`${slot._id}_all`} style={{
+                                            <tr key={`${slotId}_merged`} style={{
                                                 borderBottom: "1px solid #f3f4f6",
-                                                backgroundColor: slotIdx % 2 === 0 ? "white" : "#fdfdfd"
+                                                backgroundColor: sIdx % 2 === 0 ? "white" : "#fdfdfd"
                                             }}>
                                                 <td style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
                                                     <span style={{
                                                         display: "inline-flex", alignItems: "center", justifyContent: "center",
                                                         width: 28, height: 28, borderRadius: "50%",
-                                                        backgroundColor: "rgba(105,180,185,0.15)",
-                                                        color: "rgba(105,180,185,1)",
+                                                        backgroundColor: hasLesson ? "rgba(105,180,185,0.15)" : "#f3f4f6",
+                                                        color: hasLesson ? "rgba(105,180,185,1)" : "#d1d5db",
                                                         fontWeight: 700, fontSize: 13
                                                     }}>
                                                         {slot.order}
@@ -374,8 +339,22 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                                     <br />
                                                     <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatTime(slot.endTime)}</span>
                                                 </td>
-                                                <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: "#1f2937", fontWeight: 500 }}>
-                                                    {hasLesson ? (lesson.subject?.name || lesson.subject || "—") : "—"}
+                                                {showAllSubgroups && (
+                                                    <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center", color: "#059669", fontWeight: 500 }}>
+                                                        {t("student.schedule.allGroup")}
+                                                    </td>
+                                                )}
+                                                <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: hasLesson ? "#1f2937" : "#d1d5db", fontWeight: hasLesson ? 500 : 400 }}>
+                                                    {hasLesson ? (
+                                                        <div>
+                                                            <div style={{ fontWeight: 600 }}>{lesson.subject?.name || lesson.subject || "—"}</div>
+                                                            {isMobile && (
+                                                                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                                                                    <FaDoorOpen size={10} /> {lesson.classroom?.name || "—"}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : "—"}
                                                 </td>
                                                 {!isMobile && (
                                                     <td style={{ padding: "13px 14px", color: "#6b7280" }}>
@@ -389,63 +368,20 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                         );
                                     }
 
-                                    if (hasAllGroupLesson && showSubgroupColumn) {
-                                        const lesson = allGroupLesson;
+                                    // Стандартне відображення (окремі рядки для кожної підгрупи)
+                                    return renderSubgroups.map((sub, subIdx) => {
+                                        const lesson = findLesson(slotId, sub.order);
+                                        const isFirstSub = subIdx === 0;
                                         const hasLesson = !!lesson;
 
                                         return (
-                                            <tr key={`${slot._id}_all`} style={{
-                                                borderBottom: "1px solid #f3f4f6",
-                                                backgroundColor: slotIdx % 2 === 0 ? "white" : "#fdfdfd"
+                                            <tr key={`${slotId}_${sub.order}`} style={{
+                                                borderBottom: subIdx === renderSubgroups.length - 1 ? "1px solid #f3f4f6" : "none",
+                                                backgroundColor: !hasLesson ? "#fafafa" : (sIdx % 2 === 0 ? "white" : "#fdfdfd")
                                             }}>
-                                                <td style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
-                                                    <span style={{
-                                                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                                                        width: 28, height: 28, borderRadius: "50%",
-                                                        backgroundColor: "rgba(105,180,185,0.15)",
-                                                        color: "rgba(105,180,185,1)",
-                                                        fontWeight: 700, fontSize: 13
-                                                    }}>
-                                                        {slot.order}
-                                                    </span>
-                                                </td>
-                                                <td style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
-                                                    <span style={{ fontWeight: 500 }}>{formatTime(slot.startTime)}</span>
-                                                    <br />
-                                                    <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatTime(slot.endTime)}</span>
-                                                </td>
-                                                <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center", color: "#059669", fontWeight: 500 }}>
-                                                    {t("student.schedule.allGroup")}
-                                                </td>
-                                                <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: "#1f2937", fontWeight: 500 }}>
-                                                    {hasLesson ? (lesson.subject?.name || lesson.subject || "—") : "—"}
-                                                </td>
-                                                {!isMobile && (
-                                                    <td style={{ padding: "13px 14px", color: "#6b7280" }}>
-                                                        {hasLesson ? (lesson.classroom?.name || lesson.classroom || "—") : "—"}
-                                                    </td>
-                                                )}
-                                                <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: "#6b7280" }}>
-                                                    {hasLesson ? (lesson.teacher?.fullName || lesson.teacher?.name || lesson.teacher || "—") : "—"}
-                                                </td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    return subgroupsList.map((subgroupItem, subIdx) => {
-                                        const subgroupKey = subgroupItem.order || subgroupItem.id || "all";
-                                        const lesson = getSubgroupLesson(slot._id?.toString(), subgroupKey);
-                                        const hasLesson = !!lesson;
-                                        const isFirst = subIdx === 0;
-
-                                        return (
-                                            <tr key={`${slot._id}_${subgroupKey}`} style={{
-                                                borderBottom: subIdx === subgroupsList.length - 1 ? "1px solid #f3f4f6" : "none",
-                                                backgroundColor: !hasLesson ? "#fafafa" : (slotIdx % 2 === 0 ? "white" : "#fdfdfd")
-                                            }}>
-                                                {isFirst && (
+                                                {isFirstSub && (
                                                     <>
-                                                        <td rowSpan={subgroupsList.length} style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
+                                                        <td rowSpan={renderSubgroups.length} style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
                                                             <span style={{
                                                                 display: "inline-flex", alignItems: "center", justifyContent: "center",
                                                                 width: 28, height: 28, borderRadius: "50%",
@@ -456,20 +392,29 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                                                 {slot.order}
                                                             </span>
                                                         </td>
-                                                        <td rowSpan={subgroupsList.length} style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
+                                                        <td rowSpan={renderSubgroups.length} style={{ textAlign: "center", verticalAlign: "middle", padding: isMobile ? "11px 8px" : "13px 14px" }}>
                                                             <span style={{ fontWeight: 500 }}>{formatTime(slot.startTime)}</span>
                                                             <br />
                                                             <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatTime(slot.endTime)}</span>
                                                         </td>
                                                     </>
                                                 )}
-                                                {showSubgroupColumn && (
+                                                {showAllSubgroups && (
                                                     <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center" }}>
-                                                        {subgroupItem.name || `${t("schedule.subgroup")} ${subgroupItem.order}`}
+                                                        {sub.name || sub.order}
                                                     </td>
                                                 )}
                                                 <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: hasLesson ? "#1f2937" : "#d1d5db", fontWeight: hasLesson ? 500 : 400 }}>
-                                                    {hasLesson ? (lesson.subject?.name || lesson.subject || "—") : "—"}
+                                                    {hasLesson ? (
+                                                        <div>
+                                                            <div style={{ fontWeight: 600 }}>{lesson.subject?.name || lesson.subject || "—"}</div>
+                                                            {isMobile && (
+                                                                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                                                                    <FaDoorOpen size={10} /> {lesson.classroom?.name || "—"}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : "—"}
                                                 </td>
                                                 {!isMobile && (
                                                     <td style={{ padding: "13px 14px", color: "#6b7280" }}>
