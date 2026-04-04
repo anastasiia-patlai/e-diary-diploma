@@ -1,153 +1,537 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { FaCalendarWeek, FaClock, FaChalkboardTeacher, FaMapMarkerAlt } from "react-icons/fa";
+import {
+    FaCalendarAlt, FaClock, FaChalkboardTeacher,
+    FaBook, FaDoorOpen, FaListOl, FaUserGraduate, FaSpinner
+} from "react-icons/fa";
 
-const StudentScheduleTab = ({ databaseName, userData, isMobile }) => {
+const fmt = (t) => {
+    if (!t) return "—";
+    const p = t.split(":");
+    return p.length >= 2 ? `${p[0]}:${p[1]}` : t;
+};
+
+const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobileProp }) => {
     const { t } = useTranslation();
-    const [schedule, setSchedule] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedDay, setSelectedDay] = useState(new Date().getDay());
 
-    const daysOfWeek = [
-        t("schedule.monday"),
-        t("schedule.tuesday"),
-        t("schedule.wednesday"),
-        t("schedule.thursday"),
-        t("schedule.friday"),
-        t("schedule.saturday")
-    ];
+    const [days, setDays] = useState([]);
+    const [slotsByDay, setSlotsByDay] = useState({});
+    const [schedule, setSchedule] = useState([]);
+    const [activeDay, setActiveDay] = useState(null);
+    const [subgroup, setSubgroup] = useState(null);
+    const [groupName, setGroupName] = useState("");
+    const [status, setStatus] = useState("loading");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [isMobile, setIsMobile] = useState(mobileProp ?? window.innerWidth <= 768);
 
     useEffect(() => {
-        fetchSchedule();
-    }, [databaseName, userData]);
+        if (mobileProp !== undefined) setIsMobile(mobileProp);
+    }, [mobileProp]);
 
-    const fetchSchedule = async () => {
-        try {
-            setLoading(true);
-            if (databaseName && userData?.groupId) {
-                const response = await fetch(`/api/schedule/group/${userData.groupId}?databaseName=${databaseName}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setSchedule(data);
-                } else {
-                    // Тестові дані
-                    setSchedule([
-                        { day: 1, subject: "Математика", teacher: "Іванова М.П.", time: "08:30-09:15", room: "205" },
-                        { day: 1, subject: "Українська мова", teacher: "Петренко О.В.", time: "09:25-10:10", room: "210" },
-                        { day: 2, subject: "Англійська мова", teacher: "Сміт Дж.", time: "08:30-09:15", room: "305" },
-                        { day: 2, subject: "Історія", teacher: "Коваленко Т.М.", time: "09:25-10:10", room: "215" }
-                    ]);
-                }
-            } else {
-                // Тестові дані
-                setSchedule([
-                    { day: 1, subject: "Математика", teacher: "Іванова М.П.", time: "08:30-09:15", room: "205" },
-                    { day: 1, subject: "Українська мова", teacher: "Петренко О.В.", time: "09:25-10:10", room: "210" },
-                    { day: 2, subject: "Англійська мова", teacher: "Сміт Дж.", time: "08:30-09:15", room: "305" },
-                    { day: 2, subject: "Історія", teacher: "Коваленко Т.М.", time: "09:25-10:10", room: "215" }
-                ]);
+    useEffect(() => {
+        const h = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener("resize", h);
+        return () => window.removeEventListener("resize", h);
+    }, []);
+
+    const getDb = () =>
+        dbProp || JSON.parse(localStorage.getItem("userInfo") || "{}").databaseName || "";
+
+    useEffect(() => {
+        const load = async () => {
+            const db = getDb();
+            const userId = userData?._id || userData?.id;
+
+            if (!db || !userId) {
+                setErrorMsg(t("student.errors.noDataFound"));
+                setStatus("error");
+                return;
             }
-        } catch (error) {
-            console.error('Помилка отримання розкладу:', error);
-        } finally {
-            setLoading(false);
-        }
+
+            try {
+                setStatus("loading");
+
+                /* 1. Отримати дані студента — знаходимо groupId */
+                const stuRes = await fetch(`/api/users/${userId}?databaseName=${encodeURIComponent(db)}`);
+                if (!stuRes.ok) throw new Error(`Users HTTP ${stuRes.status}`);
+                const student = await stuRes.json();
+
+                console.log("👤 Студент:", student);
+
+                const groupId = student.group?._id || student.group || userData?.group?._id || userData?.group;
+                const gName = student.group?.name || userData?.group?.name || "";
+                const stuSubgroup = student.subgroup || userData?.subgroup || null;
+
+                if (!groupId) {
+                    setErrorMsg(t("student.errors.noDataFound"));
+                    setStatus("error");
+                    return;
+                }
+
+                setGroupName(gName);
+                setSubgroup(stuSubgroup);
+                console.log(`📚 Група: ${groupId} (${gName}), підгрупа: ${stuSubgroup}`);
+
+                /* 2. Активні дні тижня з БД */
+                const daysRes = await fetch(`/api/days/active?databaseName=${encodeURIComponent(db)}`);
+                if (!daysRes.ok) throw new Error(`Days HTTP ${daysRes.status}`);
+                const daysData = await daysRes.json();
+
+                if (!Array.isArray(daysData) || daysData.length === 0) {
+                    setErrorMsg(t("student.errors.noDataFound"));
+                    setStatus("error");
+                    return;
+                }
+
+                console.log(`📅 Днів з БД: ${daysData.length}`, daysData.map(d => d.name));
+
+                /* 3. Часові слоти для КОЖНОГО дня паралельно */
+                const slotResults = await Promise.all(
+                    daysData.map(async (day) => {
+                        try {
+                            const r = await fetch(
+                                `/api/timetab?dayOfWeekId=${day.id}&databaseName=${encodeURIComponent(db)}`
+                            );
+                            const slots = r.ok ? await r.json() : [];
+                            const sorted = Array.isArray(slots)
+                                ? slots.sort((a, b) => a.order - b.order)
+                                : [];
+                            console.log(`⏰ ${day.name}: ${sorted.length} слотів`);
+                            return { key: day._id.toString(), slots: sorted };
+                        } catch {
+                            return { key: day._id.toString(), slots: [] };
+                        }
+                    })
+                );
+
+                const slotsMap = {};
+                slotResults.forEach(({ key, slots }) => { slotsMap[key] = slots; });
+
+                /* 4. Розклад для групи */
+                const schRes = await fetch(
+                    `/api/schedule/group/${groupId}?databaseName=${encodeURIComponent(db)}`
+                );
+                if (!schRes.ok) throw new Error(`Schedule HTTP ${schRes.status}`);
+                const schData = await schRes.json();
+
+                console.log(`📋 Уроків у розкладі: ${Array.isArray(schData) ? schData.length : 0}`);
+
+                /* Fallback: якщо timetab порожній — будуємо слоти з розкладу */
+                const totalSlots = Object.values(slotsMap).reduce((s, arr) => s + arr.length, 0);
+                if (totalSlots === 0 && Array.isArray(schData) && schData.length > 0) {
+                    console.warn("⚠️ timetab порожній — будуємо слоти з розкладу групи");
+                    const fallbackMap = {};
+                    schData.forEach(lesson => {
+                        const ts = lesson.timeSlot;
+                        const dw = lesson.dayOfWeek;
+                        if (!ts || typeof ts !== "object" || !dw || typeof dw !== "object") return;
+                        const dayKey = dw._id?.toString();
+                        if (!dayKey) return;
+                        if (!fallbackMap[dayKey]) fallbackMap[dayKey] = new Map();
+                        const tsKey = ts._id?.toString();
+                        if (tsKey && !fallbackMap[dayKey].has(tsKey)) {
+                            fallbackMap[dayKey].set(tsKey, {
+                                _id: ts._id,
+                                order: ts.order,
+                                startTime: ts.startTime,
+                                endTime: ts.endTime
+                            });
+                        }
+                    });
+                    Object.keys(fallbackMap).forEach(dayKey => {
+                        slotsMap[dayKey] = Array.from(fallbackMap[dayKey].values())
+                            .sort((a, b) => a.order - b.order);
+                    });
+                    console.log("✅ Fallback слоти побудовано для днів:", Object.keys(fallbackMap).length);
+                }
+
+                /* 5. Визначити активний день — поточний або перший */
+                const todayIso = new Date().getDay();
+                const todayDbId = todayIso === 0 ? 7 : todayIso;
+                const today = daysData.find(d => d.id === todayDbId) || daysData[0];
+
+                setDays(daysData);
+                setSlotsByDay(slotsMap);
+                setSchedule(Array.isArray(schData) ? schData : []);
+                setActiveDay(today);
+                setStatus("ok");
+
+            } catch (err) {
+                console.error("❌ Помилка завантаження:", err);
+                setErrorMsg(t("student.errors.loadError"));
+                setStatus("error");
+            }
+        };
+
+        load();
+    }, [userData?._id, userData?.id]);
+
+    /* ── уроки для активного дня + фільтр підгрупи ─────────── */
+    const getLessons = () => {
+        if (!schedule.length || !activeDay) return [];
+
+        return schedule
+            .filter(lesson => {
+                const ld = lesson.dayOfWeek;
+                if (!ld) return false;
+                const ldId = typeof ld === "object" ? ld._id?.toString() : ld.toString();
+                return ldId === activeDay._id?.toString();
+            })
+            .filter(lesson => {
+                const ls = lesson.subgroup;
+                if (!ls || ls === "all" || ls === "0") return true;
+                if (!subgroup) return true;
+                return String(ls) === String(subgroup);
+            })
+            .sort((a, b) => (a.timeSlot?.order ?? 999) - (b.timeSlot?.order ?? 999));
     };
 
-    const getScheduleForDay = (day) => {
-        return schedule.filter(lesson => lesson.day === day);
-    };
-
-    if (loading) {
-        return <div>{t("common.loading")}</div>;
+    /* ── рендер ─────────────────────────────────────────────── */
+    if (status === "loading") {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 340 }}>
+                <FaSpinner style={{ fontSize: 30, color: "rgba(105,180,185,1)", animation: "spin 1s linear infinite" }} />
+                <p style={{ marginTop: 12, color: "#6b7280" }}>{t("common.loading")}</p>
+                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+        );
     }
 
-    return (
-        <div>
-            <h3 style={{ fontSize: isMobile ? '18px' : '24px', marginBottom: '20px' }}>
-                {t("student.schedule.title")}
-            </h3>
+    if (status === "error") {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "#dc2626", padding: 20, textAlign: "center" }}>
+                {errorMsg}
+            </div>
+        );
+    }
 
+    const lessons = getLessons();
+    const activeSlots = activeDay ? (slotsByDay[activeDay._id?.toString()] || []) : [];
+
+    return (
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: isMobile ? "0 12px" : "0" }}>
+
+            {/* ── Картка студента ── */}
             <div style={{
-                display: 'flex',
-                gap: '10px',
-                overflowX: 'auto',
-                marginBottom: '20px',
-                paddingBottom: '10px'
+                backgroundColor: "white", borderRadius: 12, padding: isMobile ? "14px 16px" : "16px 20px",
+                marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb",
+                display: "flex", alignItems: "center", gap: 14
             }}>
-                {daysOfWeek.map((day, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setSelectedDay(index + 1)}
-                        style={{
-                            padding: '10px 15px',
-                            backgroundColor: selectedDay === index + 1 ? 'rgba(105, 180, 185, 1)' : '#f3f4f6',
-                            color: selectedDay === index + 1 ? 'white' : '#374151',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '500',
-                            whiteSpace: 'nowrap',
-                            transition: 'all 0.3s'
-                        }}
-                    >
-                        {day}
-                    </button>
-                ))}
+                <FaCalendarAlt size={isMobile ? 20 : 24} color="rgba(105,180,185,1)" />
+                <div>
+                    <h2 style={{ margin: 0, fontSize: isMobile ? 17 : 20, fontWeight: 600, color: "#1f2937" }}>
+                        {t("student.schedule.title")}
+                    </h2>
+                    <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span>{groupName || t("common.notSpecified")}</span>
+                        {subgroup && (
+                            <span style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                padding: "2px 8px", backgroundColor: "rgba(105,180,185,0.12)",
+                                borderRadius: 12, fontSize: 12, color: "rgba(105,180,185,1)"
+                            }}>
+                                <FaUserGraduate size={10} />
+                                {t("student.schedule.subgroup")} {subgroup}
+                            </span>
+                        )}
+                    </p>
+                </div>
             </div>
 
-            <div style={{
-                backgroundColor: 'white',
-                borderRadius: '10px',
-                border: '1px solid #e5e7eb',
-                overflow: 'hidden'
-            }}>
-                {getScheduleForDay(selectedDay).length > 0 ? (
-                    getScheduleForDay(selectedDay).map((lesson, index) => (
-                        <div
-                            key={index}
+            {/* ── Вкладки днів (з БД) ── */}
+            <div style={{ display: "flex", gap: isMobile ? 4 : 8, marginBottom: 20, overflowX: "auto", paddingBottom: 4 }}>
+                {days.map(day => {
+                    const isActive = activeDay?._id?.toString() === day._id?.toString();
+
+                    const getTranslatedDayName = (dayName, isShort = false) => {
+                        if (!dayName) return '';
+                        const dayMap = {
+                            'понеділок': isShort ? 'mondayShort' : 'monday',
+                            'вівторок': isShort ? 'tuesdayShort' : 'tuesday',
+                            'середа': isShort ? 'wednesdayShort' : 'wednesday',
+                            'четвер': isShort ? 'thursdayShort' : 'thursday',
+                            "п'ятниця": isShort ? 'fridayShort' : 'friday',
+                            'пятниця': isShort ? 'fridayShort' : 'friday',
+                            'субота': isShort ? 'saturdayShort' : 'saturday',
+                            'monday': isShort ? 'mondayShort' : 'monday',
+                            'tuesday': isShort ? 'tuesdayShort' : 'tuesday',
+                            'wednesday': isShort ? 'wednesdayShort' : 'wednesday',
+                            'thursday': isShort ? 'thursdayShort' : 'thursday',
+                            'friday': isShort ? 'fridayShort' : 'friday',
+                            'saturday': isShort ? 'saturdayShort' : 'saturday'
+                        };
+                        const key = dayMap[dayName?.toLowerCase()];
+                        if (key) {
+                            return t(`student.schedule.days.${key}`, { defaultValue: dayName });
+                        }
+                        return dayName;
+                    };
+
+                    const displayName = isMobile
+                        ? getTranslatedDayName(day.name, true)
+                        : getTranslatedDayName(day.name, false);
+
+                    return (
+                        <button
+                            key={day._id}
+                            onClick={() => setActiveDay(day)}
                             style={{
-                                padding: '15px',
-                                borderBottom: index !== getScheduleForDay(selectedDay).length - 1 ? '1px solid #e5e7eb' : 'none',
-                                display: 'flex',
-                                flexDirection: isMobile ? 'column' : 'row',
-                                justifyContent: 'space-between',
-                                alignItems: isMobile ? 'flex-start' : 'center',
-                                gap: isMobile ? '10px' : '0'
+                                padding: isMobile ? "9px 13px" : "11px 22px",
+                                backgroundColor: isActive ? "rgba(105,180,185,1)" : "white",
+                                color: isActive ? "white" : "#374151",
+                                border: isActive ? "none" : "1px solid #e5e7eb",
+                                borderRadius: 8,
+                                cursor: "pointer",
+                                fontSize: isMobile ? 13 : 15,
+                                fontWeight: isActive ? 600 : 400,
+                                whiteSpace: "nowrap",
+                                flexShrink: 0,
+                                transition: "all 0.18s"
                             }}
                         >
-                            <div style={{ minWidth: '80px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <FaClock style={{ color: '#9ca3af' }} />
-                                    <span style={{ fontWeight: '500' }}>{lesson.time}</span>
-                                </div>
-                            </div>
+                            {displayName}
+                        </button>
+                    );
+                })}
+            </div>
 
-                            <div style={{ flex: 1, marginLeft: isMobile ? '0' : '20px' }}>
-                                <h4 style={{ margin: 0, fontSize: '16px' }}>{lesson.subject}</h4>
-                                <div style={{ display: 'flex', gap: '15px', marginTop: '5px', flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', color: '#666' }}>
-                                        <FaChalkboardTeacher />
-                                        <span>{lesson.teacher}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', color: '#666' }}>
-                                        <FaMapMarkerAlt />
-                                        <span>{t("schedule.room")}: {lesson.room}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))
+            {/* ── Таблиця розкладу ── */}
+            <div style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+
+                <div style={{
+                    padding: "13px 20px", backgroundColor: "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                    display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8
+                }}>
+                    <h3 style={{ margin: 0, fontSize: isMobile ? 15 : 17, fontWeight: 600, color: "rgba(105,180,185,1)" }}>
+                        {activeDay?.name}
+                        {activeSlots.length > 0 && (
+                            <span style={{ marginLeft: 8, fontSize: 12, color: "#9ca3af", fontWeight: 400 }}>
+                                ({activeSlots.length} {isMobile ? t("student.schedule.timeSlotsShort") : t("student.schedule.timeSlots")})
+                            </span>
+                        )}
+                    </h3>
+                    {subgroup && (
+                        <span style={{ fontSize: 13, color: "#6b7280", display: "flex", alignItems: "center", gap: 5 }}>
+                            <FaUserGraduate size={12} color="rgba(105,180,185,1)" />
+                            {t("student.schedule.showingForSubgroup")} {subgroup}
+                        </span>
+                    )}
+                </div>
+
+                {activeSlots.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: isMobile ? "50px 20px" : "70px 20px", color: "#9ca3af" }}>
+                        <FaClock size={isMobile ? 34 : 42} style={{ marginBottom: 12, opacity: 0.35 }} />
+                        <p style={{ fontSize: isMobile ? 14 : 15, margin: 0 }}>{t("student.schedule.noLessons")}</p>
+                    </div>
                 ) : (
-                    <div style={{
-                        padding: '40px',
-                        textAlign: 'center',
-                        color: '#9ca3af'
-                    }}>
-                        {t("student.schedule.noLessons")}
+                    <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 320 : 580 }}>
+                            <thead>
+                                <tr style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
+                                    <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13, width: isMobile ? 42 : 58 }}>
+                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                            <FaListOl size={isMobile ? 10 : 12} />{t("student.schedule.number")}
+                                        </span>
+                                    </th>
+                                    <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13, width: isMobile ? 72 : 110 }}>
+                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                            <FaClock size={isMobile ? 10 : 12} />{t("student.schedule.time")}
+                                        </span>
+                                    </th>
+                                    <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13 }}>
+                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                            <FaBook size={isMobile ? 10 : 12} />{t("student.schedule.subject")}
+                                        </span>
+                                    </th>
+                                    {!isMobile && (
+                                        <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: 13 }}>
+                                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                                <FaDoorOpen size={12} />{t("student.schedule.classroom")}
+                                            </span>
+                                        </th>
+                                    )}
+                                    <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13 }}>
+                                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                            <FaChalkboardTeacher size={isMobile ? 10 : 12} />{t("student.schedule.teacher")}
+                                        </span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeSlots.map((slot, idx) => {
+                                    const lesson = lessons.find(l => {
+                                        const tsId = typeof l.timeSlot === "object"
+                                            ? l.timeSlot?._id?.toString()
+                                            : l.timeSlot?.toString();
+                                        return tsId === slot._id?.toString();
+                                    });
+                                    const hasLesson = !!lesson;
+
+                                    return (
+                                        <tr key={slot._id} style={{
+                                            borderBottom: "1px solid #f3f4f6",
+                                            backgroundColor: hasLesson
+                                                ? (idx % 2 === 0 ? "white" : "#fdfdfd")
+                                                : "#fafafa"
+                                        }}>
+                                            <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center" }}>
+                                                <span style={{
+                                                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                                    width: 28, height: 28, borderRadius: "50%",
+                                                    backgroundColor: hasLesson ? "rgba(105,180,185,0.15)" : "#f3f4f6",
+                                                    color: hasLesson ? "rgba(105,180,185,1)" : "#d1d5db",
+                                                    fontWeight: 700, fontSize: 13
+                                                }}>
+                                                    {slot.order}
+                                                </span>
+                                            </td>
+
+                                            <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center", color: "#6b7280", fontSize: isMobile ? 11 : 13 }}>
+                                                <span style={{ fontWeight: 500, color: "#374151" }}>{fmt(slot.startTime)}</span>
+                                                <br />
+                                                <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(slot.endTime)}</span>
+                                            </td>
+
+                                            <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: hasLesson ? "#1f2937" : "#d1d5db", fontWeight: hasLesson ? 500 : 400, fontSize: isMobile ? 13 : 14 }}>
+                                                {hasLesson ? (
+                                                    <>
+                                                        {lesson.subject?.name || lesson.subject || "—"}
+                                                        {lesson.subgroup && lesson.subgroup !== "all" && lesson.subgroup !== "0" && (
+                                                            <span style={{
+                                                                marginLeft: 6, fontSize: 10,
+                                                                color: "rgba(105,180,185,1)",
+                                                                backgroundColor: "rgba(105,180,185,0.1)",
+                                                                padding: "1px 6px", borderRadius: 8
+                                                            }}>
+                                                                ({t("student.schedule.subgroup")} {lesson.subgroup})
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : "—"}
+                                            </td>
+
+                                            {!isMobile && (
+                                                <td style={{ padding: "13px 14px", color: "#6b7280", fontSize: 13 }}>
+                                                    {hasLesson ? (lesson.classroom?.name || lesson.classroom || "—") : "—"}
+                                                </td>
+                                            )}
+
+                                            <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: "#6b7280", fontSize: isMobile ? 12 : 13 }}>
+                                                {hasLesson
+                                                    ? (lesson.teacher?.fullName || lesson.teacher?.name || lesson.teacher || "—")
+                                                    : "—"}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
+
+            {/* ── ЛЕГЕНДА ── */}
+            <div style={{
+                marginTop: 20,
+                padding: isMobile ? "12px 16px" : "16px 20px",
+                backgroundColor: "#f9fafb",
+                borderRadius: 12,
+                border: "1px solid #e5e7eb"
+            }}>
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 12,
+                    flexWrap: "wrap"
+                }}>
+                    <h4 style={{ margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600, color: "#374151" }}>
+                        {t("student.schedule.legendTitle") || "Легенда"}
+                    </h4>
+                </div>
+                <div style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: isMobile ? 12 : 16,
+                    alignItems: "center"
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{
+                            width: 28, height: 28,
+                            borderRadius: "50%",
+                            backgroundColor: "rgba(105,180,185,0.15)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "rgba(105,180,185,1)",
+                            fontWeight: 700,
+                            fontSize: 13
+                        }}>
+                            <FaListOl size={12} />
+                        </div>
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.number")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <FaClock size={14} color="rgba(105,180,185,1)" />
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.time")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <FaBook size={14} color="rgba(105,180,185,1)" />
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.subject")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <FaDoorOpen size={14} color="rgba(105,180,185,1)" />
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.classroom")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <FaChalkboardTeacher size={14} color="rgba(105,180,185,1)" />
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.teacher")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <FaUserGraduate size={14} color="rgba(105,180,185,1)" />
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
+                            {t("student.schedule.subgroup")}
+                        </span>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{
+                            width: 28, height: 28,
+                            borderRadius: "50%",
+                            backgroundColor: "#f3f4f6",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#d1d5db",
+                            fontWeight: 700,
+                            fontSize: 13
+                        }}>
+                            <span>1</span>
+                        </div>
+                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#9ca3af" }}>
+                            {t("student.schedule.noLesson") || "Вікно (немає уроку)"}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 };
