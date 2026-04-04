@@ -64,6 +64,7 @@ app.use('/api/groups', groupsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/schedule', scheduleRouter);
 app.use('/api/time-slots', timeSlotsRouter);
+app.use('/api/timetab', timeSlotsRouter);
 app.use('/api/classrooms', classroomsRoutes);
 app.use('/api/days', daysOfWeekRoutes);
 app.use('/api/study-calendar', studyCalendar);

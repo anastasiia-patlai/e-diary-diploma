@@ -58,6 +58,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
 
                 console.log("👤 Студент:", student);
 
+                // groupId може бути рядком або populate'd об'єктом
                 const groupId = student.group?._id || student.group || userData?.group?._id || userData?.group;
                 const gName = student.group?.name || userData?.group?.name || "";
                 const stuSubgroup = student.subgroup || userData?.subgroup || null;
@@ -85,18 +86,18 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
 
                 console.log(`📅 Днів з БД: ${daysData.length}`, daysData.map(d => d.name));
 
-                /* 3. Часові слоти для КОЖНОГО дня паралельно */
                 const slotResults = await Promise.all(
                     daysData.map(async (day) => {
                         try {
                             const r = await fetch(
-                                `/api/timetab?dayOfWeekId=${day.id}&databaseName=${encodeURIComponent(db)}`
+                                `/api/time-slots?dayOfWeekId=${day.id}&databaseName=${encodeURIComponent(db)}`
                             );
                             const slots = r.ok ? await r.json() : [];
                             const sorted = Array.isArray(slots)
                                 ? slots.sort((a, b) => a.order - b.order)
                                 : [];
                             console.log(`⏰ ${day.name}: ${sorted.length} слотів`);
+                            // Ключ — MongoDB _id дня (саме він зберігається в Schedule.dayOfWeek)
                             return { key: day._id.toString(), slots: sorted };
                         } catch {
                             return { key: day._id.toString(), slots: [] };
@@ -115,8 +116,16 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                 const schData = await schRes.json();
 
                 console.log(`📋 Уроків у розкладі: ${Array.isArray(schData) ? schData.length : 0}`);
+                if (Array.isArray(schData) && schData.length > 0) {
+                    const ex = schData[0];
+                    console.log("Приклад уроку:", {
+                        subject: ex.subject,
+                        dayOfWeek: ex.dayOfWeek,
+                        timeSlot: ex.timeSlot,
+                        subgroup: ex.subgroup
+                    });
+                }
 
-                /* Fallback: якщо timetab порожній — будуємо слоти з розкладу */
                 const totalSlots = Object.values(slotsMap).reduce((s, arr) => s + arr.length, 0);
                 if (totalSlots === 0 && Array.isArray(schData) && schData.length > 0) {
                     console.warn("⚠️ timetab порожній — будуємо слоти з розкладу групи");
@@ -145,9 +154,8 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                     console.log("✅ Fallback слоти побудовано для днів:", Object.keys(fallbackMap).length);
                 }
 
-                /* 5. Визначити активний день — поточний або перший */
-                const todayIso = new Date().getDay();
-                const todayDbId = todayIso === 0 ? 7 : todayIso;
+                const todayIso = new Date().getDay();           // 0=нд,1=пн…
+                const todayDbId = todayIso === 0 ? 7 : todayIso; // DayOfWeek.id
                 const today = daysData.find(d => d.id === todayDbId) || daysData[0];
 
                 setDays(daysData);
@@ -164,9 +172,9 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
         };
 
         load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userData?._id, userData?.id]);
 
-    /* ── уроки для активного дня + фільтр підгрупи ─────────── */
     const getLessons = () => {
         if (!schedule.length || !activeDay) return [];
 
@@ -174,12 +182,15 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
             .filter(lesson => {
                 const ld = lesson.dayOfWeek;
                 if (!ld) return false;
+                // dayOfWeek populate'd → об'єкт з _id
                 const ldId = typeof ld === "object" ? ld._id?.toString() : ld.toString();
                 return ldId === activeDay._id?.toString();
             })
             .filter(lesson => {
                 const ls = lesson.subgroup;
+                // subgroup 'all' або порожній → для всієї групи, показуємо завжди
                 if (!ls || ls === "all" || ls === "0") return true;
+                // якщо підгрупа студента невідома → показуємо всі уроки
                 if (!subgroup) return true;
                 return String(ls) === String(subgroup);
             })
@@ -243,8 +254,11 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                 {days.map(day => {
                     const isActive = activeDay?._id?.toString() === day._id?.toString();
 
+                    // Функція для перекладу назв днів
                     const getTranslatedDayName = (dayName, isShort = false) => {
                         if (!dayName) return '';
+
+                        // Мапа для відповідності назв з БД до ключів перекладу
                         const dayMap = {
                             'понеділок': isShort ? 'mondayShort' : 'monday',
                             'вівторок': isShort ? 'tuesdayShort' : 'tuesday',
@@ -260,8 +274,10 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                             'friday': isShort ? 'fridayShort' : 'friday',
                             'saturday': isShort ? 'saturdayShort' : 'saturday'
                         };
+
                         const key = dayMap[dayName?.toLowerCase()];
                         if (key) {
+                            // Використовуємо правильний шлях: student.schedule.days
                             return t(`student.schedule.days.${key}`, { defaultValue: dayName });
                         }
                         return dayName;
@@ -298,6 +314,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
             {/* ── Таблиця розкладу ── */}
             <div style={{ backgroundColor: "white", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
 
+                {/* заголовок */}
                 <div style={{
                     padding: "13px 20px", backgroundColor: "#f9fafb",
                     borderBottom: "1px solid #e5e7eb",
@@ -319,6 +336,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                     )}
                 </div>
 
+                {/* немає слотів */}
                 {activeSlots.length === 0 ? (
                     <div style={{ textAlign: "center", padding: isMobile ? "50px 20px" : "70px 20px", color: "#9ca3af" }}>
                         <FaClock size={isMobile ? 34 : 42} style={{ marginBottom: 12, opacity: 0.35 }} />
@@ -329,21 +347,25 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: isMobile ? 320 : 580 }}>
                             <thead>
                                 <tr style={{ backgroundColor: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
+                                    {/* № */}
                                     <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13, width: isMobile ? 42 : 58 }}>
                                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                             <FaListOl size={isMobile ? 10 : 12} />{t("student.schedule.number")}
                                         </span>
                                     </th>
+                                    {/* Час */}
                                     <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "center", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13, width: isMobile ? 72 : 110 }}>
                                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                             <FaClock size={isMobile ? 10 : 12} />{t("student.schedule.time")}
                                         </span>
                                     </th>
+                                    {/* Предмет */}
                                     <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13 }}>
                                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                             <FaBook size={isMobile ? 10 : 12} />{t("student.schedule.subject")}
                                         </span>
                                     </th>
+                                    {/* Кабінет — тільки desktop */}
                                     {!isMobile && (
                                         <th style={{ padding: "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: 13 }}>
                                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -351,6 +373,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                             </span>
                                         </th>
                                     )}
+                                    {/* Вчитель */}
                                     <th style={{ padding: isMobile ? "10px 8px" : "12px 14px", textAlign: "left", fontWeight: 600, color: "#374151", fontSize: isMobile ? 12 : 13 }}>
                                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                             <FaChalkboardTeacher size={isMobile ? 10 : 12} />{t("student.schedule.teacher")}
@@ -359,13 +382,22 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                 </tr>
                             </thead>
                             <tbody>
+                                {/*
+                                  Перебираємо ВСІ часові слоти активного дня.
+                                  Для кожного слоту шукаємо урок у розкладі групи:
+                                    lesson.timeSlot._id === slot._id
+                                  Якщо урок є — показуємо його дані.
+                                  Якщо немає — рядок порожній (вікно).
+                                */}
                                 {activeSlots.map((slot, idx) => {
+                                    // Пошук уроку для цього слоту
                                     const lesson = lessons.find(l => {
                                         const tsId = typeof l.timeSlot === "object"
                                             ? l.timeSlot?._id?.toString()
                                             : l.timeSlot?.toString();
                                         return tsId === slot._id?.toString();
                                     });
+
                                     const hasLesson = !!lesson;
 
                                     return (
@@ -375,6 +407,7 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                                 ? (idx % 2 === 0 ? "white" : "#fdfdfd")
                                                 : "#fafafa"
                                         }}>
+                                            {/* № слоту */}
                                             <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center" }}>
                                                 <span style={{
                                                     display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -387,12 +420,14 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                                 </span>
                                             </td>
 
+                                            {/* Час зі слоту — завжди є */}
                                             <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", textAlign: "center", color: "#6b7280", fontSize: isMobile ? 11 : 13 }}>
                                                 <span style={{ fontWeight: 500, color: "#374151" }}>{fmt(slot.startTime)}</span>
                                                 <br />
                                                 <span style={{ fontSize: 11, color: "#9ca3af" }}>{fmt(slot.endTime)}</span>
                                             </td>
 
+                                            {/* Предмет */}
                                             <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: hasLesson ? "#1f2937" : "#d1d5db", fontWeight: hasLesson ? 500 : 400, fontSize: isMobile ? 13 : 14 }}>
                                                 {hasLesson ? (
                                                     <>
@@ -411,12 +446,14 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                                                 ) : "—"}
                                             </td>
 
+                                            {/* Кабінет (desktop) */}
                                             {!isMobile && (
                                                 <td style={{ padding: "13px 14px", color: "#6b7280", fontSize: 13 }}>
                                                     {hasLesson ? (lesson.classroom?.name || lesson.classroom || "—") : "—"}
                                                 </td>
                                             )}
 
+                                            {/* Вчитель */}
                                             <td style={{ padding: isMobile ? "11px 8px" : "13px 14px", color: "#6b7280", fontSize: isMobile ? 12 : 13 }}>
                                                 {hasLesson
                                                     ? (lesson.teacher?.fullName || lesson.teacher?.name || lesson.teacher || "—")
@@ -430,107 +467,6 @@ const StudentScheduleTab = ({ userData, databaseName: dbProp, isMobile: mobilePr
                     </div>
                 )}
             </div>
-
-            {/* ── ЛЕГЕНДА ── */}
-            <div style={{
-                marginTop: 20,
-                padding: isMobile ? "12px 16px" : "16px 20px",
-                backgroundColor: "#f9fafb",
-                borderRadius: 12,
-                border: "1px solid #e5e7eb"
-            }}>
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    marginBottom: 12,
-                    flexWrap: "wrap"
-                }}>
-                    <h4 style={{ margin: 0, fontSize: isMobile ? 14 : 16, fontWeight: 600, color: "#374151" }}>
-                        {t("student.schedule.legendTitle") || "Легенда"}
-                    </h4>
-                </div>
-                <div style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: isMobile ? 12 : 16,
-                    alignItems: "center"
-                }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{
-                            width: 28, height: 28,
-                            borderRadius: "50%",
-                            backgroundColor: "rgba(105,180,185,0.15)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "rgba(105,180,185,1)",
-                            fontWeight: 700,
-                            fontSize: 13
-                        }}>
-                            <FaListOl size={12} />
-                        </div>
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.number")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FaClock size={14} color="rgba(105,180,185,1)" />
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.time")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FaBook size={14} color="rgba(105,180,185,1)" />
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.subject")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FaDoorOpen size={14} color="rgba(105,180,185,1)" />
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.classroom")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FaChalkboardTeacher size={14} color="rgba(105,180,185,1)" />
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.teacher")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FaUserGraduate size={14} color="rgba(105,180,185,1)" />
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#6b7280" }}>
-                            {t("student.schedule.subgroup")}
-                        </span>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{
-                            width: 28, height: 28,
-                            borderRadius: "50%",
-                            backgroundColor: "#f3f4f6",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#d1d5db",
-                            fontWeight: 700,
-                            fontSize: 13
-                        }}>
-                            <span>1</span>
-                        </div>
-                        <span style={{ fontSize: isMobile ? 12 : 13, color: "#9ca3af" }}>
-                            {t("student.schedule.noLesson") || "Вікно (немає уроку)"}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
     );
