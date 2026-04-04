@@ -25,9 +25,12 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     const [selectedSemester, setSelectedSemester] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [loadingSemesters, setLoadingSemesters] = useState(true);
+    // All dayOfWeek orders for this journal (same subject+group+subgroup, possibly different days)
     const [allDayOrders, setAllDayOrders] = useState([]);
+    // All sibling scheduleIds (needed by HomeworkTab to load DZ across days)
     const [allScheduleIds, setAllScheduleIds] = useState([scheduleId]);
 
+    // --- journal columns state ---
     const [journalColumns, setJournalColumns] = useState([]);
     const [showAddColumn, setShowAddColumn] = useState(false);
     const [addColumnAfterIdx, setAddColumnAfterIdx] = useState(null);
@@ -138,6 +141,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             const primaryLesson = lessonResponse.data;
             setCurrentLesson(primaryLesson);
 
+            // Find ALL schedule entries for the same subject+group+subgroup (different days/times)
             try {
                 const allSchedulesResponse = await axios.get('/api/schedule', {
                     params: {
@@ -157,6 +161,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                 const siblingIdsList = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
                 setAllScheduleIds(siblingIdsList);
 
+                // Load grades from ALL sibling schedules at once
                 const siblingIds = siblings.length > 0 ? siblings.map(s => s._id) : [scheduleId];
                 const idsParam = siblingIds.join(',');
                 try {
@@ -705,6 +710,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
             {showAddColumn && (
                 <AddColumnPopup
                     dates={dates}
+                    preselectedDate={addColumnAfterIdx}
                     onAdd={handleAddColumn}
                     onClose={() => setShowAddColumn(false)}
                 />
@@ -714,4 +720,3 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
 };
 
 export default GradebookPage;
-
