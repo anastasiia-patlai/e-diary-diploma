@@ -852,7 +852,7 @@
             "birthDate": "Дата народження",
             "registrationDate": "Дата реєстрації",
             "contactInfo": "Контактна інформація та предмети",
-            "email": "Електронна пошта",
+            "login": "Логін",
             "phone": "Телефон",
             "subjects": "Викладає предмети",
             "noSubjects": "Предмети не додані",
@@ -862,7 +862,7 @@
         "profileEditPopup": {
             "title": "Редагування профілю",
             "fullName": "ПІБ",
-            "email": "Електронна пошта",
+            "login": "Логін",
             "phone": "Телефон",
             "birthDate": "Дата народження",
             "dateFormat": "Формат: ДД-ММ-РРРР",
@@ -908,6 +908,13 @@
         },
         "notifications": {
             "updateSuccess": "Дані успішно оновлено!"
+        },
+        "roles": {
+            "admin": "Адміністратор",
+            "teacher": "Вчитель",
+            "student": "Учень",
+            "parent": "Батько",
+            "user": "Користувач"
         },
         "errors": {
             "noDataFound": "Не вдалося знайти дані для оновлення в localStorage",

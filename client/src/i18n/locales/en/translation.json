@@ -854,7 +854,7 @@
             "birthDate": "Date of Birth",
             "registrationDate": "Registration Date",
             "contactInfo": "Contact Information & Subjects",
-            "email": "Email",
+            "login": "Login",
             "phone": "Phone",
             "subjects": "Teaches Subjects",
             "noSubjects": "No subjects added",
@@ -864,7 +864,7 @@
         "profileEditPopup": {
             "title": "Edit Profile",
             "fullName": "Full Name",
-            "email": "Email",
+            "login": "Login",
             "phone": "Phone",
             "birthDate": "Date of Birth",
             "dateFormat": "Format: YYYY-MM-DD",
@@ -910,6 +910,13 @@
         },
         "notifications": {
             "updateSuccess": "Data updated successfully!"
+        },
+        "roles": {
+            "admin": "Administrator",
+            "teacher": "Teacher",
+            "student": "Student",
+            "parent": "Parent",
+            "user": "User"
         },
         "errors": {
             "noDataFound": "No data found for update in localStorage",

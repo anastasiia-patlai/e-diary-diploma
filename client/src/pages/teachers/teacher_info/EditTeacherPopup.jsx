@@ -187,7 +187,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
             <div style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                width: isMobile ? '100%' : '600px',
+                width: isMobile ? '100%' : '700px',
                 maxWidth: '95vw',
                 maxHeight: '90vh',
                 overflow: 'hidden',
@@ -209,7 +209,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                         fontWeight: '600',
                         color: '#1f2937'
                     }}>
-                        {t('teacher.editPopup.title')}
+                        {t('teacher.profileEditPopup.title')}
                     </h3>
                     <button
                         onClick={onClose}
@@ -238,154 +238,172 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                     padding: isMobile ? '20px 16px' : '24px'
                 }}>
                     <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label className="form-label" style={{
-                                fontSize: isMobile ? '15px' : '16px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                {t('teacher.editPopup.fullName')} *
-                            </label>
-                            <input
-                                type="text"
-                                name="fullName"
-                                className={getInputClass("fullName")}
-                                value={formData.fullName}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                style={{
-                                    fontSize: isMobile ? '14px' : '16px',
-                                    padding: isMobile ? '10px 12px' : '12px 16px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #d1d5db',
-                                    width: '100%',
-                                    boxSizing: 'border-box',
-                                    transition: 'border-color 0.2s'
-                                }}
-                            />
-                            {errors.fullName && (
-                                <div style={{
-                                    fontSize: isMobile ? '12px' : '13px',
-                                    color: '#dc2626',
-                                    marginTop: '6px'
-                                }}>
-                                    {errors.fullName}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="form-label" style={{
-                                fontSize: isMobile ? '15px' : '16px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                {t('teacher.editPopup.email')} *
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                className={getInputClass("email")}
-                                value={formData.email}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                style={{
-                                    fontSize: isMobile ? '14px' : '16px',
-                                    padding: isMobile ? '10px 12px' : '12px 16px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #d1d5db',
-                                    width: '100%',
-                                    boxSizing: 'border-box',
-                                    transition: 'border-color 0.2s'
-                                }}
-                            />
-                            {errors.email && (
-                                <div style={{
-                                    fontSize: isMobile ? '12px' : '13px',
-                                    color: '#dc2626',
-                                    marginTop: '6px'
-                                }}>
-                                    {errors.email}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="form-label" style={{
-                                fontSize: isMobile ? '15px' : '16px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                {t('teacher.editPopup.phone')} *
-                            </label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                className={getInputClass("phone")}
-                                value={formData.phone}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                style={{
-                                    fontSize: isMobile ? '14px' : '16px',
-                                    padding: isMobile ? '10px 12px' : '12px 16px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #d1d5db',
-                                    width: '100%',
-                                    boxSizing: 'border-box',
-                                    transition: 'border-color 0.2s'
-                                }}
-                                placeholder="+380XXXXXXXXX"
-                            />
-                            {errors.phone && (
-                                <div style={{
-                                    fontSize: isMobile ? '12px' : '13px',
-                                    color: '#dc2626',
-                                    marginTop: '6px'
-                                }}>
-                                    {errors.phone}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="form-label" style={{
-                                fontSize: isMobile ? '15px' : '16px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '8px'
-                            }}>
-                                {t('teacher.editPopup.birthDate')}
-                            </label>
-                            <input
-                                type="date"
-                                name="dateOfBirth"
-                                className="form-control"
-                                value={formData.dateOfBirth}
-                                onChange={handleChange}
-                                style={{
-                                    fontSize: isMobile ? '14px' : '16px',
-                                    padding: isMobile ? '10px 12px' : '12px 16px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #d1d5db',
-                                    width: '100%',
-                                    boxSizing: 'border-box',
-                                    transition: 'border-color 0.2s'
-                                }}
-                            />
-                            <small className="text-muted" style={{
-                                fontSize: isMobile ? '11px' : '12px',
-                                color: '#6b7280',
-                                display: 'block',
-                                marginTop: '6px'
-                            }}>
-                                {t('teacher.editPopup.dateFormat')}
-                            </small>
-                        </div>
-
                         <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                            gap: isMobile ? '16px' : '20px',
+                            marginBottom: '-20px'
+                        }}>
+                            {/* Ліва колонка */}
+                            <div>
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{
+                                        fontSize: isMobile ? '15px' : '16px',
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        {t('teacher.profileEditPopup.fullName')} *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="fullName"
+                                        className={getInputClass("fullName")}
+                                        value={formData.fullName}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        style={{
+                                            fontSize: isMobile ? '14px' : '16px',
+                                            padding: isMobile ? '10px 12px' : '12px 16px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #d1d5db',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                    />
+                                    {errors.fullName && (
+                                        <div style={{
+                                            fontSize: isMobile ? '12px' : '13px',
+                                            color: '#dc2626',
+                                            marginTop: '6px'
+                                        }}>
+                                            {errors.fullName}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{
+                                        fontSize: isMobile ? '15px' : '16px',
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        {t('teacher.profileEditPopup.login')} *
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className={getInputClass("email")}
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        style={{
+                                            fontSize: isMobile ? '14px' : '16px',
+                                            padding: isMobile ? '10px 12px' : '12px 16px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #d1d5db',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                    />
+                                    {errors.email && (
+                                        <div style={{
+                                            fontSize: isMobile ? '12px' : '13px',
+                                            color: '#dc2626',
+                                            marginTop: '6px'
+                                        }}>
+                                            {errors.email}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Права колонка */}
+                            <div>
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{
+                                        fontSize: isMobile ? '15px' : '16px',
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        {t('teacher.profileEditPopup.phone')} *
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        className={getInputClass("phone")}
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        style={{
+                                            fontSize: isMobile ? '14px' : '16px',
+                                            padding: isMobile ? '10px 12px' : '12px 16px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #d1d5db',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                        placeholder="+380XXXXXXXXX"
+                                    />
+                                    {errors.phone && (
+                                        <div style={{
+                                            fontSize: isMobile ? '12px' : '13px',
+                                            color: '#dc2626',
+                                            marginTop: '6px'
+                                        }}>
+                                            {errors.phone}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{
+                                        fontSize: isMobile ? '15px' : '16px',
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        {t('teacher.profileEditPopup.birthDate')}
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="dateOfBirth"
+                                        className="form-control"
+                                        value={formData.dateOfBirth}
+                                        onChange={handleChange}
+                                        style={{
+                                            fontSize: isMobile ? '14px' : '16px',
+                                            padding: isMobile ? '10px 12px' : '12px 16px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #d1d5db',
+                                            width: '100%',
+                                            boxSizing: 'border-box',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                    />
+                                    <small style={{
+                                        fontSize: isMobile ? '11px' : '12px',
+                                        color: '#6b7280',
+                                        display: 'block',
+                                        marginTop: '6px'
+                                    }}>
+                                        {t('teacher.profileEditPopup.dateFormat')}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Професійна інформація (закоментована, залишаємо як є) */}
+                        {/* <div style={{
                             margin: '20px 0',
                             padding: isMobile ? '16px' : '20px',
                             backgroundColor: '#f9fafb',
@@ -500,7 +518,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                     {t('teacher.editPopup.contactAdmin')}
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
                         <div style={{
                             display: 'flex',
@@ -527,7 +545,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 onMouseOver={(e) => e.target.style.backgroundColor = '#e5e7eb'}
                                 onMouseOut={(e) => e.target.style.backgroundColor = '#f3f4f6'}
                             >
-                                {t('teacher.editPopup.cancel')}
+                                {t('teacher.profileEditPopup.cancel')}
                             </button>
                             <button
                                 type="submit"
@@ -547,7 +565,7 @@ const EditTeacherPopup = ({ userData, onSave, onClose, isMobile }) => {
                                 onMouseOut={(e) => e.target.style.backgroundColor = 'rgba(105, 180, 185, 1)'}
                                 disabled={Object.keys(errors).some(key => errors[key])}
                             >
-                                {t('teacher.editPopup.save')}
+                                {t('teacher.profileEditPopup.save')}
                             </button>
                         </div>
                     </form>

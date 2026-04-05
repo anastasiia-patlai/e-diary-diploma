@@ -643,7 +643,7 @@ const TeacherInfo = ({ userData }) => {
                                     </div>
                                 </div>
 
-                                <div style={{
+                                {/* <div style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
                                     gap: isMobile ? '10px' : '12px',
@@ -681,7 +681,7 @@ const TeacherInfo = ({ userData }) => {
                                             {formatDate(displayData.createdAt)}
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
 
@@ -730,7 +730,7 @@ const TeacherInfo = ({ userData }) => {
                                             color: '#6b7280',
                                             marginBottom: '4px'
                                         }}>
-                                            {t('teacher.profile.email')}
+                                            {t('teacher.profile.login')}
                                         </div>
                                         <div style={{
                                             fontSize: isMobile ? '15px' : '16px',
