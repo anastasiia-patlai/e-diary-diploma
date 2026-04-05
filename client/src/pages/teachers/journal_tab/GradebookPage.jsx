@@ -407,6 +407,131 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
     // Normalize any id value to string for reliable comparison
     const toStr = (v) => (v?._id ?? v)?.toString() ?? '';
 
+    // ─── Auto-grade calculation ───────────────────────────────────────────────
+
+    const normDate = (d) =>
+        d instanceof Date ? d.toISOString().split('T')[0]
+            : typeof d === 'string' ? d.split('T')[0]
+                : String(d);
+
+    // All journal columns sorted by date asc, then order asc
+    const getAllColumnsSorted = () =>
+        [...journalColumns].sort((a, b) =>
+            a.date === b.date ? a.order - b.order : a.date.localeCompare(b.date)
+        );
+
+    const roundAvg = (arr) => Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+
+    /**
+     * computeAutoGrade(studentId, targetColumn) → { value: number|null, reason: string|null }
+     *
+     * theme:
+     *   — знаходимо попередню тематичну колонку (або початок)
+     *   — беремо всі поточні оцінки (regular + self/control колонки)
+     *     у діапазоні (prevTheme.date, targetCol.date] включно
+     *   — мін. 2 оцінки
+     *
+     * quarter:
+     *   — знаходимо попередню колонку "quarter" (або початок)
+     *   — беремо всі тематичні колонки у діапазоні між ними
+     *   — мін. 1 тематична
+     *
+     * semester:
+     *   — знаходимо попередню колонку "semester" (або початок)
+     *   — беремо всі чвертні колонки у діапазоні між ними
+     *   — мін. 1 чвертна
+     */
+    const computeAutoGrade = (studentId, targetColumn) => {
+        const allCols = getAllColumnsSorted();
+        const targetIdx = allCols.findIndex(c => toStr(c._id) === toStr(targetColumn._id));
+        if (targetIdx === -1) return { value: null, reason: 'Колонку не знайдено' };
+
+        const colsBefore = allCols.slice(0, targetIdx); // колонки ПЕРЕД цією
+        const sid = toStr(studentId);
+
+        // helper: value of a saved column grade
+        const savedColVal = (colId) => {
+            const g = grades.find(g => toStr(g.student) === sid && toStr(g.columnId) === toStr(colId));
+            return g?.value ?? null;
+        };
+
+        // helper: normalize grade date
+        const gradeNormDate = (g) =>
+            g.date instanceof Date ? g.date.toISOString().split('T')[0]
+                : typeof g.date === 'string' ? g.date.split('T')[0]
+                    : String(g.date);
+
+        if (targetColumn.type === 'theme') {
+            // Знаходимо попередню тематичну колонку
+            const prevThemeCol = [...colsBefore].reverse().find(c => c.type === 'theme');
+            const afterDate = prevThemeCol ? prevThemeCol.date : null; // виключно (строго >)
+            const upToDate = targetColumn.date;                         // включно (<=)
+
+            // Regular grades: дата > afterDate (якщо є) і <= upToDate
+            const regularVals = grades
+                .filter(g => {
+                    if (toStr(g.student) !== sid) return false;
+                    if (g.columnId && g.columnId !== 'null' && toStr(g.columnId) !== '') return false;
+                    const d = gradeNormDate(g);
+                    if (afterDate && d <= afterDate) return false;
+                    return d <= upToDate;
+                })
+                .map(g => g.value);
+
+            // Self/control колонки у colsBefore, які йдуть після prevThemeCol
+            const prevThemeIdx = prevThemeCol
+                ? colsBefore.findIndex(c => toStr(c._id) === toStr(prevThemeCol._id))
+                : -1;
+            const relevantColsBefore = colsBefore.slice(prevThemeIdx + 1);
+            const colVals = relevantColsBefore
+                .filter(c => c.type === 'self' || c.type === 'control')
+                .map(c => savedColVal(c._id))
+                .filter(v => v != null);
+
+            const all = [...regularVals, ...colVals];
+            if (all.length < 2) return { value: null, reason: `Потрібно мінімум 2 поточні оцінки (є ${all.length})` };
+            return { value: roundAvg(all), reason: null };
+        }
+
+        if (targetColumn.type === 'quarter') {
+            // Знаходимо попередню колонку "quarter"
+            const prevQuarterCol = [...colsBefore].reverse().find(c => c.type === 'quarter');
+            const prevQuarterIdx = prevQuarterCol
+                ? colsBefore.findIndex(c => toStr(c._id) === toStr(prevQuarterCol._id))
+                : -1;
+            const relevantCols = colsBefore.slice(prevQuarterIdx + 1);
+
+            const themeVals = relevantCols
+                .filter(c => c.type === 'theme')
+                .map(c => savedColVal(c._id))
+                .filter(v => v != null);
+
+            if (themeVals.length === 0) return { value: null, reason: 'Немає тематичних оцінок для розрахунку' };
+            return { value: roundAvg(themeVals), reason: null };
+        }
+
+        if (targetColumn.type === 'semester') {
+            // Знаходимо попередню колонку "semester"
+            const prevSemCol = [...colsBefore].reverse().find(c => c.type === 'semester');
+            const prevSemIdx = prevSemCol
+                ? colsBefore.findIndex(c => toStr(c._id) === toStr(prevSemCol._id))
+                : -1;
+            const relevantCols = colsBefore.slice(prevSemIdx + 1);
+
+            const quarterVals = relevantCols
+                .filter(c => c.type === 'quarter')
+                .map(c => savedColVal(c._id))
+                .filter(v => v != null);
+
+            if (quarterVals.length === 0) return { value: null, reason: 'Немає оцінок за чверть для розрахунку' };
+            return { value: roundAvg(quarterVals), reason: null };
+        }
+
+        return { value: null, reason: null };
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     const handleCellClick = (studentId, date) => {
         if (date.isHoliday) return;
         const sid = toStr(studentId);
@@ -424,14 +549,22 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
         setShowGradeModal(true);
     };
 
+    const AUTO_TYPES = ['theme', 'quarter', 'semester'];
+
     const handleColumnCellClick = (studentId, column) => {
         const sid = toStr(studentId);
         const cid = toStr(column._id);
-        const existingGrade = grades.find(g => {
-            const studentMatch = toStr(g.student) === sid;
-            const colMatch = toStr(g.columnId) === cid;
-            return studentMatch && colMatch;
-        });
+        const existingGrade = grades.find(g => toStr(g.student) === sid && toStr(g.columnId) === cid);
+
+        const isAutoType = AUTO_TYPES.includes(column.type);
+
+        if (isAutoType) {
+            // Auto-calculated columns: do NOT open a grade entry popup.
+            // The grade is already shown directly in the cell.
+            return;
+        }
+
+        // Manual types (self, control): open grade modal as usual
         setSelectedCell({ studentId, date: null, columnId: column._id, columnType: column.type });
         setSelectedGrade(existingGrade || null);
         setShowGradeModal(true);
@@ -666,6 +799,7 @@ const GradebookPage = ({ scheduleId, databaseName, isMobile }) => {
                     getGradeForStudentAndDate={getGradeForStudentAndDate}
                     getGradeForStudentAndColumn={getGradeForStudentAndColumn}
                     getAttendanceForStudentAndDate={getAttendanceForStudentAndDate}
+                    computeAutoGrade={computeAutoGrade}
                     onCellClick={handleCellClick}
                     onColumnCellClick={handleColumnCellClick}
                     onAddColumn={openAddColumn}

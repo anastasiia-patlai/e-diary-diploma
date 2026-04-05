@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaStar, FaUserClock, FaTimes, FaTrash, FaExclamationCircle } from 'react-icons/fa';
+import { FaStar, FaUserClock, FaTimes, FaTrash, FaExclamationCircle, FaCalculator } from 'react-icons/fa';
 
 const COLUMN_TYPE_NAMES = {
     self: 'Самостійна',
@@ -17,6 +17,9 @@ const COLUMN_TYPE_COLORS = {
     semester: { color: '#BA7517', bg: '#FAEEDA', textCol: '#633806' },
 };
 
+// Types where grade is calculated automatically
+const AUTO_TYPES = ['theme', 'quarter', 'semester'];
+
 const GradeModal = ({
     show,
     onHide,
@@ -32,22 +35,29 @@ const GradeModal = ({
     studentName,
     hasAttendance,
     isColumnMode = false,
-    columnType = null
+    columnType = null,
+    autoValue = null,
+    autoReason = null,
 }) => {
     const [mode, setMode] = useState('grade');
     const [grade, setGrade] = useState('');
     const [attendanceReason, setAttendanceReason] = useState('');
 
+    const isAutoType = AUTO_TYPES.includes(columnType);
+
     useEffect(() => {
+        if (!show) return;
         if (existingGrade) {
             setGrade(existingGrade.value.toString());
-            setMode('grade');
+        } else if (isAutoType && autoValue != null) {
+            // Pre-fill with calculated value
+            setGrade(autoValue.toString());
         } else {
             setGrade('');
-            setMode('grade');
         }
+        setMode('grade');
         setAttendanceReason('');
-    }, [existingGrade, show]);
+    }, [show, existingGrade?.value, isAutoType, autoValue]);
 
     const handleSave = () => {
         if (mode === 'grade') {
@@ -76,6 +86,9 @@ const GradeModal = ({
     const colTypeInfo = columnType ? COLUMN_TYPE_COLORS[columnType] : null;
     const colTypeName = columnType ? COLUMN_TYPE_NAMES[columnType] : null;
 
+    const canSave = mode === 'grade' ? !!grade : true;
+    const saveDisabled = !canSave || (isAutoType && autoValue == null && !existingGrade);
+
     return (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -100,7 +113,7 @@ const GradeModal = ({
                     </button>
                 </div>
 
-                {/* Context info */}
+                {/* Column type badge */}
                 {isColumnMode && colTypeInfo ? (
                     <div style={{
                         backgroundColor: colTypeInfo.bg, padding: '10px 12px',
@@ -111,6 +124,15 @@ const GradeModal = ({
                         <span style={{ fontSize: '14px', color: colTypeInfo.textCol, fontWeight: '500' }}>
                             {colTypeName}
                         </span>
+                        {isAutoType && (
+                            <span style={{
+                                marginLeft: 'auto', fontSize: '12px',
+                                color: colTypeInfo.textCol, opacity: 0.75,
+                                display: 'flex', alignItems: 'center', gap: '4px'
+                            }}>
+                                <FaCalculator size={11} /> Авторозрахунок
+                            </span>
+                        )}
                     </div>
                 ) : date ? (
                     <div style={{ backgroundColor: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#0369a1' }}>
@@ -118,7 +140,7 @@ const GradeModal = ({
                     </div>
                 ) : null}
 
-                {/* Mode toggle — only in regular (non-column) mode */}
+                {/* Mode toggle — only for regular (date) cells, not column cells */}
                 {!isColumnMode && (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                         {[
@@ -146,26 +168,73 @@ const GradeModal = ({
                     </div>
                 )}
 
-                {/* Grade input */}
+                {/* Grade section */}
                 {mode === 'grade' && (
-                    <select
-                        value={grade}
-                        onChange={(e) => setGrade(e.target.value)}
-                        style={{
-                            width: '100%', padding: '11px 12px',
-                            border: '1px solid #e5e7eb', borderRadius: '8px',
-                            fontSize: '15px', marginBottom: '20px',
-                            color: grade ? '#111827' : '#9ca3af'
-                        }}
-                    >
-                        <option value="">Оберіть оцінку</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
-                            <option key={n} value={n}>{n}</option>
-                        ))}
-                    </select>
+                    isAutoType ? (
+                        /* ── Auto-calculated types: theme / quarter / semester ── */
+                        <div style={{ marginBottom: '20px' }}>
+                            {autoValue != null ? (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '14px',
+                                    backgroundColor: '#f0fdf4', border: '1px solid #86efac',
+                                    borderRadius: '10px', padding: '14px 16px',
+                                }}>
+                                    <div style={{
+                                        width: '52px', height: '52px', borderRadius: '50%',
+                                        backgroundColor: colTypeInfo?.color || '#639922',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: 'white', fontSize: '24px', fontWeight: '700', flexShrink: 0,
+                                    }}>
+                                        {autoValue}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#166534' }}>
+                                            Розраховано автоматично
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#15803d', marginTop: '3px' }}>
+                                            Середнє арифметичне, округлене до цілого
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{
+                                    backgroundColor: '#fefce8', border: '1px solid #fde047',
+                                    borderRadius: '10px', padding: '14px 16px',
+                                    display: 'flex', alignItems: 'flex-start', gap: '10px',
+                                }}>
+                                    <FaExclamationCircle size={16} style={{ color: '#ca8a04', marginTop: '1px', flexShrink: 0 }} />
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#854d0e' }}>
+                                            Неможливо розрахувати
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#92400e', marginTop: '3px' }}>
+                                            {autoReason || 'Недостатньо даних для розрахунку'}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* ── Manual types: regular / self / control ── */
+                        <select
+                            value={grade}
+                            onChange={(e) => setGrade(e.target.value)}
+                            style={{
+                                width: '100%', padding: '11px 12px',
+                                border: '1px solid #e5e7eb', borderRadius: '8px',
+                                fontSize: '15px', marginBottom: '20px',
+                                color: grade ? '#111827' : '#9ca3af'
+                            }}
+                        >
+                            <option value="">Оберіть оцінку</option>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                                <option key={n} value={n}>{n}</option>
+                            ))}
+                        </select>
+                    )
                 )}
 
-                {/* Attendance input (only in regular mode) */}
+                {/* Attendance input (only for date cells, not columns) */}
                 {mode === 'attendance' && !isColumnMode && (
                     <div style={{ marginBottom: '20px' }}>
                         {hasAttendance ? (
@@ -218,12 +287,12 @@ const GradeModal = ({
                     {!(mode === 'attendance' && hasAttendance) && (
                         <button
                             onClick={handleSave}
-                            disabled={mode === 'grade' && !grade}
+                            disabled={saveDisabled}
                             style={{
                                 backgroundColor: 'rgba(105,180,185,1)', color: 'white',
                                 padding: '9px 18px', border: 'none', borderRadius: '7px',
-                                cursor: (mode === 'grade' && !grade) ? 'not-allowed' : 'pointer',
-                                opacity: (mode === 'grade' && !grade) ? 0.45 : 1,
+                                cursor: saveDisabled ? 'not-allowed' : 'pointer',
+                                opacity: saveDisabled ? 0.45 : 1,
                                 fontWeight: '600', fontSize: '14px'
                             }}
                         >

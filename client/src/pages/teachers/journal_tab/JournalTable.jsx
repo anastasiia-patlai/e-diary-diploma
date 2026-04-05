@@ -18,9 +18,9 @@ const TYPE_ACCENT = {
 
 const BRAND = 'rgba(105, 180, 185, 1)';
 
-const GradeCircle = ({ value }) => (
+const GradeCircle = ({ value, color }) => (
     <span style={{
-        backgroundColor: BRAND,
+        backgroundColor: color || BRAND,
         color: 'white',
         width: '30px', height: '30px',
         borderRadius: '50%',
@@ -70,6 +70,8 @@ const abbreviateName = (fullName) => {
     return `${last} ${initials}`;
 };
 
+const AUTO_TYPES = ['theme', 'quarter', 'semester'];
+
 const JournalTable = ({
     students,
     dates,
@@ -77,6 +79,7 @@ const JournalTable = ({
     getGradeForStudentAndDate,
     getGradeForStudentAndColumn,
     getAttendanceForStudentAndDate,
+    computeAutoGrade,
     onCellClick,
     onColumnCellClick,
     onAddColumn,
@@ -466,27 +469,40 @@ const JournalTable = ({
                                                 const isColHov = hoveredColId === col._id;
                                                 const accent = TYPE_ACCENT[col.type];
                                                 const t = COLUMN_TYPES[col.type];
+                                                const isAutoType = AUTO_TYPES.includes(col.type);
+
+                                                // For auto types compute the value on-the-fly
+                                                const autoVal = (isAutoType && computeAutoGrade)
+                                                    ? (computeAutoGrade(student._id, col)?.value ?? null)
+                                                    : null;
+
+                                                // What to display: saved grade wins; then auto value; then dash
+                                                const displayVal = colGrade ?? autoVal;
 
                                                 return (
                                                     <td
                                                         key={col._id}
-                                                        onClick={() => onColumnCellClick(student._id, col)}
-                                                        onMouseEnter={() => setHoveredColId(col._id)}
-                                                        onMouseLeave={() => setHoveredColId(null)}
+                                                        onClick={() => !isAutoType && onColumnCellClick(student._id, col)}
+                                                        onMouseEnter={() => !isAutoType && setHoveredColId(col._id)}
+                                                        onMouseLeave={() => !isAutoType && setHoveredColId(null)}
+                                                        title={isAutoType && autoVal == null
+                                                            ? 'Недостатньо оцінок для розрахунку'
+                                                            : undefined}
                                                         style={{
                                                             width: '66px', minWidth: '66px',
                                                             padding: '8px 4px',
                                                             textAlign: 'center',
                                                             borderBottom: '1px solid #e5e7eb',
                                                             borderLeft: `2px solid ${accent}`,
-                                                            cursor: 'pointer',
-                                                            backgroundColor: t.bg,
+                                                            cursor: isAutoType ? 'default' : 'pointer',
+                                                            backgroundColor: isColHov ? `${t.bg}bb` : t.bg,
                                                             transition: 'background-color 0.15s',
                                                             height: '46px',
                                                         }}
                                                     >
-                                                        {/* #1: assessment column grade is fully independent */}
-                                                        {colGrade ? <GradeCircle value={colGrade} /> : DASH}
+                                                        {displayVal != null
+                                                            ? <GradeCircle value={displayVal} color={t.color} />
+                                                            : DASH}
                                                     </td>
                                                 );
                                             })}
